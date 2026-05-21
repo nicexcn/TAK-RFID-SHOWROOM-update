@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  firstName   String
+  lastName    String
+  password    String
+  role        String   @default("user")
+  permissions Json     @default("{\"dashboard\":true,\"products\":false,\"rfid\":false}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id            String         @id @default(cuid())
+  rfidTag       String         @unique
+  brand         String?
+  materialType  String?
+  category      String?
+  productCode   String?
+  name          String
+  size          String?
+  colour        String?
+  description   String?
+  imageUrl      String?
+  location      String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  scans         Scan[]
+  images        ProductImage[]
+  notifications Notification[]
+}
+
+model Customer {
+  id               String         @id @default(cuid())
+  customerCode     String         @unique
+  fullName         String         @default("")
+  title            String         @default("")
+  titleOther       String?
+  company          String         @default("")
+  phone            String         @default("")
+  email            String         @default("")
+  lineId           String?
+  knowChannel      String[]       @default([])
+  knowChannelOther String?
+  pdpaConsent      Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  scans            Scan[]
+  notifications    Notification[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  customerCode String
+  customerId   String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  scans        Scan[]
+}
+
+model Scan {
+  id         String    @id @default(cuid())
+  product    Product   @relation(fields: [productId], references: [id])
+  productId  String
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+  session    Session?  @relation(fields: [sessionId], references: [id])
+  sessionId  String?
+  scannedAt  DateTime  @default(now())
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  type       String    @default("PREPARE_PRODUCT")
+  title      String
+  message    String    @default("")
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId String?
+  sessionId  String?
+  status     String    @default("PENDING")
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model DropdownOption {
+  id        String   @id @default(cuid())
+  type      String
+  value     String
+  createdAt DateTime @default(now())
+  @@unique([type, value])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model AppSettings {
+  id              String   @id @default("singleton")
+  defaultFilter   String   @default("daily")
+  yearA           Int      @default(2025)
+  yearB           Int      @default(2026)
+  graphColor      Int      @default(0)
+  takeawayLimit   Int      @default(3)
+  takeawayEnabled Boolean  @default(true)
+  visibleWidgets  Json     @default("{\"walkins\":true,\"customerTypes\":true,\"newVsTotal\":true,\"comparisonGraph\":true,\"categoryGraph\":true}")
+  updatedAt       DateTime @updatedAt
+}

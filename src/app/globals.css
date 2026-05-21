@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@font-face {
+  font-family: 'Archer';
+  src: url('/fonts/Archer Font/Archer Thin.otf') format('opentype');
+  font-weight: 100;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@font-face {
+  font-family: 'Archer';
+  src: url('/fonts/Archer Font/Archer Light.otf') format('opentype');
+  font-weight: 300;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@font-face {
+  font-family: 'Archer';
+  src: url('/fonts/Archer Font/Archer Book.otf') format('opentype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Archer';
+  src: url('/fonts/Archer Font/Archer Bold.otf') format('opentype');
+  font-weight: 700;
+}
+
+@theme {
+  --color-primary: #726c5a;
+  --color-secondary-1: #4c4847;
+  --color-secondary-2: #9f886c;
+  --color-secondary-3: #cdc3ad;
+  --color-secondary-4: #e6e5d8;
+  --color-bg-light: #f5f2ee;
+  --font-sans: 'Archer', sans-serif;
+}
+
+* {
+  font-family: 'Archer', sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f5f2ee;
+  color: #4c4847;
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #4c4847 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
 }

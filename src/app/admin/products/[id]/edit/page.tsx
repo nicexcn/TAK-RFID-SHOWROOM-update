@@ -1,0 +1,211 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import SearchableSelect from "@/components/SearchableSelect";
+import AutocompleteInput from "@/components/AutocompleteInput";
+import ImageUpload from "@/components/ImageUpload";
+
+interface DropdownOption {
+  id: string;
+  value: string;
+}
+
+export default function EditProductPage() {
+  const router = useRouter();
+  const { id } = useParams();
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    rfidTag: "",
+    brand: "",
+    materialType: "",
+    category: "",
+    productCode: "",
+    name: "",
+    imageUrl: "",
+  });
+
+  const [brands, setBrands] = useState<DropdownOption[]>([]);
+  const [materialTypes, setMaterialTypes] = useState<DropdownOption[]>([]);
+  const [categories, setCategories] = useState<DropdownOption[]>([]);
+
+  const inputStyle = {
+    background: "#f5f2ee",
+    border: "1px solid #e6e5d8",
+    color: "#4c4847",
+  };
+
+  useEffect(() => {
+    async function fetchAll() {
+      const [product, b, m, c] = await Promise.all([
+        fetch(`/api/products/${id}`).then((r) => r.json()),
+        fetch("/api/dropdown?type=brand").then((r) => r.json()),
+        fetch("/api/dropdown?type=materialType").then((r) => r.json()),
+        fetch("/api/dropdown?type=category").then((r) => r.json()),
+      ]);
+      setForm({
+        rfidTag: product.rfidTag || "",
+        brand: product.brand || "",
+        materialType: product.materialType || "",
+        category: product.category || "",
+        productCode: product.productCode || "",
+        name: product.name || "",
+        imageUrl: product.imageUrl || "",
+      });
+      setBrands(b);
+      setMaterialTypes(m);
+      setCategories(c);
+      setFetching(false);
+    }
+    fetchAll();
+  }, [id]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleSelect(name: string, value: string) {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  async function handleSubmit() {
+    if (!form.rfidTag || !form.name) {
+      setError("Please fill in required fields (RFID Tag, Product Name)");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form }),
+      });
+      if (res.ok) {
+        router.push("/admin/products");
+      } else {
+        setError("Failed to update product");
+      }
+    } catch {
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (fetching) return (
+    <div className="flex items-center justify-center h-64">
+      <p style={{ color: "#cdc3ad" }}>Loading...</p>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Edit Product</h1>
+          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Product Management / Edit Product</p>
+        </div>
+        <button onClick={() => router.push("/admin/products")}
+          className="px-5 py-2 rounded-xl text-sm"
+          style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+          ← Back
+        </button>
+      </div>
+
+      <div className="rounded-xl p-6 max-w-3xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        <div className="space-y-4">
+
+          {/* RFID Tag */}
+          <div>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
+              RFID Tag <span style={{ color: "#9f4a4a" }}>*</span>
+            </label>
+            <div className="flex gap-2">
+              <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
+                placeholder="Scan or enter RFID tag..."
+                className="flex-1 px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              <button type="button" disabled
+                className="px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+                style={{ background: "#e6e5d8", color: "#9f886c", cursor: "not-allowed" }}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                  <rect x="9" y="9" width="6" height="6"/>
+                </svg>
+                Scan
+              </button>
+            </div>
+          </div>
+
+          {/* Product Code */}
+          <div>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Code</label>
+            <input name="productCode" value={form.productCode} onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+          </div>
+
+          {/* Brand + Material Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Brand</label>
+              <SearchableSelect options={brands} value={form.brand}
+                onChange={(v) => handleSelect("brand", v)} placeholder="Select brand" />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Material Type</label>
+              <SearchableSelect options={materialTypes} value={form.materialType}
+                onChange={(v) => handleSelect("materialType", v)} placeholder="Select material type" />
+            </div>
+          </div>
+
+          {/* Category + Product Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Category</label>
+              <SearchableSelect options={categories} value={form.category}
+                onChange={(v) => handleSelect("category", v)} placeholder="Select category" searchable />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
+                Product Name <span style={{ color: "#9f4a4a" }}>*</span>
+              </label>
+              <AutocompleteInput
+                value={form.name}
+                onChange={(v) => handleSelect("name", v)}
+                placeholder="Type product name..."
+                fetchUrl="/api/products/names"
+              />
+            </div>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Image</label>
+            <ImageUpload
+              value={form.imageUrl}
+              onChange={(url) => handleSelect("imageUrl", url)}
+            />
+          </div>
+
+          {error && <p className="text-sm" style={{ color: "#9f4a4a" }}>{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button onClick={handleSubmit} disabled={loading}
+              className="px-6 py-3 rounded-xl text-sm font-medium"
+              style={{ background: "#726c5a", color: "#fff", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Saving..." : "Save Changes"}
+            </button>
+            <button onClick={() => router.push("/admin/products")}
+              className="px-6 py-3 rounded-xl text-sm"
+              style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
