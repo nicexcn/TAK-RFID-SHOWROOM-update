@@ -35,6 +35,8 @@ function imagesOf(p?: DProduct): string[] {
 export default function DisplayPage() {
   const [productMap, setProductMap] = useState<Map<string, DProduct>>(new Map());
   const [imageMs, setImageMs] = useState(IMAGE_MS); // per-image slide duration (from Settings)
+  const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base (from Settings)
+  const [cloudRoom, setCloudRoom] = useState(""); // reader deviceId/room to subscribe via the relay
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
   const unknownRef = useRef<Map<string, number>>(new Map());
@@ -67,6 +69,7 @@ export default function DisplayPage() {
     }).catch(() => {});
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
+      if (c?.relayUrl) setRelayUrl(c.relayUrl);
     }).catch(() => {});
     const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     setReaderIp(ip); setIpDraft(ip);
@@ -237,6 +240,14 @@ export default function DisplayPage() {
     window.localStorage.setItem(READER_KEY, ip); setReaderIp(ip); setShowConfig(false);
   }
 
+  // Option E: build the relay subscriber URL from the central relay base + a room.
+  function connectViaRelay() {
+    if (!relayUrl || !cloudRoom.trim()) return;
+    const url = `${relayUrl.replace(/\/+$/, "")}/?room=${encodeURIComponent(cloudRoom.trim())}`;
+    setIpDraft(url);
+    window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
+  }
+
   return (
     <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#1a1a1a" }}>
       {(slotA || slotB) ? (
@@ -310,6 +321,19 @@ export default function DisplayPage() {
             <button onClick={connect} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: "#4a6fa5" }}>เชื่อมต่อ</button>
             <button onClick={() => setSimOn((s) => !s)} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: simOn ? "#9f4a4a" : "#726c5a" }}>{simOn ? "หยุดจำลอง" : "จำลอง"}</button>
           </div>
+
+          {relayUrl && (
+            // Option E: connect via the cloud relay by entering just the reader's room/deviceId.
+            <div className="mt-2 pt-2" style={{ borderTop: "1px solid #444" }}>
+              <p className="text-white/60 text-[11px] mb-1">Cloud reader (relay) — room / deviceId</p>
+              <div className="flex gap-2">
+                <input value={cloudRoom} onChange={(e) => setCloudRoom(e.target.value)} placeholder="เช่น table-01 / serial"
+                  className="flex-1 px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }} />
+                <button onClick={connectViaRelay} className="px-3 py-1.5 rounded text-xs text-white whitespace-nowrap" style={{ background: "#4a7c59" }}>ใช้ relay</button>
+              </div>
+              <p className="text-white/30 text-[10px] mt-1 truncate">relay: {relayUrl}</p>
+            </div>
+          )}
           {readerIp && (
             // Disconnect: close the socket AND clear readerIp so neither the
             // hook's auto-reconnect nor the page's auto-connect effect re-opens it.

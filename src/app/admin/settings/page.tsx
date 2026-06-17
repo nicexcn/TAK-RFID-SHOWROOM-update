@@ -103,6 +103,7 @@ export default function SettingsPage() {
   const [mediaSuccess, setMediaSuccess] = useState("");
   const [slideDuration, setSlideDuration] = useState(5);
   const [sessionTimeout, setSessionTimeout] = useState(30);
+  const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleOn, setScheduleOn] = useState("08:00");
@@ -125,6 +126,7 @@ export default function SettingsPage() {
       if (d.takeawayEnabled !== undefined) setTakeawayEnabled(d.takeawayEnabled);
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
+      if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
       if (d.scheduleEnabled !== undefined) setScheduleEnabled(d.scheduleEnabled);
       if (d.scheduleOn) setScheduleOn(d.scheduleOn);
       if (d.scheduleOff) setScheduleOff(d.scheduleOff);
@@ -715,8 +717,15 @@ export default function SettingsPage() {
                     <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Auto-clear หลังไม่มีการใช้งาน</p>
                   </div>
                 </div>
+                <div className="mt-4 max-w-md">
+                  <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Cloud Relay URL (Option E)</label>
+                  <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
+                    placeholder="wss://relay.fly.dev (เว้นว่าง = ใช้ LAN ws:// ตรง)"
+                    className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
+                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>ตั้งครั้งเดียว → /display ใส่แค่ room/deviceId ของ reader</p>
+                </div>
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

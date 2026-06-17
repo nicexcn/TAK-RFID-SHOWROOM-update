@@ -17,7 +17,7 @@ export async function GET() {
 const ALLOWED = [
   "defaultFilter", "yearA", "yearB", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays",
+  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl",
 ];
 
 export async function PUT(req: NextRequest) {

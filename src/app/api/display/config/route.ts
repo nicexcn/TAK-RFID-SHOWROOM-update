@@ -10,7 +10,7 @@ export async function GET() {
       where: { id: "singleton" },
       select: {
         slideDuration: true, scheduleEnabled: true,
-        scheduleOn: true, scheduleOff: true, scheduleDays: true,
+        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true,
       },
     });
     return NextResponse.json({
@@ -19,8 +19,9 @@ export async function GET() {
       scheduleOn: s?.scheduleOn ?? "08:00",
       scheduleOff: s?.scheduleOff ?? "18:00",
       scheduleDays: s?.scheduleDays ?? [],
+      relayUrl: s?.relayUrl ?? "",
     });
   } catch {
-    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false });
+    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "" });
   }
 }

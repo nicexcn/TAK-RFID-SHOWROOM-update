@@ -1,0 +1,22 @@
+# Fly.io deploy for the WS relay.  Deploy:
+#   cd relay && fly launch --no-deploy   (or: fly apps create tak-rfid-relay)
+#   fly secrets set INGEST_KEY=$(openssl rand -base64 32)
+#   fly deploy
+# Your wss URL is then  wss://<app-name>.fly.dev
+app = "tak-rfid-relay"
+primary_region = "sin"   # Singapore — near the Supabase/Vercel region
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  # Keep at least one machine alive so persistent WS connections aren't dropped.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
