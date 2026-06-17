@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { comparePassword, hashPassword, verifyToken } from "@/lib/auth";
+import { passwordError } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,12 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { currentPassword, newPassword } = await req.json();
+
+    const pwErr = passwordError(newPassword);
+    if (pwErr) return NextResponse.json({ error: pwErr }, { status: 400 });
+    if (newPassword === currentPassword) {
+      return NextResponse.json({ error: "รหัสผ่านใหม่ต้องต่างจากเดิม" }, { status: 400 });
+    }
 
     const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
     if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -23,6 +30,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error("CHANGE PASSWORD ERROR:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { toCsv } from "@/lib/csv";
 
 const GRAPH_COLORS = [
   { primary: "#726c5a", secondary: "#cdc3ad" },
@@ -125,7 +126,7 @@ export default function AdminDashboard() {
         c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH"),
       ]),
     ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
+    const csv = toCsv(rows);
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -248,7 +249,7 @@ export default function AdminDashboard() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24" title="Drag to reorder">
+            <svg width="14" height="14" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24" aria-label="Drag to reorder">
               <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
               <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
               <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />

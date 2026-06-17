@@ -7,11 +7,12 @@ export async function GET() {
     await prisma.user.deleteMany({ where: { username: "admin" } });
     const hashed = await hashPassword("admin1234");
     await prisma.user.create({
-      data: { username: "admin", password: hashed, role: "admin" },
+      data: { username: "admin", firstName: "Admin", lastName: "User", password: hashed, role: "admin" },
     });
     return NextResponse.json({ message: "Admin reset successfully" });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

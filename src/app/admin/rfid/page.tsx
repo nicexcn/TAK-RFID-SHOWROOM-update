@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { getDeviceId, isStationNamed, setDeviceId } from "@/lib/deviceId";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Product {
@@ -12,6 +14,7 @@ interface Product {
 interface ScanItem {
   id: string; scannedAt: string; product: Product;
   prepareStatus: "NONE" | "PREPARING" | "COMPLETE";
+  takeawayQty?: number;
   deviceId: number; // 1-4
 }
 interface Session {
@@ -81,20 +84,133 @@ function RFIDPageInner() {
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
 
+  // ── WebSocket + Pre-loaded Map + Dedup + Batch ──────────────────────────
+  const [productMap, setProductMap] = useState<Map<string, Product>>(new Map());
+  const seenEpcsRef = useRef<Set<string>>(new Set());
+  const scanQueueRef = useRef<Array<{ productId: string; rfidTag: string }>>([]);
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [deviceIps, setDeviceIps] = useState<Record<number, string>>({ 1: "", 2: "", 3: "", 4: "" });
+  const [wsDeviceId, setWsDeviceId] = useState<DeviceId>(1);
+  const [simulating, setSimulating] = useState(false);
+
+  // Station id (Option C ownership key) — read client-side from localStorage
+  const [stationId, setStationId] = useState("");
+  const [stationNamed, setStationNamed] = useState(true);
+  useEffect(() => { setStationId(getDeviceId()); setStationNamed(isStationNamed()); }, []);
+
+  const loadProductMap = useCallback(async () => {
+    try {
+      const res = await fetch("/api/products?all=true");
+      const data = await res.json();
+      const items = data.products || data || [];
+      const map = new Map<string, Product>();
+      for (const p of items) {
+        if (p.rfidTag) map.set(p.rfidTag, p);
+      }
+      setProductMap(map);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    loadProductMap();
+  }, [loadProductMap]);
+
+  const flushScans = useCallback(async () => {
+    const batch = [...scanQueueRef.current];
+    scanQueueRef.current = [];
+    flushTimerRef.current = null;
+    if (batch.length === 0 || !session) return;
+    try {
+      await fetch(`/api/sessions/${session.id}/scans/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scans: batch }),
+      });
+    } catch {
+      scanQueueRef.current.unshift(...batch);
+      flushTimerRef.current = setTimeout(flushScans, 2000);
+    }
+  }, [session]);
+
+  const handleTag = useCallback((epc: string, rssi: number, _count: number, deviceId: DeviceId = 1) => {
+    if (!session) return;
+    if (seenEpcsRef.current.has(epc)) return;
+    seenEpcsRef.current.add(epc);
+
+    const product = productMap.get(epc);
+    const logEntry: DeviceLog = {
+      deviceId, tag: epc, time: new Date().toLocaleTimeString("th-TH"),
+      productName: product?.name || null, ok: !!product,
+    };
+    setDeviceLogs((p) => [logEntry, ...p].slice(0, 200));
+
+    if (!product) return;
+
+    const fakeScan: ScanItem = {
+      id: `ws-${Date.now()}-${epc}`, scannedAt: new Date().toISOString(),
+      product, prepareStatus: "NONE", deviceId,
+    };
+    setSession((p) => p ? { ...p, scans: [fakeScan, ...p.scans] } : p);
+
+    scanQueueRef.current.push({ productId: product.id, rfidTag: epc });
+    if (!flushTimerRef.current) {
+      flushTimerRef.current = setTimeout(flushScans, 500);
+    }
+  }, [session, productMap, flushScans]);
+
+  const wsCallbacks = useMemo(() => ({
+    onTag: (epc: string, rssi: number, count: number) => handleTag(epc, rssi, count, wsDeviceId),
+  }), [handleTag, wsDeviceId]);
+
+  const ws = useWebSocket({
+    url: deviceIps[wsDeviceId] || "",
+    onTag: wsCallbacks.onTag,
+    enabled: !!session && !!deviceIps[wsDeviceId] && connectedDevices.has(wsDeviceId),
+  });
+
+  const runSimulator = useCallback(() => {
+    if (!session || productMap.size === 0) return;
+    setSimulating(true);
+    const tags = Array.from(productMap.keys());
+    // จำลอง Fix Reader: ยิง burst ~3000 ครั้งใน ~5 วินาที (ส่วนใหญ่ซ้ำ → test dedup)
+    const burstCount = 3000;
+    let sent = 0;
+    const interval = setInterval(() => {
+      if (sent >= burstCount) {
+        clearInterval(interval);
+        setSimulating(false);
+        return;
+      }
+      // Random tag จาก pool (มี duplicate เยอะ)
+      const tag = tags[Math.floor(Math.random() * tags.length)];
+      const rssi = Math.floor(Math.random() * 45) - 95;
+      handleTag(tag, rssi, 1, 1);
+      sent++;
+    }, 2); // 2ms = สมจริง Fix Reader (3000 scans ใน ~6 วินาที)
+  }, [session, productMap, handleTag]);
+
+  useEffect(() => {
+    if (!session) {
+      seenEpcsRef.current.clear();
+      scanQueueRef.current = [];
+      if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
+    }
+  }, [session]);
+
   // Auto-start if came from Customer Management
   useEffect(() => {
+    // Resume only THIS device's active session (concurrent devices = concurrent customers)
+    const url = `/api/sessions?deviceId=${encodeURIComponent(getDeviceId())}`;
     if (preloadCode) {
-      // ดึงข้อมูล session ปัจจุบันก่อน
-      fetch("/api/sessions").then((r) => r.json()).then((data) => {
+      fetch(url).then((r) => r.json()).then((data) => {
         if (data?.id && data.customerCode === preloadCode) {
-          setSession({ ...data, scans: data.scans?.map((s: ScanItem) => ({ ...s, prepareStatus: "NONE", deviceId: 1 })) || [] });
+          applyLoadedSession(data);
         } else if (preloadCode) {
-          // Auto-start session
           handleStartSessionWith(preloadCode, null);
         }
       });
     } else {
-      fetch("/api/sessions").then((r) => r.json()).then((data) => {
+      fetch(url).then((r) => r.json()).then((data) => {
         if (data?.id) setSession({ ...data, scans: data.scans?.map((s: ScanItem) => ({ ...s, prepareStatus: "NONE", deviceId: 1 })) || [] });
       });
     }
@@ -103,13 +219,21 @@ function RFIDPageInner() {
 
   async function handleStartSessionWith(code: string, custId: string | null) {
     setLoading(true); setError("");
-    const res = await fetch("/api/sessions", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerCode: code, customerId: custId }),
-    });
-    const data = await res.json();
-    setSession({ ...data, scans: [] });
-    setLoading(false);
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerCode: code, customerId: custId, deviceId: getDeviceId() }),
+      });
+      const data = await res.json();
+      // Guard: never enter the active-session branch with a missing id (would make
+      // every subsequent scan hit /api/sessions/undefined/scans).
+      if (!res.ok || !data?.id) { setError("เริ่ม session ไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+      setSession({ ...data, scans: [] });
+    } catch {
+      setError("เริ่ม session ไม่สำเร็จ ลองใหม่อีกครั้ง");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSearchCustomer() {
@@ -163,8 +287,38 @@ function RFIDPageInner() {
     });
   }
 
+  // Persist a scan's prepare status / takeaway qty (customer req #2) — previously
+  // these lived only in React state and were lost on reload / unseen by other stations.
+  async function patchScan(scanId: string, body: { prepareStatus?: string; takeawayQty?: number }) {
+    if (!session) return;
+    try {
+      await fetch(`/api/sessions/${session.id}/scans/${scanId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch { /* optimistic UI already applied; the next session load reconciles */ }
+  }
+
+  // Hydrate session + takeaway state from the server's real (now-persisted) scan rows.
+  function applyLoadedSession(data: { id?: string; scans?: ScanItem[] } & Record<string, unknown>) {
+    const scans = (data.scans || []).map((s) => ({ ...s, deviceId: 1 as const }));
+    setSession({ ...(data as unknown as Session), scans });
+    const tk: Record<string, number> = {};
+    for (const s of scans) if (s.takeawayQty) tk[s.id] = s.takeawayQty;
+    setTakeaway(tk);
+  }
+
+  function changeTakeaway(scanId: string, delta: number) {
+    setTakeaway((p) => {
+      const next = Math.max(0, (p[scanId] ?? 0) + delta);
+      patchScan(scanId, { takeawayQty: next });
+      return { ...p, [scanId]: next };
+    });
+  }
+
   async function handlePrepare(scan: ScanItem) {
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "PREPARING" } : s) } : p);
+    await patchScan(scan.id, { prepareStatus: "PREPARING" });
     await fetch("/api/notifications", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -175,23 +329,46 @@ function RFIDPageInner() {
     });
   }
 
-  function handleMarkComplete(scanId: string) {
+  async function handleMarkComplete(scanId: string) {
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scanId ? { ...s, prepareStatus: "COMPLETE" } : s) } : p);
+    await patchScan(scanId, { prepareStatus: "COMPLETE" });
   }
 
-  function handleEndSession() {
+  async function handleEndSession() {
+    const ending = session;
+    if (ending) {
+      // F4: persist any queued scans BEFORE tearing down, then
+      // F1: close the session server-side (it stays active otherwise).
+      try {
+        if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
+        await flushScans();
+        await fetch(`/api/sessions/${ending.id}`, { method: "PATCH" });
+      } catch { /* best-effort; UI still resets */ }
+    }
+    seenEpcsRef.current.clear();
     setSession(null); setCustomerQuery(""); setCustomerInfo(null);
     setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]);
     setConnectedDevices(new Set([1])); setActiveTab("all");
   }
 
   async function handleSendToDisplay() {
+    if (!session?.id) return;
     setSending(true); setSendSuccess(false);
-    await fetch("/api/sessions/display", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId: session?.id }),
-    });
-    setSendSuccess(true); setTimeout(() => setSendSuccess(false), 3000); setSending(false);
+    try {
+      const res = await fetch("/api/sessions/display", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
+      if (res.ok) {
+        setSendSuccess(true); setTimeout(() => setSendSuccess(false), 3000);
+      } else {
+        setError("ส่งขึ้นจอไม่สำเร็จ"); setTimeout(() => setError(""), 3000);
+      }
+    } catch {
+      setError("ส่งขึ้นจอไม่สำเร็จ"); setTimeout(() => setError(""), 3000);
+    } finally {
+      setSending(false);
+    }
   }
 
   // Filtered scans by tab
@@ -209,7 +386,20 @@ function RFIDPageInner() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Surface Scan</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Surface Scan</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs" style={{ color: "#9f886c" }}>Home / Surface Scan</p>
+            <button
+              onClick={() => {
+                const cur = getDeviceId();
+                const v = window.prompt("ตั้งชื่อ Station (เครื่องนี้) เช่น station-table, tablet-2", cur);
+                if (v && v.trim()) { setDeviceId(v); setStationId(v.trim()); }
+              }}
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: stationNamed ? "#f0f4ff" : "#fff0f0", color: stationNamed ? "#4a6fa5" : "#9f4a4a", border: `1px solid ${stationNamed ? "#a8c0dd" : "#f5c0c0"}` }}
+              title="คลิกเพื่อตั้ง/แก้ Station id">
+              📍 {stationId || "ตั้งชื่อ Station"}{!stationNamed && " (ยังไม่ได้ตั้ง)"}
+            </button>
+          </div>
         </div>
         {session && (
           <div className="flex items-center gap-2">
@@ -309,6 +499,53 @@ function RFIDPageInner() {
             <div className="text-right">
               <p className="text-xs" style={{ color: "#9f886c" }}>Total Scans</p>
               <p className="text-base font-semibold" style={{ color: "#726c5a" }}>{session.scans.length}</p>
+            </div>
+          </div>
+
+          {/* ── WebSocket Connection + Simulator ── */}
+          <div className="rounded-xl overflow-hidden mb-4" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+            <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
+              <p className="text-sm font-medium" style={{ color: "#4c4847" }}>RFID Connection</p>
+              <div className="flex items-center gap-2">
+                {ws.isConnected && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
+                <span className="text-xs" style={{ color: ws.isConnected ? "#10b981" : "#9f886c" }}>
+                  {ws.isConnected ? "เชื่อมต่อแล้ว" : ws.error || "ยังไม่ได้เชื่อมต่อ"}
+                </span>
+              </div>
+            </div>
+            <div className="p-4 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9f886c" }}>
+                <span>Reader</span>
+                <input
+                  value={deviceIps[wsDeviceId]}
+                  onChange={(e) => setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value }))}
+                  placeholder="192.168.1.104 หรือ wss://xxx.ngrok-free.app"
+                  className="px-2 py-1.5 rounded-lg outline-none w-72"
+                  style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+              </div>
+              {!ws.isConnected ? (
+                <button onClick={ws.connect} disabled={!deviceIps[wsDeviceId]}
+                  className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                  style={{ background: deviceIps[wsDeviceId] ? "#4a6fa5" : "#cdc3ad" }}>
+                  เชื่อมต่อ WebSocket
+                </button>
+              ) : (
+                <button onClick={ws.disconnect}
+                  className="px-4 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
+                  ตัดการเชื่อมต่อ
+                </button>
+              )}
+              <div className="border-l pl-3 ml-1" style={{ borderColor: "#e6e5d8" }}>
+                <button onClick={runSimulator} disabled={simulating || productMap.size === 0}
+                  className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
+                  style={{ background: simulating ? "#cdc3ad" : "#726c5a" }}>
+                  {simulating ? "กำลังจำลอง..." : `จำลองการสแกน (Fix Reader burst 3000)`}
+                </button>
+              </div>
+              <span className="text-xs ml-auto" style={{ color: "#cdc3ad" }}>
+                สินค้าในระบบ: {productMap.size} รายการ
+              </span>
             </div>
           </div>
 
@@ -556,13 +793,13 @@ function RFIDPageInner() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
-                              <button onClick={() => setTakeaway((p) => ({ ...p, [scan.id]: Math.max(0, (p[scan.id] ?? 0) - 1) }))}
+                              <button onClick={() => changeTakeaway(scan.id, -1)}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
                                 style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>−</button>
                               <span className="w-7 text-center text-sm font-medium" style={{ color: "#4c4847" }}>
                                 {takeaway[scan.id] ?? 0}
                               </span>
-                              <button onClick={() => setTakeaway((p) => ({ ...p, [scan.id]: (p[scan.id] ?? 0) + 1 }))}
+                              <button onClick={() => changeTakeaway(scan.id, 1)}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
                                 style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+</button>
                             </div>

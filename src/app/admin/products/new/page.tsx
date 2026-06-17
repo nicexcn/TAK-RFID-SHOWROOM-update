@@ -22,6 +22,10 @@ export default function NewProductPage() {
     category: "",
     productCode: "",
     name: "",
+    location: "",
+    size: "",
+    colour: "",
+    description: "",
     imageUrl: "",
   });
 
@@ -109,21 +113,10 @@ export default function NewProductPage() {
             <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
               RFID Tag <span style={{ color: "#9f4a4a" }}>*</span>
             </label>
-            <div className="flex gap-2">
-              <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
-                placeholder="Scan or enter RFID tag..."
-                className="flex-1 px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
-              <button type="button" disabled
-                className="px-4 py-3 rounded-xl text-sm flex items-center gap-2"
-                style={{ background: "#e6e5d8", color: "#9f886c", cursor: "not-allowed" }}>
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                  <rect x="9" y="9" width="6" height="6"/>
-                </svg>
-                Scan
-              </button>
-            </div>
-            <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>RFID Scanner integration coming soon</p>
+            <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
+              placeholder="สแกน หรือพิมพ์ RFID tag (เช่น WY7204X)"
+              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>การสแกนจริงทำที่หน้า Surface Scan · ที่นี่กรอก tag เพื่อผูกกับสินค้า</p>
           </div>
 
           {/* Product Code */}
@@ -181,7 +174,31 @@ export default function NewProductPage() {
             </div>
           </div>
 
-      
+          {/* Location + physical attributes (customer req #2: track product location) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Location (ตำแหน่งในโชว์รูม)</label>
+              <input name="location" value={form.location} onChange={handleChange} placeholder="เช่น โซน A ชั้น 2"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Size</label>
+              <input name="size" value={form.size} onChange={handleChange} placeholder="เช่น 60x60 cm"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Colour</label>
+              <input name="colour" value={form.colour} onChange={handleChange} placeholder="เช่น Walnut"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Description</label>
+              <input name="description" value={form.description} onChange={handleChange} placeholder="รายละเอียดสั้นๆ"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+          </div>
           </div>
 
           {/* Image Upload */}

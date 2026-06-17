@@ -10,7 +10,7 @@ async function main() {
       firstName: 'Admin',
       lastName: 'User',
       password: hash,
-      role: 'admin'
+      role: 'super_admin'
     }
   });
   console.log('✓ Created:', user.username, '/ admin1234');

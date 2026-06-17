@@ -53,3 +53,10 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none !important;
 }
+
+/* TV slideshow crossfade — runs on every (re)mount of the incoming layer, so it
+   fades even for cached images; the other layer stays opaque underneath. */
+@keyframes takImgFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

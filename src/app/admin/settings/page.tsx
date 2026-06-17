@@ -77,7 +77,7 @@ export default function SettingsPage() {
   const [dropdownMessage, setDropdownMessage] = useState("");
 
   // ── Account / User Management ──────────────────────────────────────────
-  const [currentUser, setCurrentUser] = useState({ id: "", username: "" });
+  const [currentUser, setCurrentUser] = useState({ id: "", username: "", role: "" });
   const [users, setUsers] = useState<UserItem[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [usersLoading, setUsersLoading] = useState(false);
@@ -118,11 +118,17 @@ export default function SettingsPage() {
   // ── Effects ────────────────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => {
-      if (d.username) setCurrentUser({ id: d.id, username: d.username });
+      if (d.username) setCurrentUser({ id: d.id, username: d.username, role: d.role || "" });
     });
     fetch("/api/settings").then((r) => r.json()).then((d) => {
       if (d.takeawayLimit !== undefined) setTakeawayLimit(d.takeawayLimit);
       if (d.takeawayEnabled !== undefined) setTakeawayEnabled(d.takeawayEnabled);
+      if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
+      if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
+      if (d.scheduleEnabled !== undefined) setScheduleEnabled(d.scheduleEnabled);
+      if (d.scheduleOn) setScheduleOn(d.scheduleOn);
+      if (d.scheduleOff) setScheduleOff(d.scheduleOff);
+      if (Array.isArray(d.scheduleDays)) setScheduleDays(d.scheduleDays);
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
@@ -227,6 +233,18 @@ export default function SettingsPage() {
     setMediaSuccess("✓ Image deleted"); setTimeout(() => setMediaSuccess(""), 2000);
   }
 
+  // Persist a partial AppSettings patch (the display/schedule Save buttons used to
+  // only show a fake success toast without calling the API).
+  async function saveSettings(patch: Record<string, unknown>, onDone: () => void) {
+    try {
+      await fetch("/api/settings", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      onDone();
+    } catch { /* keep prior state */ }
+  }
+
   async function fetchOptions() {
     const res = await fetch(`/api/dropdown?type=${activeType}`);
     setOptions(await res.json());
@@ -275,7 +293,7 @@ export default function SettingsPage() {
         {/* Sidebar */}
         <div className="w-52 shrink-0">
           <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-            {TABS.map((tab) => (
+            {TABS.filter((tab) => tab.key !== "account" || currentUser.role === "super_admin").map((tab) => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className="w-full text-left px-4 py-3 text-sm transition-all"
                 style={{
@@ -411,8 +429,8 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* ── Account ── */}
-          {activeTab === "account" && (
+          {/* ── Account / User Management (super_admin only) ── */}
+          {activeTab === "account" && currentUser.role === "super_admin" && (
             <div>
               {/* User list header */}
               <div style={cardStyle}>
@@ -698,7 +716,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); }}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>
@@ -748,7 +766,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 {scheduleSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{scheduleSuccess}</p>}
-                <button onClick={() => { setScheduleSuccess("✓ Schedule saved"); setTimeout(() => setScheduleSuccess(""), 2000); }}
+                <button onClick={() => saveSettings({ scheduleEnabled, scheduleOn, scheduleOff, scheduleDays }, () => { setScheduleSuccess("✓ Schedule saved"); setTimeout(() => setScheduleSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save Schedule
                 </button>

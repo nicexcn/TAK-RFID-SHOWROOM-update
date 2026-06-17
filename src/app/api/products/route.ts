@@ -6,10 +6,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = 10;
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const all = searchParams.get("all") === "true";
+    const limit = all ? 10000 : 10;
 
     const where: any = {
+      isActive: true, // hide soft-deleted products from catalog + scan lookup
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" } },
@@ -31,21 +33,22 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ products, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    console.log("CREATE PRODUCT DATA:", data);
-    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, imageUrl, isActive } = data;
+    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, isActive } = data;
     const product = await prisma.product.create({
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, imageUrl, isActive },
+      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, isActive },
     });
     return NextResponse.json(product);
   } catch (error) {
     console.error("CREATE PRODUCT ERROR:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

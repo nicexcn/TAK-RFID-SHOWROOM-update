@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(options);
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -23,7 +24,8 @@ export async function POST(req: NextRequest) {
     const option = await prisma.dropdownOption.create({ data: { type, value } });
     return NextResponse.json(option);
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -33,6 +35,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.dropdownOption.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -25,6 +25,7 @@ export async function GET() {
     return NextResponse.json({ message: "Admin created successfully" });
   } catch (error) {
     console.error("SEED ERROR:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

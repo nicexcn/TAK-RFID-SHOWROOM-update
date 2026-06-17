@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toCsv } from "@/lib/csv";
 
 const TITLE_OPTIONS = ["Architect", "Interior", "Turnkey", "Contractor", "Homeowner", "Other"];
 const titleColors: Record<string, string> = {
@@ -43,7 +44,7 @@ export default function CustomersPage() {
       ["Code","Full Name","Title","Company","Phone","Email","Channels","Registered"],
       ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH")]),
     ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
+    const csv = toCsv(rows);
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `customers_${new Date().toISOString().slice(0,10)}.csv`; a.click();

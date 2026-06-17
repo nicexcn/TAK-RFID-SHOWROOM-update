@@ -24,6 +24,10 @@ export default function EditProductPage() {
     category: "",
     productCode: "",
     name: "",
+    location: "",
+    size: "",
+    colour: "",
+    description: "",
     imageUrl: "",
   });
 
@@ -52,6 +56,10 @@ export default function EditProductPage() {
         category: product.category || "",
         productCode: product.productCode || "",
         name: product.name || "",
+        location: product.location || "",
+        size: product.size || "",
+        colour: product.colour || "",
+        description: product.description || "",
         imageUrl: product.imageUrl || "",
       });
       setBrands(b);
@@ -178,6 +186,32 @@ export default function EditProductPage() {
                 placeholder="Type product name..."
                 fetchUrl="/api/products/names"
               />
+            </div>
+          </div>
+
+          {/* Location + physical attributes (customer req #2: track product location) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Location (ตำแหน่งในโชว์รูม)</label>
+              <input name="location" value={form.location} onChange={handleChange} placeholder="เช่น โซน A ชั้น 2"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Size</label>
+              <input name="size" value={form.size} onChange={handleChange} placeholder="เช่น 60x60 cm"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Colour</label>
+              <input name="colour" value={form.colour} onChange={handleChange} placeholder="เช่น Walnut"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Description</label>
+              <input name="description" value={form.description} onChange={handleChange} placeholder="รายละเอียดสั้นๆ"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
 

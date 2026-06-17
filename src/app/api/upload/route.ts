@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { validateImageMeta, sniffImageMime, saveImage } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File;
-    if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // 1) declared type + size
+    const metaErr = validateImageMeta(file);
+    if (metaErr) return NextResponse.json({ error: metaErr }, { status: 400 });
 
-    const ext = file.name.split(".").pop();
-    const filename = `${Date.now()}.${ext}`;
-    const filepath = path.join(process.cwd(), "public/uploads", filename);
+    // 2) real content (magic bytes) — reject disguised/renamed files
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const realMime = sniffImageMime(buffer);
+    if (!realMime) {
+      return NextResponse.json({ error: "File content is not a valid image" }, { status: 400 });
+    }
 
-    await writeFile(filepath, buffer);
-
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    const { url } = await saveImage(buffer, realMime);
+    return NextResponse.json({ url });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error("UPLOAD ERROR:", error);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

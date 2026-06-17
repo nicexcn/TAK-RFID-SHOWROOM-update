@@ -16,30 +16,44 @@ export async function GET(req: NextRequest) {
   const period = searchParams.get("period") || "daily";
   const { from, to } = getPeriodRange(period);
   try {
-    const totalCustomers = await prisma.customer.count();
-    const newCustomers = await prisma.customer.count({ where: { createdAt: { gte: from, lte: to } } });
-    const totalSessions = await prisma.session.count({ where: { createdAt: { gte: from, lte: to } } });
+    // These 7 reads are independent — run them in ONE parallel batch instead of
+    // sequentially. On a cross-region DB each await is a full round-trip, so
+    // 7 sequential awaits stacked ~7×latency; Promise.all collapses that to ~1×.
+    const [
+      totalCustomers,
+      newCustomers,
+      totalSessions,
+      allCustomers,
+      customersWithChannels,
+      sessions12m,
+      scans,
+    ] = await Promise.all([
+      prisma.customer.count(),
+      prisma.customer.count({ where: { createdAt: { gte: from, lte: to } } }),
+      prisma.session.count({ where: { createdAt: { gte: from, lte: to } } }),
+      prisma.customer.findMany({ select: { title: true } }),
+      prisma.customer.findMany({ select: { knowChannel: true } }),
+      prisma.session.findMany({
+        where: { createdAt: { gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } },
+        select: { createdAt: true },
+      }),
+      // Scan stats respect the selected period (customer req #6: scan stats by time).
+      prisma.scan.findMany({ where: { scannedAt: { gte: from, lte: to } }, select: { product: { select: { category: true, materialType: true, brand: true } } } }),
+    ]);
 
-    const allCustomers = await prisma.customer.findMany({ select: { title: true } });
     const titleMap: Record<string, number> = {};
     allCustomers.forEach((c) => { const t = c.title || "Other"; titleMap[t] = (titleMap[t] || 0) + 1; });
     const customersByTitle = Object.entries(titleMap).map(([title, count]) => ({ title, count })).sort((a, b) => b.count - a.count);
 
-    const customersWithChannels = await prisma.customer.findMany({ select: { knowChannel: true } });
     const channelMap: Record<string, number> = {};
     customersWithChannels.forEach((c) => { (c.knowChannel || []).forEach((ch) => { channelMap[ch] = (channelMap[ch] || 0) + 1; }); });
     const customersByChannel = Object.entries(channelMap).map(([channel, count]) => ({ channel, count })).sort((a, b) => b.count - a.count);
 
-    const sessions12m = await prisma.session.findMany({
-      where: { createdAt: { gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } },
-      select: { createdAt: true },
-    });
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const monthMap: Record<string, number> = {};
     sessions12m.forEach((s) => { const key = monthNames[s.createdAt.getMonth()]; monthMap[key] = (monthMap[key] || 0) + 1; });
     const sessionsByMonth = monthNames.filter((m) => monthMap[m]).map((m) => ({ month: m, count: monthMap[m] }));
 
-    const scans = await prisma.scan.findMany({ select: { product: { select: { category: true, materialType: true, brand: true } } } });
     const catMap: Record<string, number> = {};
     const matMap: Record<string, number> = {};
     const brandMap: Record<string, number> = {};

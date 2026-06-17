@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(products.map((p) => p.name));
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

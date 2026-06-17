@@ -55,28 +55,46 @@ model Customer {
   pdpaConsent      Boolean        @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  scans            Scan[]
   notifications    Notification[]
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   customerCode String
   customerId   String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  deviceId     String?   // station id (one configured staff station/tablet) — concurrent sessions are keyed per station
+  isActive     Boolean   @default(true)
+  lastSeenAt   DateTime  @default(now()) // heartbeat; idle past TTL => treated as inactive (abandonment)
+  displayedAt  DateTime? // set when this session is explicitly pushed to the TV ("Send to Display")
+  createdAt    DateTime  @default(now())
   scans        Scan[]
+
+  @@index([deviceId, isActive])
 }
 
 model Scan {
-  id         String    @id @default(cuid())
-  product    Product   @relation(fields: [productId], references: [id])
+  id         String   @id @default(cuid())
+  product    Product  @relation(fields: [productId], references: [id])
   productId  String
-  customer   Customer? @relation(fields: [customerId], references: [id])
-  customerId String?
-  session    Session?  @relation(fields: [sessionId], references: [id])
-  sessionId  String?
-  scannedAt  DateTime  @default(now())
+  // A scan always belongs to a session; the customer is derived via session.customerId
+  // (single source of truth). sessionId is required so the dedup constraint below
+  // is a real guarantee (NULL sessionIds would otherwise bypass uniqueness).
+  session    Session  @relation(fields: [sessionId], references: [id])
+  sessionId  String
+  scannedAt  DateTime @default(now())
+  // Prepare workflow (customer req #2): NONE → PREPARING → COMPLETE. Persisted so
+  // status survives reload and is visible across staff stations (was client-only).
+  prepareStatus String @default("NONE")
+  // Takeaway quantity the customer wants to take home (customer req #2).
+  takeawayQty   Int    @default(0)
+  // Reader that produced this scan — mac (handheld) / serial (Speedway). MPT confirms
+  // it's in every message + unique (customer req #3: "ตำแหน่งที่ Scan" / device→customer).
+  deviceId      String?
+  updatedAt     DateTime @updatedAt @default(now())
+
+  @@unique([sessionId, productId])
+  @@index([sessionId])
+  @@index([productId])
 }
 
 model Notification {
@@ -121,5 +139,12 @@ model AppSettings {
   takeawayLimit   Int      @default(3)
   takeawayEnabled Boolean  @default(true)
   visibleWidgets  Json     @default("{\"walkins\":true,\"customerTypes\":true,\"newVsTotal\":true,\"comparisonGraph\":true,\"categoryGraph\":true}")
+  // TV display config (was UI-only state with a fake "Save" — now persisted).
+  slideDuration   Int      @default(5)   // seconds each product image shows
+  sessionTimeout  Int      @default(30)  // minutes idle before a session is abandoned
+  scheduleEnabled Boolean  @default(false)
+  scheduleOn      String   @default("08:00")
+  scheduleOff     String   @default("18:00")
+  scheduleDays    String[] @default(["Mon", "Tue", "Wed", "Thu", "Fri"])
   updatedAt       DateTime @updatedAt
 }
