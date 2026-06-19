@@ -63,6 +63,10 @@ model Session {
   customerCode String
   customerId   String?
   deviceId     String?   // station id (one configured staff station/tablet) — concurrent sessions are keyed per station
+  // The physical reader (mac/serial) bound to this session. Set when staff serve a
+  // customer with a relay-connected reader. Server-side ingest (/api/scan) maps an
+  // incoming scan's device_id → the active Session with this readerId for attribution.
+  readerId     String?
   isActive     Boolean   @default(true)
   lastSeenAt   DateTime  @default(now()) // heartbeat; idle past TTL => treated as inactive (abandonment)
   displayedAt  DateTime? // set when this session is explicitly pushed to the TV ("Send to Display")
@@ -70,6 +74,7 @@ model Session {
   scans        Scan[]
 
   @@index([deviceId, isActive])
+  @@index([readerId, isActive])
 }
 
 model Scan {

@@ -9,6 +9,7 @@ const PUBLIC_API = [
   "/api/auth/logout",
   "/api/sessions/display",
   "/api/display", // table-display product map (TV has no login)
+  "/api/scan", // server-side scan ingest — self-authenticates via x-ingest-key, not the cookie
 ];
 
 export function proxy(req: NextRequest) {

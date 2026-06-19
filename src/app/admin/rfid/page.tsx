@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "rea
 import { useSearchParams } from "next/navigation";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId, isStationNamed, setDeviceId } from "@/lib/deviceId";
+import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Product {
@@ -19,6 +20,10 @@ interface ScanItem {
 }
 interface Session {
   id: string; customerCode: string; customerId: string | null; scans: ScanItem[];
+  // When set, a physical reader is bound to this session and the SERVER persists its
+  // scans (relay → /api/scan). The browser then shows scans live but does NOT POST them,
+  // so there's no double-write. Empty = local/direct mode where the browser persists.
+  readerId?: string | null;
 }
 interface CustomerInfo {
   id: string; customerCode: string; fullName: string; title: string; company: string; phone: string;
@@ -42,6 +47,14 @@ const STATUS_STYLE = {
   PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe",    color: "#3b82f6" },
   COMPLETE:  { label: "พร้อมแล้ว",   bg: "#d1fae5",    color: "#10b981" },
 };
+
+// A relay subscriber URL may pin one reader as `?device=<device_id>`. If present, that
+// device_id is the reader we bind to the session so the SERVER ingests its scans
+// (/api/scan). No ?device (broadcast) or a direct LAN ws:// URL → empty → browser-persist.
+function readerIdFromUrl(url: string): string {
+  if (!url) return "";
+  try { return (new URL(url).searchParams.get("device") || "").trim(); } catch { return ""; }
+}
 
 // ── Main component (wrapped for Suspense) ─────────────────────────────────
 function RFIDPageInner() {
@@ -152,6 +165,11 @@ function RFIDPageInner() {
     };
     setSession((p) => p ? { ...p, scans: [fakeScan, ...p.scans] } : p);
 
+    // Server-authoritative mode: a reader is bound (readerId) and the relay ingests
+    // these scans into /api/scan, so the browser must NOT also persist them (no double
+    // write, and persistence survives a browser close). We still show them live above.
+    if (session.readerId) return;
+
     scanQueueRef.current.push({ productId: product.id, rfidTag: epc });
     if (!flushTimerRef.current) {
       flushTimerRef.current = setTimeout(flushScans, 500);
@@ -217,12 +235,33 @@ function RFIDPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Server-persist mode: the server (relay → /api/scan) owns persistence, so the staff
+  // view must reconcile with the DB to get REAL scan ids (prepare/takeaway PATCH by id)
+  // and pick up scans that arrived while this tab wasn't the one scanning. Refetch on the
+  // same realtime nudge the TV uses. No-op in local mode (no readerId, browser persists).
+  const serverPersist = !!session?.readerId;
+  useEffect(() => {
+    if (!serverPersist || !supabaseBrowser) return;
+    const refetch = () => {
+      fetch(`/api/sessions?deviceId=${encodeURIComponent(getDeviceId())}`)
+        .then((r) => r.json())
+        .then((data) => { if (data?.id) applyLoadedSession(data); })
+        .catch(() => { /* fallback: next nudge reconciles */ });
+    };
+    const channel = supabaseBrowser.channel(`${DISPLAY_CHANNEL}-rfid`);
+    channel.on("broadcast", { event: DISPLAY_EVENT }, refetch).subscribe();
+    return () => { if (supabaseBrowser) supabaseBrowser.removeChannel(channel); };
+  }, [serverPersist]);
+
   async function handleStartSessionWith(code: string, custId: string | null) {
     setLoading(true); setError("");
     try {
+      // If a reader is pinned via the relay (?device=<device_id>), bind it so the server
+      // attributes its scans to this session. Empty for direct LAN → browser persists.
+      const readerId = readerIdFromUrl(deviceIps[wsDeviceId] || "");
       const res = await fetch("/api/sessions", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerCode: code, customerId: custId, deviceId: getDeviceId() }),
+        body: JSON.stringify({ customerCode: code, customerId: custId, deviceId: getDeviceId(), readerId }),
       });
       const data = await res.json();
       // Guard: never enter the active-session branch with a missing id (would make

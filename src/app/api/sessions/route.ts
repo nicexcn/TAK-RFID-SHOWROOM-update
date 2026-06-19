@@ -17,16 +17,19 @@ const sessionInclude = {
 // Both writes run in one transaction; a partial unique index backstops the invariant.
 export async function POST(req: NextRequest) {
   try {
-    const { customerCode, customerId, deviceId } = await req.json();
+    const { customerCode, customerId, deviceId, readerId } = await req.json();
 
     const deactivateWhere: {
       isActive: true;
-      OR: Array<{ deviceId: string | null } | { customerId: string }>;
+      OR: Array<{ deviceId: string | null } | { customerId: string } | { readerId: string }>;
     } = {
       isActive: true,
       OR: [{ deviceId: deviceId ?? null }],
     };
     if (customerId) deactivateWhere.OR.push({ customerId });
+    // One active session per physical reader: binding a reader to a new customer closes
+    // whatever it was last bound to, so server-side ingest (/api/scan) can't misattribute.
+    if (readerId) deactivateWhere.OR.push({ readerId: String(readerId) });
 
     // count what we're replacing so the client can confirm a customer switch
     const replaced = await prisma.session.findMany({
@@ -41,6 +44,7 @@ export async function POST(req: NextRequest) {
           customerCode,
           customerId: customerId || null,
           deviceId: deviceId || null,
+          readerId: readerId ? String(readerId) : null,
           isActive: true,
         },
       }),

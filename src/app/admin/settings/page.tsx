@@ -722,7 +722,7 @@ export default function SettingsPage() {
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (เว้นว่าง = ใช้ LAN ws:// ตรง)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>ตั้งครั้งเดียว → /display ใส่แค่ room/deviceId ของ reader</p>
+                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>ตั้งครั้งเดียว → /display เว้นว่าง = ทุก reader หรือใส่ device_id เจาะจง</p>
                 </div>
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
                 <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
