@@ -95,7 +95,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: "Total Members", value: customers.length },
           { label: "Architect", value: customers.filter((c) => c.title === "Architect").length },
@@ -169,8 +169,8 @@ export default function CustomersPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-        <table className="w-full text-sm">
+      <div className="rounded-xl overflow-x-auto" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        <table className="w-full text-sm min-w-max">
           <thead>
             <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
               {["Code","Name","Type","Company","Phone","Email","Channels","Registered",""].map((h) => (
