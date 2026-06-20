@@ -74,8 +74,16 @@ export async function POST(
     // If this session is currently on the TV, nudge it to refetch live.
     if (created > 0) await broadcastDisplayChanged();
     const skipped = scans.length - created - unknown;
+
+    // Return the persisted rows (real DB ids) for the batched products so the client can
+    // reconcile its optimistic "ws-" ids → real ids (id-based merges/PATCH then all match).
+    const rows = await prisma.scan.findMany({
+      where: { sessionId, productId: { in: [...finalIds] } },
+      select: { id: true, productId: true, prepareStatus: true, takeawayQty: true },
+    });
+
     return NextResponse.json(
-      { created, skipped, unknown, total: scans.length },
+      { created, skipped, unknown, total: scans.length, scans: rows },
       { status: 201 }
     );
   } catch (error) {

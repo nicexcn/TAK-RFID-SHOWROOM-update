@@ -19,6 +19,15 @@ export async function POST(req: NextRequest) {
   try {
     const { customerCode, customerId, deviceId, readerId } = await req.json();
 
+    // Resolve the customerId from the code when the client didn't supply one (e.g. staff
+    // typed the customer ID directly instead of picking a search result). Otherwise the
+    // session — and every notification raised from it — would link no customer.
+    let resolvedCustomerId: string | null = customerId || null;
+    if (!resolvedCustomerId && customerCode) {
+      const cust = await prisma.customer.findUnique({ where: { customerCode }, select: { id: true } });
+      resolvedCustomerId = cust?.id ?? null;
+    }
+
     const deactivateWhere: {
       isActive: true;
       OR: Array<{ deviceId: string | null } | { customerId: string } | { readerId: string }>;
@@ -26,7 +35,7 @@ export async function POST(req: NextRequest) {
       isActive: true,
       OR: [{ deviceId: deviceId ?? null }],
     };
-    if (customerId) deactivateWhere.OR.push({ customerId });
+    if (resolvedCustomerId) deactivateWhere.OR.push({ customerId: resolvedCustomerId });
     // One active session per physical reader: binding a reader to a new customer closes
     // whatever it was last bound to, so server-side ingest (/api/scan) can't misattribute.
     if (readerId) deactivateWhere.OR.push({ readerId: String(readerId) });
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
       prisma.session.create({
         data: {
           customerCode,
-          customerId: customerId || null,
+          customerId: resolvedCustomerId,
           deviceId: deviceId || null,
           readerId: readerId ? String(readerId) : null,
           isActive: true,
@@ -65,10 +74,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const deviceId = new URL(req.url).searchParams.get("deviceId");
+    const cutoff = await idleCutoff();
     const session = await prisma.session.findFirst({
       where: deviceId
         ? { isActive: true, deviceId }
-        : { isActive: true, lastSeenAt: { gte: idleCutoff() } },
+        : { isActive: true, lastSeenAt: { gte: cutoff } },
       orderBy: { createdAt: "desc" },
       include: sessionInclude,
     });
