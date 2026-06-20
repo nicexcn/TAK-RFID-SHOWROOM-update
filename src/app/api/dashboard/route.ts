@@ -11,10 +11,22 @@ function getPeriodRange(period: string) {
   return { from, to: now };
 }
 
+// A custom from/to (YYYY-MM-DD) wins over the period preset; the 'to' day is included whole.
+function getRange(searchParams: URLSearchParams) {
+  const fromP = searchParams.get("from");
+  const toP = searchParams.get("to");
+  if (fromP && toP) {
+    const from = new Date(fromP);
+    const to = new Date(toP);
+    to.setHours(23, 59, 59, 999);
+    if (!isNaN(from.getTime()) && !isNaN(to.getTime())) return { from, to };
+  }
+  return getPeriodRange(searchParams.get("period") || "daily");
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const period = searchParams.get("period") || "daily";
-  const { from, to } = getPeriodRange(period);
+  const { from, to } = getRange(searchParams);
   try {
     // These 7 reads are independent — run them in ONE parallel batch instead of
     // sequentially. On a cross-region DB each await is a full round-trip, so
@@ -50,9 +62,23 @@ export async function GET(req: NextRequest) {
     const customersByChannel = Object.entries(channelMap).map(([channel, count]) => ({ channel, count })).sort((a, b) => b.count - a.count);
 
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    // Bucket by YEAR+month (not just month name) so the same month a year apart can't collide
+    // (e.g. Jun 2025 vs Jun 2026), then emit a continuous, chronological last-12-months axis
+    // (zero-filled) — correct for the line chart, which would otherwise draw misleading slopes
+    // across missing months.
     const monthMap: Record<string, number> = {};
-    sessions12m.forEach((s) => { const key = monthNames[s.createdAt.getMonth()]; monthMap[key] = (monthMap[key] || 0) + 1; });
-    const sessionsByMonth = monthNames.filter((m) => monthMap[m]).map((m) => ({ month: m, count: monthMap[m] }));
+    sessions12m.forEach((s) => {
+      const key = `${s.createdAt.getFullYear()}-${s.createdAt.getMonth()}`;
+      monthMap[key] = (monthMap[key] || 0) + 1;
+    });
+    const now = new Date();
+    const sessionsByMonth = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+      return {
+        month: `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`,
+        count: monthMap[`${d.getFullYear()}-${d.getMonth()}`] || 0,
+      };
+    });
 
     const catMap: Record<string, number> = {};
     const matMap: Record<string, number> = {};

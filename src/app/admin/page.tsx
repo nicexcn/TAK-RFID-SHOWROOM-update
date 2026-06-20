@@ -30,7 +30,7 @@ interface DashboardStats {
   scansByBrand: { name: string; value: number }[];
 }
 
-function FilterButtons({ value, onChange }: { value: FilterPeriod; onChange: (v: FilterPeriod) => void }) {
+function FilterButtons({ value, onChange }: { value: FilterPeriod | null; onChange: (v: FilterPeriod) => void }) {
   return (
     <div className="flex gap-1">
       {(["daily", "weekly", "monthly", "annually"] as FilterPeriod[]).map((o) => (
@@ -93,15 +93,26 @@ function DraggableCard({
   );
 }
 
+// Persist the dashboard's selected range across reloads/navigation (per browser).
+const RANGE_KEY = "tak-dash-range";
+type SavedRange = { rangeMode: "preset" | "custom"; statFilter: FilterPeriod; customFrom: string; customTo: string };
+function readSavedRange(): SavedRange | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(RANGE_KEY);
+    return raw ? (JSON.parse(raw) as SavedRange) : null;
+  } catch { return null; }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
 
-  // Export
+  // Export + date range (the range drives BOTH the stats view and the exports)
   const [showExport, setShowExport] = useState(false);
-  const [exportRange, setExportRange] = useState<"day" | "month" | "range">("day");
-  const [exportDateFrom, setExportDateFrom] = useState("");
-  const [exportDateTo, setExportDateTo] = useState("");
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">(() => readSavedRange()?.rangeMode ?? "preset");
+  const [customFrom, setCustomFrom] = useState(() => readSavedRange()?.customFrom ?? "");
+  const [customTo, setCustomTo] = useState(() => readSavedRange()?.customTo ?? "");
 
   // Copy
   const [copiedChart, setCopiedChart] = useState("");
@@ -112,13 +123,50 @@ export default function AdminDashboard() {
     });
   }
 
-  async function handleExport() {
-    const params = new URLSearchParams({ range: exportRange });
-    if (exportDateFrom) params.set("from", exportDateFrom);
-    if (exportDateTo) params.set("to", exportDateTo);
-    const res = await fetch(`/api/customers?${params}`);
+  // The currently-selected window (custom dates or the active preset), as YYYY-MM-DD.
+  function currentRange(): { from: string; to: string } {
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    if (rangeMode === "custom" && customFrom && customTo) return { from: customFrom, to: customTo };
+    const now = new Date(); const f = new Date();
+    if (statFilter === "weekly") f.setDate(now.getDate() - 7);
+    else if (statFilter === "monthly") f.setMonth(now.getMonth() - 1);
+    else if (statFilter === "annually") f.setFullYear(now.getFullYear() - 1);
+    else f.setHours(0, 0, 0, 0); // daily
+    return { from: iso(f), to: iso(now) };
+  }
+
+  function saveCsv(rows: unknown[][], name: string) {
+    const blob = new Blob(["﻿" + toCsv(rows)], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setShowExport(false);
+  }
+
+  // Summary = the aggregated numbers behind the dashboard widgets, for the selected range.
+  function handleExportSummary() {
+    if (!stats) return;
+    const { from, to } = currentRange();
+    saveCsv([
+      ["Dashboard Summary", `${from} -> ${to}`], [],
+      ["Metric", "Value"],
+      ["Total customers", stats.totalCustomers],
+      ["New customers", stats.newCustomers],
+      ["Walk-ins (sessions)", stats.totalSessions], [],
+      ["Customer Type", "Count"], ...stats.customersByTitle.map((t) => [t.title, t.count]), [],
+      ["Know Channel", "Count"], ...stats.customersByChannel.map((c) => [c.channel, c.count]), [],
+      ["Month", "Walk-ins"], ...stats.sessionsByMonth.map((m) => [m.month, m.count]), [],
+      ["Category", "Scans"], ...stats.scansByCategory.map((c) => [c.name, c.value]), [],
+      ["Material", "Scans"], ...stats.scansByMaterial.map((c) => [c.name, c.value]), [],
+      ["Brand", "Scans"], ...stats.scansByBrand.map((c) => [c.name, c.value]),
+    ], `dashboard_summary_${from}_${to}.csv`);
+  }
+
+  // Raw = the customer records registered within the selected range.
+  async function handleExportCustomers() {
+    const { from, to } = currentRange();
+    const res = await fetch(`/api/customers?from=${from}&to=${to}`);
     const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) { alert("ไม่มีข้อมูลในช่วงเวลานี้"); return; }
+    if (!Array.isArray(data) || data.length === 0) { alert("No customers in this range"); return; }
     const rows = [
       ["Code", "Full Name", "Title", "Company", "Phone", "Email", "Channels", "Registered"],
       ...data.map((c: { customerCode: string; fullName: string; title: string; company: string; phone: string; email: string; knowChannel: string[]; createdAt: string }) => [
@@ -130,12 +178,12 @@ export default function AdminDashboard() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    a.href = url; a.download = `customers_${from}_${to}.csv`; a.click();
     setShowExport(false);
   }
 
   // Filters
-  const [statFilter, setStatFilter] = useState<FilterPeriod>("daily");
+  const [statFilter, setStatFilter] = useState<FilterPeriod>(() => readSavedRange()?.statFilter ?? "daily");
   const [rightFilter, setRightFilter] = useState<"category" | "material" | "brand">("category");
 
   // Settings
@@ -200,21 +248,38 @@ export default function AdminDashboard() {
     fetch("/api/settings").then((r) => r.json()).then((data) => {
       if (data.id) {
         setAppSettings({ defaultFilter: data.defaultFilter, graphColor: data.graphColor, visibleWidgets: data.visibleWidgets });
-        setStatFilter(data.defaultFilter);
+        if (!readSavedRange()) setStatFilter(data.defaultFilter); // a saved range wins over the default
       }
       setSettingsLoaded(true);
     }).catch(() => setSettingsLoaded(true));
   }, []);
 
+  // Remember the selected range (preset or custom dates) so it survives reload/navigation.
   useEffect(() => {
+    try {
+      window.localStorage.setItem(RANGE_KEY, JSON.stringify({ rangeMode, statFilter, customFrom, customTo }));
+    } catch { /* storage unavailable (private mode) — range just won't persist */ }
+  }, [rangeMode, statFilter, customFrom, customTo]);
+
+  // Only the latest request's result is applied. Otherwise the initial fetch and
+  // the settings-driven defaultFilter fetch race, and a slow earlier response
+  // overwrites the newer one — the "Walk-ins flickers 1 → 34 → 1" bug.
+  const statsReqRef = useRef(0);
+  useEffect(() => {
+    if (!settingsLoaded) return; // wait for defaultFilter so we fetch once, with the right period
+    const custom = rangeMode === "custom";
+    if (custom && (!customFrom || !customTo)) return; // wait until both dates are picked
+    const reqId = ++statsReqRef.current;
     setLoadingStats(true);
-    fetch(`/api/dashboard?period=${statFilter}`)
+    const qs = custom ? `from=${customFrom}&to=${customTo}` : `period=${statFilter}`;
+    fetch(`/api/dashboard?${qs}`)
       .then((r) => r.json())
-      .then((data) => { setStats(data); setLoadingStats(false); })
-      .catch(() => setLoadingStats(false));
-  }, [statFilter]);
+      .then((data) => { if (reqId === statsReqRef.current) { setStats(data); setLoadingStats(false); } })
+      .catch(() => { if (reqId === statsReqRef.current) setLoadingStats(false); });
+  }, [statFilter, rangeMode, customFrom, customTo, settingsLoaded]);
 
   const color = GRAPH_COLORS[appSettings.graphColor] ?? GRAPH_COLORS[0];
+  const dateRange = currentRange(); // effective from→to for the active preset or custom window
   const hasCustomers = (stats?.totalCustomers ?? 0) > 0;
   const compData = stats?.sessionsByMonth ?? [];
   const rightChartData = {
@@ -428,15 +493,23 @@ export default function AdminDashboard() {
     return null;
   }
 
+  // Widget Visibility (Settings): hide a card/chart when its toggle is off. Chart ids map
+  // to their settings keys (sessions→comparisonGraph, category→categoryGraph).
+  const WIDGET_KEY: Record<string, keyof typeof appSettings.visibleWidgets> = {
+    walkins: "walkins", customerTypes: "customerTypes", newVsTotal: "newVsTotal",
+    sessions: "comparisonGraph", category: "categoryGraph",
+  };
+  const isWidgetVisible = (id: string) => appSettings.visibleWidgets?.[WIDGET_KEY[id]] !== false;
+
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Dashboard</h1>
           <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Dashboard</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Export */}
           <div className="relative">
             <button onClick={() => setShowExport(!showExport)}
@@ -451,52 +524,28 @@ export default function AdminDashboard() {
             {showExport && (
               <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 p-5"
                 style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-                <p className="text-sm font-semibold mb-4" style={{ color: "#4c4847" }}>Export ข้อมูลลูกค้า</p>
-                <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: "#f5f2ee" }}>
-                  {(["day", "month", "range"] as const).map((r) => (
-                    <button key={r} onClick={() => setExportRange(r)}
-                      className="flex-1 py-2 text-xs font-medium"
-                      style={{ background: exportRange === r ? "#726c5a" : "transparent", color: exportRange === r ? "#fff" : "#9f886c" }}>
-                      {r === "day" ? "รายวัน" : r === "month" ? "รายเดือน" : "ช่วงเวลา"}
-                    </button>
-                  ))}
-                </div>
-                {(exportRange === "day" || exportRange === "range") && (
-                  <div className="mb-3">
-                    <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>{exportRange === "day" ? "วันที่" : "จากวันที่"}</label>
-                    <input type="date" value={exportDateFrom} onChange={(e) => setExportDateFrom(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl outline-none text-sm"
-                      style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-                  </div>
-                )}
-                {exportRange === "range" && (
-                  <div className="mb-3">
-                    <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>ถึงวันที่</label>
-                    <input type="date" value={exportDateTo} onChange={(e) => setExportDateTo(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl outline-none text-sm"
-                      style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-                  </div>
-                )}
-                {exportRange === "month" && (
-                  <div className="mb-3">
-                    <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>เดือน</label>
-                    <input type="month" value={exportDateFrom} onChange={(e) => setExportDateFrom(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl outline-none text-sm"
-                      style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-                  </div>
-                )}
-                <div className="flex gap-2 mt-4">
-                  <button onClick={() => setShowExport(false)}
-                    className="flex-1 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847" }}>Cancel</button>
-                  <button onClick={handleExport}
-                    className="flex-1 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Export CSV</button>
-                </div>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#4c4847" }}>Export CSV</p>
+                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>
+                  Range: {dateRange.from} → {dateRange.to}
+                </p>
+                <button onClick={handleExportSummary} disabled={!stats}
+                  className="w-full mb-2 py-2.5 rounded-xl text-sm font-medium text-white text-left px-4"
+                  style={{ background: "#726c5a", opacity: stats ? 1 : 0.5 }}>
+                  📊 Dashboard Summary
+                  <span className="block text-[11px] font-normal opacity-80">Aggregated stats for the selected range</span>
+                </button>
+                <button onClick={handleExportCustomers}
+                  className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4"
+                  style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>
+                  👤 Customers (raw)
+                  <span className="block text-[11px] font-normal" style={{ color: "#9f886c" }}>Customers registered in this range</span>
+                </button>
               </div>
             )}
           </div>
           {/* Search */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", width: 220 }}>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 min-w-0 sm:flex-none sm:w-56"
+            style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
@@ -508,15 +557,33 @@ export default function AdminDashboard() {
       {showExport && <div className="fixed inset-0 z-40" onClick={() => setShowExport(false)} />}
 
       {/* Filter row */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-medium" style={{ color: "#9f886c" }}>Showing stats for:</p>
-        <FilterButtons value={statFilter} onChange={setStatFilter} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <p className="text-xs font-medium" style={{ color: "#9f886c" }}>
+          Showing stats for: <span style={{ color: "#726c5a" }}>{dateRange.from} → {dateRange.to}</span>
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { setRangeMode("preset"); setStatFilter(v); }} />
+          <button onClick={() => setRangeMode("custom")}
+            className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
+            style={{ background: rangeMode === "custom" ? "#726c5a" : "#f5f2ee", color: rangeMode === "custom" ? "#fff" : "#9f886c", border: "1px solid " + (rangeMode === "custom" ? "#726c5a" : "#e6e5d8") }}>
+            Custom
+          </button>
+          {rangeMode === "custom" && (
+            <div className="flex items-center gap-1">
+              <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)}
+                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+              <span className="text-xs" style={{ color: "#9f886c" }}>–</span>
+              <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)}
+                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Stats Cards (draggable) ── */}
       <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {cardOrder.map((id) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {cardOrder.filter(isWidgetVisible).map((id) => (
           <DraggableCard key={id} id={id} dragOver={dragOver}
             onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd}>
             {renderCard(id)}
@@ -527,10 +594,9 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="rounded-xl p-5 mb-6" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
         <h2 className="text-base font-semibold mb-4" style={{ color: "#4c4847" }}>Quick Actions</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: "Add Customer", sub: "Register new customer", href: "/admin/customers/add" },
-            { label: "Upload Media", sub: "Upload images for display", href: "/admin/media" },
             { label: "Add Product", sub: "Register new product", href: "/admin/products/new" },
           ].map((action) => (
             <button key={action.label} onClick={() => router.push(action.href)}
@@ -551,8 +617,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Chart Cards (draggable) ── */}
-      <div className="grid grid-cols-2 gap-4">
-        {chartOrder.map((id) => (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {chartOrder.filter(isWidgetVisible).map((id) => (
           <DraggableCard key={id} id={id} dragOver={dragChartOver}
             onDragStart={handleChartDragStart} onDragEnter={handleChartDragEnter} onDragEnd={handleChartDragEnd}>
             {renderChart(id)}

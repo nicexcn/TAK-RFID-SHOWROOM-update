@@ -5,10 +5,20 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const title = searchParams.get("title") || "";
+  // Optional registered-date range (YYYY-MM-DD) for the dashboard export; 'to' includes the whole day.
+  const fromP = searchParams.get("from");
+  const toP = searchParams.get("to");
+  let createdAt: { gte?: Date; lte?: Date } | undefined;
+  if (fromP || toP) {
+    createdAt = {};
+    if (fromP && !isNaN(new Date(fromP).getTime())) createdAt.gte = new Date(fromP);
+    if (toP && !isNaN(new Date(toP).getTime())) { const d = new Date(toP); d.setHours(23, 59, 59, 999); createdAt.lte = d; }
+  }
   const customers = await prisma.customer.findMany({
     where: {
       AND: [
         title ? { title } : {},
+        createdAt ? { createdAt } : {},
         search ? { OR: [
           { fullName: { contains: search, mode: "insensitive" } },
           { customerCode: { contains: search, mode: "insensitive" } },
