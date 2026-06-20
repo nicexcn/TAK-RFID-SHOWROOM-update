@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { uploadImage } from "@/lib/uploadImage";
 
 interface Props {
   value: string;
@@ -11,16 +12,20 @@ interface Props {
 export default function ImageUpload({ value, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
 
+  const [error, setError] = useState("");
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (data.url) onChange(data.url);
-    setUploading(false);
+    setError("");
+    try {
+      onChange(await uploadImage(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -55,6 +60,7 @@ export default function ImageUpload({ value, onChange }: Props) {
           <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
         </label>
       )}
+      {error && <p className="text-xs" style={{ color: "#9f4a4a" }}>{error}</p>}
     </div>
   );
 }

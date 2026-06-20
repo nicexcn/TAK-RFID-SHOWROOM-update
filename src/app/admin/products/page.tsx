@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import BulkImageImport from "@/components/BulkImageImport";
 
 interface Product {
   id: string;
@@ -48,6 +49,7 @@ export default function ProductsPage() {
 
   // Import state
   const [showImport, setShowImport] = useState(false);
+  const [importMode, setImportMode] = useState<"data" | "images">("data");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<Record<string, string>[]>([]);
   const [importing, setImporting] = useState(false);
@@ -133,6 +135,7 @@ export default function ProductsPage() {
 
   function handleCloseImport() {
     setShowImport(false);
+    setImportMode("data");
     setImportFile(null);
     setImportPreview([]);
     setImportResult(null);
@@ -231,7 +234,13 @@ export default function ProductsPage() {
                     <button
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setMenuPosition({ top: rect.bottom + window.scrollY, left: rect.left - 100 });
+                        // The menu is position:fixed → use VIEWPORT coords (no scrollY).
+                        const MENU_W = 144, MENU_H = 96; // w-36, two items
+                        // Flip up when there isn't room below, so it never runs off the bottom.
+                        const top = rect.bottom + MENU_H > window.innerHeight ? rect.top - MENU_H : rect.bottom;
+                        // Right-align to the trigger, clamped on-screen (mobile-safe).
+                        const left = Math.min(Math.max(8, rect.right - MENU_W), window.innerWidth - MENU_W - 8);
+                        setMenuPosition({ top, left });
                         setOpenMenu(openMenu === product.id ? null : product.id);
                       }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg"
@@ -302,7 +311,7 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>Import Products</h2>
-                <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>นำเข้าข้อมูลสินค้าจากไฟล์ CSV</p>
+                <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>Import product data (CSV) or bulk product images</p>
               </div>
               <button onClick={handleCloseImport}
                 className="w-8 h-8 flex items-center justify-center rounded-lg"
@@ -313,7 +322,24 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            {!importResult ? (
+            {/* Mode toggle: product data (CSV) vs product images (bulk photo drop) */}
+            <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: "#f5f2ee" }}>
+              {([["data", "Product Data"], ["images", "Product Images"]] as const).map(([m, label]) => (
+                <button key={m} onClick={() => setImportMode(m)}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: importMode === m ? "#fff" : "transparent",
+                    color: importMode === m ? "#726c5a" : "#9f886c",
+                    boxShadow: importMode === m ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {importMode === "images" ? (
+              <BulkImageImport onDone={fetchProducts} />
+            ) : !importResult ? (
               <>
                 {/* Download Template */}
                 <div className="flex items-center justify-between p-4 rounded-xl mb-4"
@@ -336,7 +362,7 @@ export default function ProductsPage() {
                 {/* Column mapping guide */}
                 <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid #e6e5d8" }}>
                   <p className="text-xs font-medium mb-2" style={{ color: "#4c4847" }}>Columns ที่รองรับ</p>
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {[
                       ["rfidTag *", "RFID Tag (จำเป็น)"],
                       ["name *", "ชื่อสินค้า (จำเป็น)"],

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { syncCover } from "@/lib/productCover";
 
 export async function GET(req: NextRequest) {
   try {
@@ -42,9 +43,16 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, isActive } = data;
+    // imageUrl is a derived cover cache — never written directly. The initial image
+    // (if any) becomes gallery image #0, and syncCover() sets the cover from it.
     const product = await prisma.product.create({
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, isActive },
+      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive },
     });
+    if (imageUrl) {
+      await prisma.productImage.create({ data: { productId: product.id, url: imageUrl, order: 0 } });
+      await syncCover(product.id);
+      return NextResponse.json({ ...product, imageUrl });
+    }
     return NextResponse.json(product);
   } catch (error) {
     console.error("CREATE PRODUCT ERROR:", error);

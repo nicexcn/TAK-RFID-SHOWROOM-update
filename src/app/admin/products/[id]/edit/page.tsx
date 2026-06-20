@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import SearchableSelect from "@/components/SearchableSelect";
 import AutocompleteInput from "@/components/AutocompleteInput";
-import ImageUpload from "@/components/ImageUpload";
+import ProductGallery from "@/components/ProductGallery";
 
 interface DropdownOption {
   id: string;
@@ -215,12 +215,12 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Image Upload */}
+          {/* Product Images — first image is the cover (synced to imageUrl) */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Image</label>
-            <ImageUpload
-              value={form.imageUrl}
-              onChange={(url) => handleSelect("imageUrl", url)}
+            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Images</label>
+            <ProductGallery
+              productId={String(id)}
+              onCoverChange={(url) => handleSelect("imageUrl", url)}
             />
           </div>
 
