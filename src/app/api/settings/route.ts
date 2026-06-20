@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { invalidateIdleCache } from "@/lib/sessionConfig";
 
 export async function GET() {
   try {
@@ -31,6 +32,7 @@ export async function PUT(req: NextRequest) {
       update: data,
       create: { id: "singleton", ...data },
     });
+    if ("sessionTimeout" in data) invalidateIdleCache(); // apply the new idle window immediately
     return NextResponse.json(settings);
   } catch (error) {
     console.error(error);

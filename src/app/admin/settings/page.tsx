@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface DropdownOption { id: string; type: string; value: string; }
 interface MediaFile {
@@ -43,8 +42,6 @@ const WIDGETS = [
   { key: "categoryGraph",   label: "Interest by Category Graph" },
 ];
 
-const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-
 const cardStyle: React.CSSProperties = {
   background: "#fff", border: "1px solid #e6e5d8",
   borderRadius: "0.75rem", padding: "1.5rem", marginBottom: "1rem",
@@ -54,7 +51,6 @@ const cardStyle: React.CSSProperties = {
 const iS = { background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" };
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Dashboard
@@ -105,11 +101,6 @@ export default function SettingsPage() {
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
-  const [scheduleEnabled, setScheduleEnabled] = useState(false);
-  const [scheduleOn, setScheduleOn] = useState("08:00");
-  const [scheduleOff, setScheduleOff] = useState("18:00");
-  const [scheduleDays, setScheduleDays] = useState<string[]>(["Mon","Tue","Wed","Thu","Fri"]);
-  const [scheduleSuccess, setScheduleSuccess] = useState("");
 
   // Takeaway
   const [takeawayLimit, setTakeawayLimit] = useState(3);
@@ -127,10 +118,6 @@ export default function SettingsPage() {
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
-      if (d.scheduleEnabled !== undefined) setScheduleEnabled(d.scheduleEnabled);
-      if (d.scheduleOn) setScheduleOn(d.scheduleOn);
-      if (d.scheduleOff) setScheduleOff(d.scheduleOff);
-      if (Array.isArray(d.scheduleDays)) setScheduleDays(d.scheduleDays);
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
@@ -235,7 +222,7 @@ export default function SettingsPage() {
     setMediaSuccess("✓ Image deleted"); setTimeout(() => setMediaSuccess(""), 2000);
   }
 
-  // Persist a partial AppSettings patch (the display/schedule Save buttons used to
+  // Persist a partial AppSettings patch (the Display Settings Save button used to
   // only show a fake success toast without calling the API).
   async function saveSettings(patch: Record<string, unknown>, onDone: () => void) {
     try {
@@ -291,9 +278,9 @@ export default function SettingsPage() {
         <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Settings</p>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sidebar */}
-        <div className="w-52 shrink-0">
+        <div className="w-full lg:w-52 shrink-0">
           <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             {TABS.filter((tab) => tab.key !== "account" || currentUser.role === "super_admin").map((tab) => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -473,7 +460,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>สร้าง User ใหม่</p>
                       <button onClick={() => setShowCreate(false)} style={{ color: "#9f886c" }}>✕</button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Username <span style={{ color: "#dc2626" }}>*</span></label>
                         <input value={createForm.username} onChange={(e) => setCreateForm((p) => ({ ...p, username: e.target.value }))}
@@ -586,7 +573,7 @@ export default function SettingsPage() {
                         {editingUser?.id === u.id && (
                           <div className="rounded-xl p-4 mt-1" style={{ background: "#faf9f7", border: "1px solid #e6e5d8" }}>
                             <p className="text-xs font-semibold mb-3" style={{ color: "#9f886c" }}>แก้ไขข้อมูล</p>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Username</label>
                                 <input value={editForm.username} onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
@@ -653,7 +640,7 @@ export default function SettingsPage() {
           {activeTab === "product" && (
             <div style={cardStyle}>
               <h2 className="text-base font-semibold mb-4" style={{ color: "#4c4847" }}>Dropdown Options</h2>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e6e5d8" }}>
                   {DROPDOWN_TYPES.map((type) => (
                     <button key={type.key} onClick={() => setActiveType(type.key)}
@@ -703,7 +690,7 @@ export default function SettingsPage() {
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Display Settings</h2>
                 <p className="text-xs mb-4" style={{ color: "#9f886c" }}>ตั้งค่าการแสดงผลบน TV display</p>
-                <div className="grid grid-cols-2 gap-4 max-w-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                   <div>
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Slide Duration (sec)</label>
                     <input type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
@@ -720,9 +707,9 @@ export default function SettingsPage() {
                 <div className="mt-4 max-w-md">
                   <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Cloud Relay URL (Option E)</label>
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
-                    placeholder="wss://relay.fly.dev (เว้นว่าง = ใช้ LAN ws:// ตรง)"
+                    placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>ตั้งครั้งเดียว → /display เว้นว่าง = ทุก reader หรือใส่ device_id เจาะจง</p>
+                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Set once → in /display leave empty for all readers, or enter a specific device_id</p>
                 </div>
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
                 <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
@@ -732,70 +719,11 @@ export default function SettingsPage() {
               </div>
 
               <div style={cardStyle}>
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Display Scheduling</h2>
-                  <div onClick={() => setScheduleEnabled((p) => !p)}
-                    className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
-                    style={{ background: scheduleEnabled ? "#726c5a" : "#cdc3ad" }}>
-                    <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: scheduleEnabled ? "22px" : "4px" }} />
-                  </div>
-                </div>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>กำหนดเวลาเปิด/ปิด display screen อัตโนมัติ</p>
-                <div className={scheduleEnabled ? "" : "opacity-40 pointer-events-none"}>
-                  <div className="mb-4">
-                    <label className="block text-sm mb-2" style={{ color: "#4c4847" }}>วันที่เปิดใช้งาน</label>
-                    <div className="flex gap-2 flex-wrap">
-                      {DAYS.map((day) => {
-                        const active = scheduleDays.includes(day);
-                        return (
-                          <button key={day} onClick={() => setScheduleDays((p) => active ? p.filter((d) => d !== day) : [...p, day])}
-                            className="w-12 py-1.5 rounded-xl text-xs font-medium transition-all"
-                            style={{
-                              background: active ? "#726c5a" : "#f5f2ee", color: active ? "#fff" : "#9f886c",
-                              border: "1px solid " + (active ? "#726c5a" : "#e6e5d8"),
-                            }}>
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 max-w-xs">
-                    <div className="flex-1">
-                      <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>เปิด (On)</label>
-                      <input type="time" value={scheduleOn} onChange={(e) => setScheduleOn(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    </div>
-                    <div style={{ color: "#cdc3ad", marginTop: 16 }}>→</div>
-                    <div className="flex-1">
-                      <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>ปิด (Off)</label>
-                      <input type="time" value={scheduleOff} onChange={(e) => setScheduleOff(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    </div>
-                  </div>
-                </div>
-                {scheduleSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{scheduleSuccess}</p>}
-                <button onClick={() => saveSettings({ scheduleEnabled, scheduleOn, scheduleOff, scheduleDays }, () => { setScheduleSuccess("✓ Schedule saved"); setTimeout(() => setScheduleSuccess(""), 2000); })}
-                  className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
-                  Save Schedule
-                </button>
-              </div>
-
-              <div style={cardStyle}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Media Files</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>จัดการรูปภาพ product ทั้งหมด</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
                   </div>
-                  <button onClick={() => router.push("/admin/media")}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-                    style={{ background: "#726c5a", color: "#fff" }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    Upload Media
-                  </button>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
                   style={{ background: "#f5f2ee", border: "1px solid #e6e5d8" }}>

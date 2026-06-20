@@ -330,9 +330,9 @@ export default function DisplayPage() {
             // Option E: subscribe via the cloud relay. Leave the field empty for ALL readers,
             // or enter a device_id to show only that reader on this screen.
             <div className="mt-2 pt-2" style={{ borderTop: "1px solid #444" }}>
-              <p className="text-white/60 text-[11px] mb-1">Cloud relay — device_id (เว้นว่าง = ทุก reader)</p>
+              <p className="text-white/60 text-[11px] mb-1">Cloud relay — device_id (empty = all readers)</p>
               <div className="flex gap-2">
-                <input value={cloudRoom} onChange={(e) => setCloudRoom(e.target.value)} placeholder="เว้นว่าง = ทุก reader / หรือ mac·serial"
+                <input value={cloudRoom} onChange={(e) => setCloudRoom(e.target.value)} placeholder="empty = all readers / or mac·serial"
                   className="flex-1 px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }} />
                 <button onClick={connectViaRelay} className="px-3 py-1.5 rounded text-xs text-white whitespace-nowrap" style={{ background: "#4a7c59" }}>ใช้ relay</button>
               </div>
