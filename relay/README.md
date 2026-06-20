@@ -26,6 +26,7 @@ The reader's identity is **in every message** (`device_id`), so there are **no r
 
 ```
 pusher      wss://<relay-host>/?role=pusher&key=<INGEST_KEY>
+pusher      wss://<relay-host>/?role=pusher&key=<KEY>&device=<id>  → tag this reader's stream
 subscriber  wss://<relay-host>/                    → receives ALL readers
 subscriber  wss://<relay-host>/?device=<device_id> → receives only that reader
 ```
@@ -34,7 +35,7 @@ subscriber  wss://<relay-host>/?device=<device_id> → receives only that reader
 |----------|-----|---------|
 | `role`   | both | `pusher` (the middleware) or `subscriber` (a browser, default). |
 | `key`    | pusher only | must equal the relay's `INGEST_KEY` env, else the connection is closed. Subscribers don't need a key (parity with the public TV display). |
-| `device` | subscriber only | optional filter — receive only scans whose payload `device_id` matches. Omit to receive all readers. |
+| `device` | both | **pusher:** tag — stamp this id onto every message this pusher sends (overrides the payload `device_id`). **subscriber:** filter — receive only scans whose `device_id` matches. Omit to receive all. |
 
 Pushers send the RFID JSON the reader emits; `device_id` (with `mac_address` /
 `serial_number` accepted as aliases) is read from the body:
@@ -43,8 +44,23 @@ Pushers send the RFID JSON the reader emits; `device_id` (with `mac_address` /
 { "status": "SCANNING", "device_id": "00:11:22:33:44:55", "epc": "E2802026FFFF00001234", "rssi": -50.0, "count": 1, "battery": 100 }
 ```
 
-The relay forwards each message **verbatim**; it parses only to read `device_id` (for
-routing + persistence) and `epc` (for persistence).
+The relay forwards each message verbatim; it parses only to read `device_id` (for routing +
+persistence) and `epc` (for persistence).
+
+### Separating multiple readers
+
+Each reader stays distinct by its `device_id`. Best is for each middleware to send its own
+real id in the body (handheld = mac, table = serial). If a middleware can't — e.g. it sends a
+generic/`"UNKNOWN"` id — tag it at connect time instead and the relay stamps it:
+
+```
+BLE handheld → wss://<relay>/?role=pusher&key=<KEY>&device=handheld   (or its mac)
+Table reader → wss://<relay>/?role=pusher&key=<KEY>&device=table      (or its serial)
+
+watch handheld → wss://<relay>/?device=handheld
+watch table    → wss://<relay>/?device=table
+watch both     → wss://<relay>/
+```
 
 ## Deploy
 

@@ -34,6 +34,7 @@ export function useWebSocket({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const currentUrlRef = useRef<string>(""); // URL the live socket is connected to (to detect URL switches)
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retriesRef = useRef(0);
   const stoppedRef = useRef(false); // set by disconnect() to stop auto-reconnect
@@ -72,16 +73,32 @@ export function useWebSocket({
     }
   }, []);
 
+  const closeSocket = useCallback(() => {
+    const ws = socketRef.current;
+    if (!ws) return;
+    // Detach handlers FIRST so closing the old socket doesn't fire onclose → auto-reconnect
+    // to the URL we're leaving (which would leak a second connection).
+    ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+    try { ws.close(); } catch { /* already closing */ }
+    socketRef.current = null;
+  }, []);
+
   const connectWs = useCallback(() => {
     if (!url || !enabledRef.current) return;
-    if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
     clearReconnectTimer();
+    const fullUrl = normalizeWsUrl(url);
+
+    // Already connected to this exact URL → nothing to do (avoid redundant reconnects).
+    if (socketRef.current?.readyState === WebSocket.OPEN && currentUrlRef.current === fullUrl) return;
+    // Otherwise tear down whatever is open/connecting first — covers switching to a new URL
+    // (the bug: changing the reader URL left the old socket open) and stale half-open sockets.
+    closeSocket();
     setError(null);
 
     try {
-      const fullUrl = normalizeWsUrl(url);
       const ws = new WebSocket(fullUrl);
+      currentUrlRef.current = fullUrl;
 
       ws.onopen = () => {
         updateConnected(true);
@@ -116,17 +133,14 @@ export function useWebSocket({
       setError(String(e));
       updateConnected(false);
     }
-  }, [url, clearReconnectTimer, updateConnected, handleMessage]);
+  }, [url, clearReconnectTimer, updateConnected, handleMessage, closeSocket]);
 
   const disconnect = useCallback(() => {
     clearReconnectTimer();
     stoppedRef.current = true; // explicit user disconnect — don't auto-reconnect
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
+    closeSocket();
     updateConnected(false);
-  }, [clearReconnectTimer, updateConnected]);
+  }, [clearReconnectTimer, updateConnected, closeSocket]);
 
   const connect = useCallback(() => {
     stoppedRef.current = false;
@@ -137,12 +151,9 @@ export function useWebSocket({
   useEffect(() => {
     return () => {
       clearReconnectTimer();
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
+      closeSocket();
     };
-  }, [clearReconnectTimer]);
+  }, [clearReconnectTimer, closeSocket]);
 
   return { isConnected, connect, disconnect, error };
 }

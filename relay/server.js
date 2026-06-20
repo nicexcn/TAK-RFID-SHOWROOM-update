@@ -15,12 +15,17 @@
  *
  * Connect URLs:
  *   pusher     wss://<relay-host>/?role=pusher&key=<INGEST_KEY>
+ *   pusher     wss://<relay-host>/?role=pusher&key=<KEY>&device=<id>  → TAG this reader's stream
  *   subscriber wss://<relay-host>/                      → receives ALL readers
  *   subscriber wss://<relay-host>/?device=<device_id>   → receives only that reader
  *
  * - A PUSHER (the middleware) must present the correct key; every message it sends is
- *   forwarded verbatim to matching SUBSCRIBERS. Subscribers are open (parity with the
- *   public TV display); pushers are keyed.
+ *   forwarded to matching SUBSCRIBERS. Subscribers are open (parity with the public TV
+ *   display); pushers are keyed.
+ * - SEPARATING READERS: a pusher may add ?device=<id> to tag its WHOLE stream — the relay
+ *   stamps that id onto every message (overriding the payload's device_id), so the BLE
+ *   handheld and the table reader stay distinct even when the middleware can only send a
+ *   generic/"UNKNOWN" device_id in the body. Without it, the payload device_id is used.
  * - SERVER-SIDE PERSISTENCE (the "confident path"): when APP_BASE_URL + SCAN_INGEST_KEY
  *   are set, the relay also ingests each scan into the app's /api/scan (dedup + batched),
  *   so the SERVER persists it — attributed via the payload's device_id → the active
@@ -45,6 +50,10 @@ const DEDUP_WINDOW_MS = 5 * 60 * 1000; // periodically forget seen tags so re-sc
 const subscribers = new Set();
 /** device_id -> { seen:Set<epc>, queue:string[], timer } — ingest dedup/batch state */
 const ingestByDevice = new Map();
+/** device_id -> last-seen ms — readers currently/recently pushing (for the admin reader picker) */
+const seenDevices = new Map();
+const DEVICE_TTL_MS = 60 * 1000; // a device counts as "connected" if seen within this window
+function markDevice(id) { if (id) seenDevices.set(id, Date.now()); }
 
 // The reader identity is in every message (mirror of src/lib/rfidMessage.ts readDeviceId).
 function readDeviceId(data) {
@@ -70,6 +79,20 @@ function parseScan(raw) {
   const deviceId = readDeviceId(data);
   if (data.status === "START" || data.status === "STOP" || data.status === "CLEAR") return { deviceId, epc: "" };
   return { deviceId, epc: data.epc != null ? String(data.epc).trim() : "" };
+}
+
+// Overwrite a message's device_id with the pusher's connection-level tag (?device=), so a
+// middleware that can't put a real per-device id in the body (e.g. it sends "UNKNOWN") can
+// still be told apart per reader. Returns the rewritten JSON, or the raw string if not JSON.
+function stampDeviceId(raw, deviceId) {
+  try {
+    const data = JSON.parse(raw);
+    if (data && typeof data === "object") {
+      data.device_id = deviceId;
+      return JSON.stringify(data);
+    }
+  } catch { /* non-JSON (plain EPC) — leave as-is; routing still uses the tag */ }
+  return raw;
 }
 
 function ingestState(deviceId) {
@@ -111,12 +134,24 @@ async function flushIngest(deviceId) {
 }
 
 const server = http.createServer((req, res) => {
+  const cors = { "access-control-allow-origin": "*" }; // device list is non-sensitive; browser fetch from the app
+  // Live list of readers currently pushing — the /admin/rfid reader picker reads this.
+  if (req.method === "GET" && req.url.startsWith("/devices")) {
+    const now = Date.now();
+    const devices = [...seenDevices.entries()]
+      .filter(([, t]) => now - t < DEVICE_TTL_MS)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, t]) => ({ id, idleMs: now - t }));
+    res.writeHead(200, { "content-type": "application/json", ...cors });
+    res.end(JSON.stringify({ devices }));
+    return;
+  }
   if (req.method === "GET" && (req.url === "/" || req.url.startsWith("/health"))) {
-    res.writeHead(200, { "content-type": "application/json" });
+    res.writeHead(200, { "content-type": "application/json", ...cors });
     res.end(JSON.stringify({ ok: true, subscribers: subscribers.size, ingest: INGEST_ENABLED }));
     return;
   }
-  res.writeHead(404);
+  res.writeHead(404, cors);
   res.end();
 });
 
@@ -133,10 +168,20 @@ wss.on("connection", (ws, req) => {
 
   if (role === "pusher") {
     if (INGEST_KEY && key !== INGEST_KEY) { ws.close(1008, "unauthorized"); return; }
-    console.log(`pusher connected${INGEST_ENABLED ? " (persist on)" : ""}`);
+    // Optional connection-level identity: ?device=<id> tags THIS pusher's whole stream,
+    // overriding the payload's device_id. Lets the BLE handheld and the table reader be
+    // told apart even when the middleware can't send a real per-device id in the body.
+    const pusherDevice = (url.searchParams.get("device") || "").trim();
+    if (pusherDevice) markDevice(pusherDevice); // show up in /devices even before the first scan
+    console.log(`pusher connected${pusherDevice ? ` device=${pusherDevice}` : ""}${INGEST_ENABLED ? " (persist on)" : ""}`);
     ws.on("message", (data) => {
-      const msg = data.toString();
-      const { deviceId, epc } = parseScan(msg);
+      let msg = data.toString();
+      let { deviceId, epc } = parseScan(msg);
+      if (pusherDevice) {
+        deviceId = pusherDevice;                 // the connection tag wins over the payload
+        msg = stampDeviceId(msg, pusherDevice);  // so subscribers + ingest see the right id
+      }
+      markDevice(deviceId); // track this reader for the admin reader picker (/devices)
       for (const sub of subscribers) {
         if (sub.readyState !== 1) continue;
         if (sub.deviceFilter && sub.deviceFilter !== deviceId) continue; // device filter (optional)
@@ -144,7 +189,7 @@ wss.on("connection", (ws, req) => {
       }
       if (INGEST_ENABLED && deviceId && epc) queueIngest(deviceId, epc); // ← persist server-side
     });
-    ws.on("close", () => console.log("pusher left"));
+    ws.on("close", () => console.log(`pusher left${pusherDevice ? ` (device=${pusherDevice})` : ""}`));
   } else {
     // Optional device filter: ?device=<id> → only that reader's scans (default = all).
     ws.deviceFilter = (url.searchParams.get("device") || "").trim();

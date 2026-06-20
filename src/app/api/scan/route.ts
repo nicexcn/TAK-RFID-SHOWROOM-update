@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
     // Resolve the active (non-idle) session for each reader in ONE query. A reader maps
     // to at most one active session in practice; if several exist, the newest wins.
     const devices = [...new Set(scans.map((s) => s.device))];
+    const cutoff = await idleCutoff();
     const sessions = await prisma.session.findMany({
-      where: { isActive: true, readerId: { in: devices }, lastSeenAt: { gte: idleCutoff() } },
+      where: { isActive: true, readerId: { in: devices }, lastSeenAt: { gte: cutoff } },
       orderBy: { createdAt: "desc" },
       select: { id: true, readerId: true },
     });
