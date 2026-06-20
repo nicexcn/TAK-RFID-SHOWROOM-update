@@ -1,37 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { broadcastNotifications } from "@/lib/realtime";
+import { notifInclude, attachTakeaway, attachTakeawayMany } from "@/lib/notifDetails";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const unreadOnly = searchParams.get("unread") === "true";
-  const notifications = await prisma.notification.findMany({
-    where: unreadOnly ? { isRead: false } : {},
-    include: {
-      product: { select: { id: true, name: true, productCode: true, location: true } },
-      customer: { select: { id: true, customerCode: true, fullName: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
-  return NextResponse.json(notifications);
+  try {
+    const { searchParams } = new URL(req.url);
+    const unreadOnly = searchParams.get("unread") === "true";
+    const notifications = await prisma.notification.findMany({
+      where: unreadOnly ? { isRead: false } : {},
+      include: notifInclude,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return NextResponse.json(await attachTakeawayMany(notifications));
+  } catch (error) {
+    console.error("NOTIF GET ERROR:", error);
+    return NextResponse.json({ error: "Failed to load notifications" }, { status: 500 });
+  }
 }
 
+// POST — raise a "prepare this sample" alert. Deduped per (session, product): re-pressing
+// "เตรียม" re-surfaces the existing alert instead of spamming a new row.
 export async function POST(req: NextRequest) {
-  const { productId, customerId, sessionId, title, message } = await req.json();
-  const notification = await prisma.notification.create({
-    data: {
-      type: "PREPARE_PRODUCT",
-      title: title || "เตรียมสินค้าตัวอย่าง",
-      message: message || "",
-      productId,
-      customerId: customerId || null,
-      sessionId: sessionId || null,
-      status: "PENDING",
-    },
-    include: {
-      product: { select: { id: true, name: true, productCode: true, location: true } },
-      customer: { select: { id: true, customerCode: true, fullName: true } },
-    },
-  });
-  return NextResponse.json(notification, { status: 201 });
+  try {
+    const { productId, customerId, sessionId, title, message } = await req.json();
+    if (!productId) return NextResponse.json({ error: "productId required" }, { status: 400 });
+
+    const existing = sessionId
+      ? await prisma.notification.findFirst({
+          where: { productId, sessionId, status: { not: "COMPLETE" } },
+          select: { id: true },
+        })
+      : null;
+
+    const row = existing
+      ? await prisma.notification.update({
+          where: { id: existing.id },
+          data: { isRead: false, ...(message !== undefined && { message }) },
+          include: notifInclude,
+        })
+      : await prisma.notification.create({
+          data: {
+            type: "PREPARE_PRODUCT",
+            title: title || "เตรียมสินค้าตัวอย่าง",
+            message: message || "",
+            productId,
+            customerId: customerId || null,
+            sessionId: sessionId || null,
+            status: "PENDING",
+          },
+          include: notifInclude,
+        });
+
+    const notification = await attachTakeaway(row); // include the takeaway quantity
+    // Carry the row in the broadcast so subscribers update instantly without a refetch.
+    await broadcastNotifications({ type: existing ? "update" : "create", notification });
+    return NextResponse.json(notification, { status: existing ? 200 : 201 });
+  } catch (error) {
+    console.error("NOTIF POST ERROR:", error);
+    return NextResponse.json({ error: "Failed to create notification" }, { status: 500 });
+  }
+}
+
+// PATCH (collection) — mark all unread notifications as read in one call.
+export async function PATCH() {
+  try {
+    await prisma.notification.updateMany({ where: { isRead: false }, data: { isRead: true } });
+    await broadcastNotifications({ type: "readAll" });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("NOTIF PATCH-ALL ERROR:", error);
+    return NextResponse.json({ error: "Failed to update notifications" }, { status: 500 });
+  }
 }

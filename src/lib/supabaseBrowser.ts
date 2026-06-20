@@ -19,3 +19,6 @@ export const supabaseBrowser =
 
 export const DISPLAY_CHANNEL = "sessions-display";
 export const DISPLAY_EVENT = "changed";
+
+export const NOTIF_CHANNEL = "notifications";
+export const NOTIF_EVENT = "changed";
