@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -127,11 +128,11 @@ export default function RegisterPage() {
               {loading ? "Creating account..." : "Create Account"}
             </button>
 
-            <button onClick={() => router.push("/login")}
-              className="w-full py-3 rounded-xl text-sm"
+            <Link href="/login"
+              className="block text-center w-full py-3 rounded-xl text-sm"
               style={{ background: "transparent", color: "#9f886c" }}>
               ← Back to Login
-            </button>
+            </Link>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface ScanRow {
   id: string;
@@ -85,7 +86,7 @@ export default function CustomerDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
-          <button onClick={() => router.push(`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`)} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>เริ่มสแกน</button>
+          <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>เริ่มสแกน</Link>
           <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>ลบ</button>
         </div>
       </div>

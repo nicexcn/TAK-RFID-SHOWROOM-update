@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toCsv } from "@/lib/csv";
 
 const TITLE_OPTIONS = ["Architect", "Interior", "Turnkey", "Contractor", "Homeowner", "Other"];
@@ -85,12 +86,12 @@ export default function CustomersPage() {
             </svg>
             Export CSV
           </button>
-          <button onClick={() => router.push("/admin/customers/add")} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>
+          <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Add Customer
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -209,8 +210,8 @@ export default function CustomersPage() {
                 <td className="px-4 py-3 text-xs" style={{ color: "#9f886c" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => router.push(`/admin/customers/${c.id}`)}
-                      className="px-3 py-1 rounded-lg text-xs" style={{ background: "#f5f2ee", color: "#726c5a" }}>View</button>
+                    <Link href={`/admin/customers/${c.id}`}
+                      className="px-3 py-1 rounded-lg text-xs" style={{ background: "#f5f2ee", color: "#726c5a" }}>View</Link>
                     <button
                       onClick={() => handleStartScan(c)}
                       disabled={startingSession === c.id}

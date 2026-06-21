@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import BulkImageImport from "@/components/BulkImageImport";
 
 interface Product {
@@ -36,7 +36,6 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 export default function ProductsPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -176,15 +175,15 @@ export default function ProductsPage() {
             Import
           </button>
           {/* Add Product Button */}
-          <button
-            onClick={() => router.push("/admin/products/new")}
+          <Link
+            href="/admin/products/new"
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
             style={{ background: "#726c5a", color: "#fff" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Add Product
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -273,7 +272,7 @@ export default function ProductsPage() {
       {openMenu && (
         <div ref={menuRef} className="fixed z-50 w-36 rounded-xl overflow-hidden"
           style={{ top: menuPosition.top, left: menuPosition.left, background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-          <button onClick={() => { router.push(`/admin/products/${openMenu}/edit`); setOpenMenu(null); }}
+          <Link href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
             className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
             style={{ color: "#4c4847" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
@@ -283,7 +282,7 @@ export default function ProductsPage() {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
             Edit
-          </button>
+          </Link>
           <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
             className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
             style={{ color: "#9f4a4a" }}

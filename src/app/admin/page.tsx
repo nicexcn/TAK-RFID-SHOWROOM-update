@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -106,7 +106,6 @@ function readSavedRange(): SavedRange | null {
 
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const router = useRouter();
 
   // Export + date range (the range drives BOTH the stats view and the exports)
   const [showExport, setShowExport] = useState(false);
@@ -599,7 +598,7 @@ export default function AdminDashboard() {
             { label: "Add Customer", sub: "Register new customer", href: "/admin/customers/add" },
             { label: "Add Product", sub: "Register new product", href: "/admin/products/new" },
           ].map((action) => (
-            <button key={action.label} onClick={() => router.push(action.href)}
+            <Link key={action.label} href={action.href}
               className="flex flex-col items-center justify-center p-6 rounded-xl transition-all"
               style={{ border: "1.5px dashed #cdc3ad", background: "transparent" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
@@ -611,7 +610,7 @@ export default function AdminDashboard() {
               </div>
               <p className="text-sm font-medium" style={{ color: "#4c4847" }}>{action.label}</p>
               <p className="text-xs mt-1" style={{ color: "#9f886c" }}>{action.sub}</p>
-            </button>
+            </Link>
           ))}
         </div>
       </div>

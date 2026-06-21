@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Toaster, toast } from "sonner";
 import { subscribeNotifications } from "@/lib/notifChannel";
 import { isNotifyEnabled, setNotifyEnabled, enableNotifications, playBeep, showOsNotification } from "@/lib/notify";
@@ -110,11 +111,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isMobile = () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
 
-  function go(href: string) {
-    router.push(href);
-    if (isMobile()) setSidebarOpen(false); // close the drawer after navigating on mobile
-  }
-
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -155,7 +151,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {navItems.map((item) => {
             const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
-              <button key={item.href} onClick={() => go(item.href)}
+              <Link key={item.href} href={item.href}
+                onClick={() => { if (isMobile()) setSidebarOpen(false); }} // close the drawer on mobile
                 className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center justify-between"
                 style={{ background: isActive ? "rgba(255,255,255,0.5)" : "transparent", color: "#4c4847", fontWeight: isActive ? 600 : 400, borderLeft: isActive ? "3px solid #726c5a" : "3px solid transparent" }}>
                 <span>{item.label}</span>
@@ -164,7 +161,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {notifCount}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </nav>
