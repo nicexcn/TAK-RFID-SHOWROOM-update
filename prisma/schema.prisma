@@ -90,8 +90,16 @@ model Scan {
   // Prepare workflow (customer req #2): NONE → PREPARING → COMPLETE. Persisted so
   // status survives reload and is visible across staff stations (was client-only).
   prepareStatus String @default("NONE")
-  // Takeaway quantity the customer wants to take home (customer req #2).
+  // Takeaway quantity the customer wants to take home (customer req #2). This is also the
+  // BORROW quantity — takeaway == loan. The fields below track the return side.
   takeawayQty   Int    @default(0)
+  // Borrow/return tracking. returnedQty of takeawayQty have come back; returnedAt is set
+  // when fully returned. dueDate is an OPTIONAL override — the effective due date is
+  // (dueDate ?? scannedAt + BORROW_DAYS), so existing takeaways get a due date for free
+  // and the scan flow stays untouched. See src/lib/loanStatus.ts.
+  returnedQty   Int    @default(0)
+  returnedAt    DateTime?
+  dueDate       DateTime?
   // Reader that produced this scan — mac (handheld) / serial (Speedway). MPT confirms
   // it's in every message + unique (customer req #3: "ตำแหน่งที่ Scan" / device→customer).
   deviceId      String?

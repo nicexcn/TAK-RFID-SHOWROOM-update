@@ -9,6 +9,7 @@ interface ScanRow {
   scannedAt: string;
   prepareStatus: "NONE" | "PREPARING" | "COMPLETE";
   takeawayQty: number;
+  returnedQty: number;
   product: { id: string; name: string; rfidTag: string; imageUrl: string | null; location: string | null; brand: string | null };
 }
 interface SessionRow {
@@ -130,7 +131,13 @@ export default function CustomerDetailPage() {
                       </p>
                     </div>
                     {scan.takeawayQty > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#fdf0e3", color: "#c07a30" }}>Takeaway {scan.takeawayQty}</span>
+                      scan.returnedQty >= scan.takeawayQty ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#d1fae5", color: "#10b981" }}>Returned ✓</span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#fdf0e3", color: "#c07a30" }}>
+                          {scan.returnedQty > 0 ? `Borrowed ${scan.takeawayQty} · ${scan.returnedQty} back` : `Borrowed ${scan.takeawayQty}`}
+                        </span>
+                      )
                     )}
                     <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                   </div>
