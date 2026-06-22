@@ -253,8 +253,13 @@ export default function AdminDashboard() {
     }).catch(() => setSettingsLoaded(true));
   }, []);
 
-  // Remember the selected range (preset or custom dates) so it survives reload/navigation.
+  // Remember the selected range (preset or custom dates) so it survives reload/navigation —
+  // but ONLY once the user actually picks one. Persisting on mount would write RANGE_KEY
+  // before the async /api/settings fetch resolves, so `!readSavedRange()` above would always
+  // be false and the configured Default Filter would never apply (it was always "daily").
+  const userPickedRange = useRef(false);
   useEffect(() => {
+    if (!userPickedRange.current) return; // no user pick yet → let the Settings default win
     try {
       window.localStorage.setItem(RANGE_KEY, JSON.stringify({ rangeMode, statFilter, customFrom, customTo }));
     } catch { /* storage unavailable (private mode) — range just won't persist */ }
@@ -561,18 +566,18 @@ export default function AdminDashboard() {
           Showing stats for: <span style={{ color: "#726c5a" }}>{dateRange.from} → {dateRange.to}</span>
         </p>
         <div className="flex items-center gap-2 flex-wrap">
-          <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { setRangeMode("preset"); setStatFilter(v); }} />
-          <button onClick={() => setRangeMode("custom")}
+          <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { userPickedRange.current = true; setRangeMode("preset"); setStatFilter(v); }} />
+          <button onClick={() => { userPickedRange.current = true; setRangeMode("custom"); }}
             className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
             style={{ background: rangeMode === "custom" ? "#726c5a" : "#f5f2ee", color: rangeMode === "custom" ? "#fff" : "#9f886c", border: "1px solid " + (rangeMode === "custom" ? "#726c5a" : "#e6e5d8") }}>
             Custom
           </button>
           {rangeMode === "custom" && (
             <div className="flex items-center gap-1">
-              <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)}
+              <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => { userPickedRange.current = true; setCustomFrom(e.target.value); }}
                 className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
               <span className="text-xs" style={{ color: "#9f886c" }}>–</span>
-              <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)}
+              <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => { userPickedRange.current = true; setCustomTo(e.target.value); }}
                 className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
             </div>
           )}
