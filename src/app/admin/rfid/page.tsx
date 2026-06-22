@@ -199,7 +199,16 @@ function RFIDPageInner() {
       }
     }
     if (remap.size === 0) return;
-    setSession((p) => (p ? { ...p, scans: p.scans.map((s) => (remap.has(s.id) ? { ...s, id: remap.get(s.id)! } : s)) } : p));
+    setSession((p) => {
+      if (!p) return p;
+      const seen = new Set<string>();
+      // remap ws- ids → real ids, then drop any duplicate id (a remap can land on an id
+      // that's already in the list); keep the first (newest) occurrence.
+      const scans = p.scans
+        .map((s) => (remap.has(s.id) ? { ...s, id: remap.get(s.id)! } : s))
+        .filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
+      return { ...p, scans };
+    });
     setTakeaway((tk) => {
       const next: Record<string, number> = {};
       for (const [id, q] of Object.entries(tk)) next[remap.get(id) ?? id] = q;
@@ -244,7 +253,14 @@ function RFIDPageInner() {
       id: `ws-${Date.now()}-${epc}`, scannedAt: new Date().toISOString(),
       product, prepareStatus: "NONE", deviceId,
     };
-    setSession((p) => p ? { ...p, scans: [fakeScan, ...p.scans] } : p);
+    // One scan per product — the DB is unique on (session, product), so two tags that
+    // resolve to the same product must not become two rows (they'd later collapse to the
+    // same id → duplicate React key). Skip if this product is already in the list.
+    setSession((p) => {
+      if (!p) return p;
+      if (p.scans.some((s) => s.product.id === product.id)) return p;
+      return { ...p, scans: [fakeScan, ...p.scans] };
+    });
 
     // Always persist from the browser. (Server-side ingest via /api/scan only attributes
     // when the scan's device_id matches the session's readerId; readers that send a generic
@@ -265,6 +281,20 @@ function RFIDPageInner() {
     onTag: wsCallbacks.onTag,
     enabled: !!session && !!deviceIps[wsDeviceId] && connectedDevices.has(wsDeviceId),
   });
+
+  // Bind the connected reader to the active session. The reader picker only appears AFTER
+  // the session is active, so readerId can't be captured at start — we set it on connect so
+  // the reader shows "in use". Re-attempts on every (re)connect (self-heals a dropped socket).
+  // Needs a relay ?device= reader — a bare/direct connection has no id to track.
+  useEffect(() => {
+    if (!ws.isConnected || !session?.id) return;
+    const rid = readerIdFromUrl(deviceIps[wsDeviceId] || "");
+    if (!rid || session.readerId === rid) return;
+    fetch(`/api/sessions/${session.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ readerId: rid }),
+    }).then((r) => { if (r.ok) setSession((p) => (p ? { ...p, readerId: rid } : p)); }).catch(() => {});
+  }, [ws.isConnected, session?.id, session?.readerId, deviceIps, wsDeviceId]);
 
   const runSimulator = useCallback(() => {
     if (!session || productMap.size === 0) return;
@@ -333,20 +363,31 @@ function RFIDPageInner() {
     return () => { if (supabaseBrowser) supabaseBrowser.removeChannel(channel); };
   }, [serverPersist]);
 
-  // Track which session is on the TV so "Stop Display" only shows when THIS session is displayed.
-  // Refreshed on the same realtime nudge the TV uses (covers another station sending/stopping).
+  // Track which session is on the TV ("Stop Display") AND which readers are in use by a
+  // customer. Both change on session start/send/stop, which broadcast on DISPLAY_CHANNEL.
+  const [busyReaders, setBusyReaders] = useState<Record<string, { customerCode: string; customerName: string }>>({});
   const refreshDisplayed = useCallback(() => {
     fetch("/api/sessions/display").then((r) => r.json()).then((d) => setDisplayedId(d?.id ?? null)).catch(() => {});
   }, []);
+  const refreshReaders = useCallback(() => {
+    fetch("/api/readers").then((r) => r.json()).then((d) => {
+      const map: Record<string, { customerCode: string; customerName: string }> = {};
+      (d?.readers || []).forEach((x: { readerId: string; customerCode: string; customerName: string }) => {
+        map[x.readerId] = { customerCode: x.customerCode, customerName: x.customerName };
+      });
+      setBusyReaders(map);
+    }).catch(() => {});
+  }, []);
   useEffect(() => {
-    refreshDisplayed();
-    if (!supabaseBrowser) return;
-    // Must subscribe to the SAME topic the broadcast uses (DISPLAY_CHANNEL) — a suffixed
-    // name is a different topic and would never receive the nudge.
+    const sync = () => { refreshDisplayed(); refreshReaders(); };
+    sync();
+    const t = setInterval(sync, 10000); // fallback poll (occupancy + displayed session)
+    if (!supabaseBrowser) return () => clearInterval(t);
+    // Same topic as the broadcast (DISPLAY_CHANNEL) — a suffixed name is a different topic.
     const channel = supabaseBrowser.channel(DISPLAY_CHANNEL);
-    channel.on("broadcast", { event: DISPLAY_EVENT }, refreshDisplayed).subscribe();
-    return () => { if (supabaseBrowser) supabaseBrowser.removeChannel(channel); };
-  }, [refreshDisplayed]);
+    channel.on("broadcast", { event: DISPLAY_EVENT }, sync).subscribe();
+    return () => { clearInterval(t); if (supabaseBrowser) supabaseBrowser.removeChannel(channel); };
+  }, [refreshDisplayed, refreshReaders]);
 
   // Reflect prep-staff progress (กำลังเตรียม / พร้อมแล้ว) on the scan page. Gentle poll that
   // MERGES prepareStatus/takeawayQty into existing scans by id — never replaces the list, so
@@ -480,6 +521,18 @@ function RFIDPageInner() {
   async function handleMarkComplete(scan: ScanItem) {
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "COMPLETE" } : s) } : p);
     await patchScan(scan, { prepareStatus: "COMPLETE" });
+  }
+
+  // Intentional disconnect (button) frees the reader for other stations; the session stays
+  // active. A transient socket drop does NOT call this — it re-binds on reconnect instead.
+  function handleDisconnect() {
+    ws.disconnect();
+    if (session?.id && session.readerId) {
+      fetch(`/api/sessions/${session.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearReader: true }),
+      }).then((r) => { if (r.ok) setSession((p) => (p ? { ...p, readerId: null } : p)); }).catch(() => {});
+    }
   }
 
   async function handleEndSession() {
@@ -669,6 +722,20 @@ function RFIDPageInner() {
               </div>
             </div>
             <div className="p-4 flex items-center gap-3 flex-wrap">
+              {/* Reader occupancy — which physical readers are currently serving a customer */}
+              <div className="w-full text-xs flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "#9f886c" }}>
+                <span className="font-medium" style={{ color: "#4c4847" }}>Readers in use:</span>
+                {Object.keys(busyReaders).length === 0 ? (
+                  <span style={{ color: "#10b981" }}>none — all free</span>
+                ) : (
+                  Object.entries(busyReaders).map(([rid, c]) => (
+                    <span key={rid} className="inline-flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#dc2626" }} />
+                      {rid} → {c.customerName} ({c.customerCode})
+                    </span>
+                  ))
+                )}
+              </div>
               {!ws.isConnected ? (
                 <>
                   <select value="" onChange={(e) => pickReader(e.target.value)}
@@ -677,11 +744,17 @@ function RFIDPageInner() {
                     <option value="">Select reader…</option>
                     {relayDevices.length > 0 && (
                       <optgroup label="Connected to relay (live)">
-                        {relayDevices.map((d) => <option key={"live-" + d} value={d}>🟢 {d}</option>)}
+                        {relayDevices.map((d) => {
+                          const b = busyReaders[d];
+                          return <option key={"live-" + d} value={d}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
+                        })}
                       </optgroup>
                     )}
                     <optgroup label="Presets">
-                      {READER_PRESETS.map((r) => <option key={r.device} value={r.device}>{r.label}</option>)}
+                      {READER_PRESETS.map((r) => {
+                        const b = busyReaders[r.device];
+                        return <option key={r.device} value={r.device}>{b ? `🔴 ${r.label} — in use (${b.customerName})` : r.label}</option>;
+                      })}
                     </optgroup>
                   </select>
                   <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9f886c" }}>
@@ -708,7 +781,7 @@ function RFIDPageInner() {
                     {readerIdFromUrl(deviceIps[wsDeviceId]) || "LAN (direct)"}
                   </span>
                   <span className="text-[11px]" style={{ color: "#cdc3ad" }}>{deviceIps[wsDeviceId]}</span>
-                  <button onClick={ws.disconnect}
+                  <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
                     ตัดการเชื่อมต่อ
