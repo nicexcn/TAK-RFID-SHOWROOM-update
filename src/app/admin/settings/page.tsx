@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { SavedReader } from "@/lib/readers";
+
+const newReaderId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
 
 interface DropdownOption { id: string; type: string; value: string; }
 interface MediaFile {
@@ -100,6 +104,7 @@ export default function SettingsPage() {
   const [slideDuration, setSlideDuration] = useState(5);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
+  const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
 
   // Takeaway
@@ -118,6 +123,7 @@ export default function SettingsPage() {
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
+      if (Array.isArray(d.readers)) setReaders(d.readers);
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
@@ -233,6 +239,12 @@ export default function SettingsPage() {
       onDone();
     } catch { /* keep prior state */ }
   }
+
+  // Reader registry editor
+  const addReader = () => setReaders((rs) => [...rs, { id: newReaderId(), name: "", device: "", url: "" }]);
+  const updateReader = (id: string, patch: Partial<SavedReader>) =>
+    setReaders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const removeReader = (id: string) => setReaders((rs) => rs.filter((r) => r.id !== id));
 
   async function fetchOptions() {
     const res = await fetch(`/api/dropdown?type=${activeType}`);
@@ -709,10 +721,41 @@ export default function SettingsPage() {
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Set once → in /display leave empty for all readers, or enter a specific device_id</p>
+                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
                 </div>
+
+                {/* Central reader registry — one source of truth, shown as a dropdown on Scan & Display */}
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Readers</label>
+                    <button onClick={addReader} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add reader</button>
+                  </div>
+                  <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>
+                    Named readers shown as a dropdown on Scan &amp; Display, so staff pick a name instead of typing an address.
+                    Set <b>Device tag</b> for a relay reader (connects via the relay URL above), or a full <b>URL / IP</b> for a direct LAN reader.
+                  </p>
+                  {readers.length === 0 ? (
+                    <p className="text-xs py-1" style={{ color: "#cdc3ad" }}>No readers yet — add one to get started.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {readers.map((r) => (
+                        <div key={r.id} className="grid grid-cols-12 gap-2 items-center">
+                          <input value={r.name} onChange={(e) => updateReader(r.id, { name: e.target.value })}
+                            placeholder="Name (e.g. Table reader)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                          <input value={r.device} onChange={(e) => updateReader(r.id, { device: e.target.value })}
+                            placeholder="Device tag (relay)" className="col-span-3 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                          <input value={r.url} onChange={(e) => updateReader(r.id, { url: e.target.value })}
+                            placeholder="or full URL / IP (direct)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                          <button onClick={() => removeReader(r.id)} title="Remove"
+                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
 
 /**
@@ -37,6 +38,7 @@ export default function DisplayPage() {
   const [imageMs, setImageMs] = useState(IMAGE_MS); // per-image slide duration (from Settings)
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base (from Settings)
   const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
+  const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
   const unknownRef = useRef<Map<string, number>>(new Map());
@@ -70,6 +72,7 @@ export default function DisplayPage() {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
+      setSavedReaders(normalizeReaders(c?.readers));
     }).catch(() => {});
     const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     setReaderIp(ip); setIpDraft(ip);
@@ -252,6 +255,13 @@ export default function DisplayPage() {
     window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
 
+  // Pick a reader by NAME from the central registry → resolve to its subscriber URL + connect.
+  function applySavedReader(url: string) {
+    if (!url) return;
+    setIpDraft(url);
+    window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
+  }
+
   return (
     <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#1a1a1a" }}>
       {(slotA || slotB) ? (
@@ -316,6 +326,19 @@ export default function DisplayPage() {
 
       {showConfig && (
         <div className="absolute top-14 right-6 p-4 rounded-xl" style={{ background: "rgba(20,20,20,0.92)", border: "1px solid #444", minWidth: 280 }}>
+          {savedReaders.length > 0 && (
+            <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
+              <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
+              <select value="" onChange={(e) => applySavedReader(e.target.value)}
+                className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }}>
+                <option value="">เลือก reader…</option>
+                {savedReaders.map((r) => {
+                  const url = readerUrl(r, relayUrl);
+                  return <option key={r.id} value={url} disabled={!url}>{r.name || r.device || r.url}</option>;
+                })}
+              </select>
+            </div>
+          )}
           <p className="text-white text-sm mb-2">Fix Reader (โต๊ะ)</p>
           <input value={ipDraft} onChange={(e) => setIpDraft(e.target.value)}
             placeholder="192.168.1.104  หรือ  wss://xxx.ngrok-free.app"

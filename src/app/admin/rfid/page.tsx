@@ -5,7 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId } from "@/lib/deviceId";
+import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
+
+// Remember the last reader URL for this station so it isn't re-typed every reload.
+const STATION_READER_KEY = "tak-station-reader-url";
 
 // A transient warning toast — fixed top-right (via the app-wide Toaster), so it's visible
 // even when the user has scrolled down the scan list (an inline error would be off-screen).
@@ -62,14 +66,6 @@ function readerIdFromUrl(url: string): string {
   try { return (new URL(url).searchParams.get("device") || "").trim(); } catch { return ""; }
 }
 
-// Quick-pick readers for the connection field, so staff select instead of typing a URL.
-// `device` is the relay tag (matches the pusher's ?device=<tag>); the relay base is filled in
-// from Settings (prod, wss) or the same host on :8081 (local, ws).
-const READER_PRESETS: { label: string; device: string }[] = [
-  { label: "Bluetooth (handheld)", device: "handheld" },
-  { label: "โต๊ะ (table reader)", device: "table" },
-];
-
 // ── Main component (wrapped for Suspense) ─────────────────────────────────
 function RFIDPageInner() {
   const searchParams = useSearchParams();
@@ -121,6 +117,7 @@ function RFIDPageInner() {
   const [wsDeviceId, setWsDeviceId] = useState<DeviceId>(1);
   const [relayBase, setRelayBase] = useState(""); // relay base for the reader quick-pick
   const [relayDevices, setRelayDevices] = useState<string[]>([]); // readers currently pushing to the relay
+  const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [simulating, setSimulating] = useState(false);
 
   // Station id (Option C ownership key): a silent, persisted per-device id used to keep
@@ -155,11 +152,25 @@ function RFIDPageInner() {
   // (must be wss); on local HTTP use the same host on :8081 (avoids a stale configured URL).
   useEffect(() => {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
+      setSavedReaders(normalizeReaders(c?.readers));
       const cfg = String(c?.relayUrl || "").replace(/\/+$/, "");
       if (typeof window === "undefined") { setRelayBase(cfg); return; }
       setRelayBase(window.location.protocol === "https:" ? cfg : `ws://${window.location.hostname}:8081`);
     }).catch(() => {});
   }, []);
+
+  // Restore this station's last reader URL once on mount, then persist it on change — so
+  // staff don't re-enter the address every reload (it was previously React-state only).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(STATION_READER_KEY);
+    if (saved) setDeviceIps((p) => ({ ...p, 1: saved }));
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const u = deviceIps[wsDeviceId];
+    if (u) window.localStorage.setItem(STATION_READER_KEY, u);
+  }, [deviceIps, wsDeviceId]);
 
   // Poll the relay for readers currently pushing, so the picker shows live devices (not just
   // the static presets). ws→http / wss→https for the relay's HTTP /devices endpoint.
@@ -175,14 +186,6 @@ function RFIDPageInner() {
     const t = setInterval(poll, 4000);
     return () => { stopped = true; clearInterval(t); };
   }, [relayBase]);
-
-  // Quick-pick a reader → fill the connection field with the relay subscriber URL (no typing).
-  function pickReader(device: string) {
-    if (!device) return;
-    const base = relayBase || (typeof window !== "undefined" ? `ws://${window.location.hostname}:8081` : "");
-    if (!base) return;
-    setDeviceIps((p) => ({ ...p, [wsDeviceId]: `${base}/?device=${encodeURIComponent(device)}` }));
-  }
 
   // Swap optimistic "ws-" scan ids for the server's real ids (matched by productId) once a
   // batch is persisted, and migrate the takeaway-map keys so the displayed qty doesn't blip.
@@ -738,24 +741,27 @@ function RFIDPageInner() {
               </div>
               {!ws.isConnected ? (
                 <>
-                  <select value="" onChange={(e) => pickReader(e.target.value)}
+                  <select value="" onChange={(e) => { if (e.target.value) setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value })); }}
                     className="px-2 py-1.5 rounded-lg outline-none text-xs"
                     style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                     <option value="">Select reader…</option>
+                    {savedReaders.length > 0 && (
+                      <optgroup label="Saved readers">
+                        {savedReaders.map((r) => {
+                          const b = r.device ? busyReaders[r.device] : undefined;
+                          const url = readerUrl(r, relayBase);
+                          return <option key={r.id} value={url} disabled={!url}>{b ? `🔴 ${r.name || r.device} — in use (${b.customerName})` : (r.name || r.device || r.url)}</option>;
+                        })}
+                      </optgroup>
+                    )}
                     {relayDevices.length > 0 && (
                       <optgroup label="Connected to relay (live)">
                         {relayDevices.map((d) => {
                           const b = busyReaders[d];
-                          return <option key={"live-" + d} value={d}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
+                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase)}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
                         })}
                       </optgroup>
                     )}
-                    <optgroup label="Presets">
-                      {READER_PRESETS.map((r) => {
-                        const b = busyReaders[r.device];
-                        return <option key={r.device} value={r.device}>{b ? `🔴 ${r.label} — in use (${b.customerName})` : r.label}</option>;
-                      })}
-                    </optgroup>
                   </select>
                   <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9f886c" }}>
                     <span>Reader</span>
