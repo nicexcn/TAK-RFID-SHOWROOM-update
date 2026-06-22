@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { getDeviceId, isStationNamed, setDeviceId } from "@/lib/deviceId";
+import { getDeviceId } from "@/lib/deviceId";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
+
+// A transient warning toast — fixed top-right (via the app-wide Toaster), so it's visible
+// even when the user has scrolled down the scan list (an inline error would be off-screen).
+const warn = (msg: string) =>
+  toast(msg, { icon: "⚠️", duration: 3000, style: { background: "#9f4a4a", color: "#fff", border: "none", borderRadius: "0.75rem" } });
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Product {
@@ -117,10 +123,8 @@ function RFIDPageInner() {
   const [relayDevices, setRelayDevices] = useState<string[]>([]); // readers currently pushing to the relay
   const [simulating, setSimulating] = useState(false);
 
-  // Station id (Option C ownership key) — read client-side from localStorage
-  const [stationId, setStationId] = useState("");
-  const [stationNamed, setStationNamed] = useState(true);
-  useEffect(() => { setStationId(getDeviceId()); setStationNamed(isStationNamed()); }, []);
+  // Station id (Option C ownership key): a silent, persisted per-device id used to keep
+  // concurrent stations' sessions separate (getDeviceId() reads/creates it in localStorage).
 
   const loadProductMap = useCallback(async () => {
     try {
@@ -441,8 +445,7 @@ function RFIDPageInner() {
     if (takeawayEnabled && delta > 0) {
       const totalOthers = Object.entries(takeaway).reduce((sum, [id, q]) => (id === scanId ? sum : sum + q), 0);
       if (totalOthers + next > takeawayLimit) {
-        setError(`Takeaway limit reached — max ${takeawayLimit} per visit`);
-        setTimeout(() => setError(""), 3000);
+        warn(`Takeaway limit reached — max ${takeawayLimit} per visit`);
         return;
       }
     }
@@ -452,6 +455,11 @@ function RFIDPageInner() {
   }
 
   async function handlePrepare(scan: ScanItem) {
+    // A prepare must say how many to prepare — require a takeaway amount first.
+    if ((takeaway[scan.id] ?? 0) < 1) {
+      warn("Set a takeaway amount (≥ 1) before preparing.");
+      return;
+    }
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "PREPARING" } : s) } : p);
     // The scan PATCH and the notification POST are independent writes; the UI already
     // updated optimistically above, so run them concurrently — perceived latency is the
@@ -539,20 +547,7 @@ function RFIDPageInner() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Surface Scan</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-xs" style={{ color: "#9f886c" }}>Home / Surface Scan</p>
-            <button
-              onClick={() => {
-                const cur = getDeviceId();
-                const v = window.prompt("ตั้งชื่อ Station (เครื่องนี้) เช่น station-table, tablet-2", cur);
-                if (v && v.trim()) { setDeviceId(v); setStationId(v.trim()); }
-              }}
-              className="text-xs px-2 py-0.5 rounded-full"
-              style={{ background: stationNamed ? "#f0f4ff" : "#fff0f0", color: stationNamed ? "#4a6fa5" : "#9f4a4a", border: `1px solid ${stationNamed ? "#a8c0dd" : "#f5c0c0"}` }}
-              title="คลิกเพื่อตั้ง/แก้ Station id">
-              📍 {stationId || "ตั้งชื่อ Station"}{!stationNamed && " (ยังไม่ได้ตั้ง)"}
-            </button>
-          </div>
+          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Surface Scan</p>
         </div>
         {session && (
           <div className="flex items-center gap-2">
@@ -817,7 +812,12 @@ function RFIDPageInner() {
                 })}
               </div>
               {visibleScans.some((s) => s.prepareStatus === "NONE") && (
-                <button onClick={() => visibleScans.filter((s) => s.prepareStatus === "NONE").forEach((s) => handlePrepare(s))}
+                <button onClick={() => {
+                  const ready = visibleScans.filter((s) => s.prepareStatus === "NONE" && (takeaway[s.id] ?? 0) >= 1);
+                  const skipped = visibleScans.filter((s) => s.prepareStatus === "NONE" && (takeaway[s.id] ?? 0) < 1).length;
+                  ready.forEach((s) => handlePrepare(s));
+                  if (skipped > 0) warn(`${skipped} item(s) skipped — set a takeaway amount (≥ 1) first.`);
+                }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                   style={{ background: "#726c5a", color: "#fff" }}>
                   เตรียมทั้งหมด
