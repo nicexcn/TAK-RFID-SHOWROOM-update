@@ -538,6 +538,26 @@ function RFIDPageInner() {
     }
   }
 
+  // Name a live/picked relay device and append it to the central registry (Settings).
+  // Re-reads the authoritative list first so a concurrent edit isn't clobbered.
+  async function saveLiveReader(device: string) {
+    if (!device) return;
+    const name = window.prompt(`Save reader "${device}" — name it:`, device);
+    if (name === null) return; // cancelled
+    try {
+      const cur = await fetch("/api/settings").then((r) => r.json()).catch(() => ({}));
+      const list = normalizeReaders(cur?.readers);
+      if (list.some((r) => r.device === device)) { setSavedReaders(list); return; } // already saved elsewhere
+      const id = (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(16).slice(2)).slice(0, 8);
+      const next = [...list, { id, name: name.trim() || device, device, url: "" }];
+      const saved = await fetch("/api/settings", {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readers: next }),
+      }).then((r) => r.json());
+      setSavedReaders(normalizeReaders(saved?.readers ?? next));
+      toast(`Saved "${name.trim() || device}" to readers`, { icon: "💾", duration: 2500, style: { background: "#4a7c59", color: "#fff", border: "none", borderRadius: "0.75rem" } });
+    } catch { warn("Couldn't save the reader — try again."); }
+  }
+
   async function handleEndSession() {
     const ending = session;
     if (ending) {
@@ -794,6 +814,18 @@ function RFIDPageInner() {
                   </button>
                 </>
               )}
+              {/* One-click: name the current (live/picked) device and save it to the registry. */}
+              {(() => {
+                const tag = readerIdFromUrl(deviceIps[wsDeviceId]);
+                if (!tag || savedReaders.some((r) => r.device === tag)) return null;
+                return (
+                  <button onClick={() => saveLiveReader(tag)} title="Save this reader to Settings so it shows by name everywhere"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+                    💾 Save reader
+                  </button>
+                );
+              })()}
               <div className="border-l pl-3 ml-1" style={{ borderColor: "#e6e5d8" }}>
                 <button onClick={runSimulator} disabled={simulating || productMap.size === 0}
                   className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
