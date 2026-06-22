@@ -27,8 +27,8 @@ interface Customer {
 const card = { background: "#fff", border: "1px solid #e6e5d8", borderRadius: 16 };
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
   NONE: { label: "—", bg: "#f5f2ee", color: "#9f886c" },
-  PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe", color: "#3b82f6" },
-  COMPLETE: { label: "เสร็จสิ้น", bg: "#d1fae5", color: "#10b981" },
+  PREPARING: { label: "Preparing", bg: "#dbeafe", color: "#3b82f6" },
+  COMPLETE: { label: "Complete", bg: "#d1fae5", color: "#10b981" },
 };
 
 export default function CustomerDetailPage() {
@@ -42,22 +42,22 @@ export default function CustomerDetailPage() {
     fetch(`/api/customers/${id}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("not found"))))
       .then((d) => setCustomer(d))
-      .catch(() => setError("ไม่พบข้อมูลลูกค้า"))
+      .catch(() => setError("Customer not found"))
       .finally(() => setLoading(false));
   }, [id]);
 
   async function handleDelete() {
-    if (!confirm("ลบลูกค้ารายนี้?")) return;
+    if (!confirm("Delete this customer?")) return;
     const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
     if (res.ok) router.push("/admin/customers");
-    else alert("ลบไม่สำเร็จ");
+    else alert("Failed to delete");
   }
 
-  if (loading) return <p style={{ color: "#9f886c" }}>กำลังโหลด…</p>;
+  if (loading) return <p style={{ color: "#9f886c" }}>Loading…</p>;
   if (error || !customer) return (
     <div>
       <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm mb-4" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
-      <p style={{ color: "#9f4a4a" }}>{error || "ไม่พบข้อมูล"}</p>
+      <p style={{ color: "#9f4a4a" }}>{error || "Not found"}</p>
     </div>
   );
 
@@ -65,15 +65,15 @@ export default function CustomerDetailPage() {
   const uniqueProducts = new Map(allScans.map((s) => [s.product.id, s]));
   const fields: [string, string][] = [
     ["Customer ID", customer.customerCode],
-    ["คำนำหน้า", customer.title === "อื่นๆ" ? customer.titleOther || "อื่นๆ" : customer.title || "—"],
-    ["ชื่อ-นามสกุล", customer.fullName || "—"],
-    ["บริษัท", customer.company || "—"],
-    ["เบอร์โทร", customer.phone || "—"],
+    ["Occupation", customer.title === "Other" ? customer.titleOther || "Other" : customer.title || "—"],
+    ["Full Name", customer.fullName || "—"],
+    ["Company", customer.company || "—"],
+    ["Phone", customer.phone || "—"],
     ["Email", customer.email || "—"],
     ["LINE ID", customer.lineId || "—"],
-    ["รู้จักผ่าน", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
-    ["PDPA", customer.pdpaConsent ? "ยินยอม ✓" : "ไม่ยินยอม"],
-    ["สร้างเมื่อ", new Date(customer.createdAt).toLocaleString("th-TH")],
+    ["Source", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
+    ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
+    ["Created", new Date(customer.createdAt).toLocaleString("en-GB")],
   ];
 
   return (
@@ -86,15 +86,15 @@ export default function CustomerDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
-          <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>เริ่มสแกน</Link>
-          <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>ลบ</button>
+          <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Start Scan</Link>
+          <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>Delete</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Customer info */}
         <div className="lg:col-span-1 p-5" style={card}>
-          <h2 className="text-base font-semibold mb-3" style={{ color: "#4c4847" }}>ข้อมูลลูกค้า</h2>
+          <h2 className="text-base font-semibold mb-3" style={{ color: "#4c4847" }}>Customer Info</h2>
           <div className="space-y-2">
             {fields.map(([label, value]) => (
               <div key={label} className="flex justify-between gap-3 text-sm">
@@ -108,11 +108,11 @@ export default function CustomerDetailPage() {
         {/* Interest history */}
         <div className="lg:col-span-2 p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>สินค้าที่สนใจ (Scan history)</h2>
-            <span className="text-xs" style={{ color: "#9f886c" }}>{uniqueProducts.size} ชิ้น · {customer.sessions.length} session</span>
+            <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Scan history</h2>
+            <span className="text-xs" style={{ color: "#9f886c" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
           </div>
           {uniqueProducts.size === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: "#cdc3ad" }}>ยังไม่มีประวัติการสแกน</p>
+            <p className="text-sm py-6 text-center" style={{ color: "#cdc3ad" }}>No scan history yet</p>
           ) : (
             <div className="space-y-2">
               {[...uniqueProducts.values()].map((scan) => {
@@ -126,7 +126,7 @@ export default function CustomerDetailPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "#4c4847" }}>{scan.product.name}</p>
                       <p className="text-xs truncate" style={{ color: "#9f886c" }}>
-                        {[scan.product.brand, scan.product.location, new Date(scan.scannedAt).toLocaleString("th-TH")].filter(Boolean).join(" · ")}
+                        {[scan.product.brand, scan.product.location, new Date(scan.scannedAt).toLocaleString("en-GB")].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     {scan.takeawayQty > 0 && (

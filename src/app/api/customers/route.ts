@@ -36,6 +36,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent } = body;
+  // Backstop: an "Other" occupation must be specified (the client also enforces this).
+  if (title === "Other" && !String(titleOther || "").trim()) {
+    return NextResponse.json({ error: "Please specify the occupation when 'Other' is selected." }, { status: 400 });
+  }
   const count = await prisma.customer.count();
   const customerCode = `C${String(count + 1).padStart(4, "0")}`;
   const customer = await prisma.customer.create({

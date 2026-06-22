@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const TITLE_OPTIONS = [
@@ -33,15 +33,31 @@ export default function AddCustomerPage() {
   const [channelOther, setChannelOther] = useState("");
   const [pdpa, setPdpa] = useState(false);
 
+  // Refs to move the user to the first missing required field on submit.
+  const fullNameRef = useRef<HTMLInputElement>(null);
+  const occupationRef = useRef<HTMLDivElement>(null);
+  const titleOtherRef = useRef<HTMLInputElement>(null);
+  const companyRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const pdpaRef = useRef<HTMLElement>(null);
+
   const toggleChannel = (ch: string) =>
     setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch]);
 
+  const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
+
   async function handleSubmit() {
     setError("");
-    if (!fullName || !title || !company || !phone || !email) {
-      setError("กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน"); return;
-    }
-    if (!pdpa) { setError("กรุณายืนยัน PDPA consent"); return; }
+    const req = "กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน";
+    // Show the error AND focus/scroll to the first missing required field.
+    if (!fullName) { setError(req); fullNameRef.current?.focus(); return; }
+    if (!title) { setError(req); scrollTo(occupationRef.current); return; }
+    if (title === "Other" && !titleOther.trim()) { setError("กรุณาระบุอาชีพ (Other)"); titleOtherRef.current?.focus(); return; }
+    if (!company) { setError(req); companyRef.current?.focus(); return; }
+    if (!phone) { setError(req); phoneRef.current?.focus(); return; }
+    if (!email) { setError(req); emailRef.current?.focus(); return; }
+    if (!pdpa) { setError("กรุณายืนยัน PDPA consent"); scrollTo(pdpaRef.current); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/customers", {
@@ -86,11 +102,11 @@ export default function AddCustomerPage() {
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
                 Full Name / ชื่อ-นามสกุล <span style={{ color: "#dc2626" }}>*</span>
               </label>
-              <input value={fullName} onChange={(e) => setFullName(e.target.value)}
+              <input ref={fullNameRef} value={fullName} onChange={(e) => setFullName(e.target.value)}
                 placeholder="กรอกชื่อ-นามสกุล"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
-            <div>
+            <div ref={occupationRef}>
               <label className="block text-sm mb-2" style={{ color: "#4c4847" }}>
                 You are a ... / คุณคือ... <span style={{ color: "#dc2626" }}>*</span>
               </label>
@@ -112,7 +128,7 @@ export default function AddCustomerPage() {
                 ))}
               </div>
               {title === "Other" && (
-                <input value={titleOther} onChange={(e) => setTitleOther(e.target.value)}
+                <input ref={titleOtherRef} value={titleOther} onChange={(e) => setTitleOther(e.target.value)}
                   placeholder="ระบุตำแหน่ง..."
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm mt-2" style={inputStyle} />
               )}
@@ -130,7 +146,7 @@ export default function AddCustomerPage() {
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
                 Company / บริษัท <span style={{ color: "#dc2626" }}>*</span>
               </label>
-              <input value={company} onChange={(e) => setCompany(e.target.value)}
+              <input ref={companyRef} value={company} onChange={(e) => setCompany(e.target.value)}
                 placeholder="ชื่อบริษัท / หน่วยงาน"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
@@ -138,7 +154,7 @@ export default function AddCustomerPage() {
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
                 Mobile Phone <span style={{ color: "#dc2626" }}>*</span>
               </label>
-              <input value={phone} onChange={(e) => setPhone(e.target.value)}
+              <input ref={phoneRef} value={phone} onChange={(e) => setPhone(e.target.value)}
                 placeholder="0XX-XXX-XXXX"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
@@ -152,7 +168,7 @@ export default function AddCustomerPage() {
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
                 Email <span style={{ color: "#dc2626" }}>*</span>
               </label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@example.com"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
@@ -201,7 +217,7 @@ export default function AddCustomerPage() {
         <hr style={{ borderColor: "#e6e5d8" }} />
 
         {/* PDPA */}
-        <section>
+        <section ref={pdpaRef}>
           <button type="button" onClick={() => setPdpa(!pdpa)} className="flex items-start gap-3 w-full text-left">
             <div className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
               style={{ borderColor: pdpa ? "#726c5a" : "#cdc3ad", background: pdpa ? "#726c5a" : "transparent" }}>
