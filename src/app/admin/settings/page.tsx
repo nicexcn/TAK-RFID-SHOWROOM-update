@@ -110,6 +110,7 @@ export default function SettingsPage() {
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoErr, setVideoErr] = useState("");
+  const [displayRotation, setDisplayRotation] = useState(0); // /display screen rotation (deg)
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
 
   // Takeaway
@@ -131,6 +132,7 @@ export default function SettingsPage() {
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
       if (d.idleVideoUrl !== undefined) setIdleVideoUrl(d.idleVideoUrl);
+      if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
       if (Array.isArray(d.readers)) setReaders(d.readers);
       if (d.id) {
         setDashboardSettings({
@@ -723,8 +725,17 @@ export default function SettingsPage() {
           {activeTab === "media" && (
             <div>
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Display Settings</h2>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>ตั้งค่าการแสดงผลบน TV display</p>
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <div>
+                    <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Display Settings</h2>
+                    <p className="text-xs" style={{ color: "#9f886c" }}>ตั้งค่าการแสดงผลบน TV display</p>
+                  </div>
+                  <a href="/display" target="_blank" rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
+                    style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+                    Open /display ↗
+                  </a>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                   <div>
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Slide Duration (sec)</label>
@@ -804,8 +815,27 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {/* Screen rotation — for portrait-mounted TVs etc. */}
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Screen rotation</label>
+                  <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[0, 90, 180, 270].map((deg) => (
+                      <button key={deg} onClick={() => setDisplayRotation(deg)}
+                        className="px-4 py-2 rounded-xl text-sm font-medium"
+                        style={{
+                          background: displayRotation === deg ? "#726c5a" : "#f5f2ee",
+                          color: displayRotation === deg ? "#fff" : "#4c4847",
+                          border: "1px solid " + (displayRotation === deg ? "#726c5a" : "#e6e5d8"),
+                        }}>
+                        {deg}°{deg === 0 ? " (normal)" : deg === 90 ? " ↻" : deg === 270 ? " ↺" : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim(), displayRotation }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

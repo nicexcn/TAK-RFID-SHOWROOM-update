@@ -160,6 +160,9 @@ model AppSettings {
   // Optional video that loops full-screen on /display when idle (no product showing).
   // Empty = the logo idle screen. Uploaded to storage; this holds its public URL.
   idleVideoUrl    String   @default("")
+  // /display screen rotation in degrees (0/90/180/270) for portrait-mounted TVs etc.
+  // Global default; a per-screen ?rotate= URL param overrides it.
+  displayRotation Int      @default(0)
   sessionTimeout  Int      @default(30)  // minutes idle before a session is abandoned
   scheduleEnabled Boolean  @default(false)
   scheduleOn      String   @default("08:00")

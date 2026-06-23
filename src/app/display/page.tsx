@@ -40,6 +40,7 @@ export default function DisplayPage() {
   const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
+  const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else Settings)
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
   const unknownRef = useRef<Map<string, number>>(new Map());
@@ -75,6 +76,12 @@ export default function DisplayPage() {
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
       setSavedReaders(normalizeReaders(c?.readers));
       setIdleVideoUrl(c?.idleVideoUrl || "");
+      // ?rotate= per-screen override wins over the Settings default; both must be 0/90/180/270.
+      const raw = new URLSearchParams(window.location.search).get("rotate");
+      const q = raw === null ? NaN : Number(raw); // null (absent) must NOT coerce to 0
+      const fromQuery = [0, 90, 180, 270].includes(q) ? q : null;
+      const fromCfg = [0, 90, 180, 270].includes(Number(c?.displayRotation)) ? Number(c.displayRotation) : 0;
+      setRotation(fromQuery ?? fromCfg);
     }).catch(() => {});
     const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     setReaderIp(ip); setIpDraft(ip);
@@ -264,8 +271,18 @@ export default function DisplayPage() {
     window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
 
+  // Rotate the whole screen for portrait-mounted TVs etc. For 90/270 the box is sized to the
+  // swapped viewport (100vh × 100vw) and centered so it fills the physical screen after rotating.
+  const portrait = rotation === 90 || rotation === 270;
   return (
-    <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#1a1a1a" }}>
+    <div className="relative overflow-hidden" style={{
+      position: "fixed", top: "50%", left: "50%",
+      width: portrait ? "100vh" : "100vw",
+      height: portrait ? "100vw" : "100vh",
+      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      transformOrigin: "center center",
+      background: "#1a1a1a",
+    }}>
       {(slotA || slotB) ? (
         // Wrapper is its own stacking context at z-index 0 so the per-layer
         // z-indexes below stay LOCAL to it — otherwise they'd paint over the
