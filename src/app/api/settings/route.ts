@@ -19,7 +19,7 @@ export async function GET() {
 const ALLOWED = [
   "defaultFilter", "yearA", "yearB", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers",
+  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "borrowDays",
 ];
 
 export async function PUT(req: NextRequest) {
@@ -30,6 +30,11 @@ export async function PUT(req: NextRequest) {
     for (const k of ALLOWED) if (k in body) data[k] = body[k];
     // The reader registry is free-form JSON from the client — coerce to a clean shape.
     if ("readers" in data) data.readers = normalizeReaders(data.readers);
+    // Borrow period must be a positive integer (1..365 days); non-numeric falls back to 14.
+    if ("borrowDays" in data) {
+      const n = Math.floor(Number(data.borrowDays));
+      data.borrowDays = Number.isFinite(n) ? Math.max(1, Math.min(365, n)) : 14;
+    }
     const settings = await prisma.appSettings.upsert({
       where: { id: "singleton" },
       update: data,

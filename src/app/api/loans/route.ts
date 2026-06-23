@@ -13,6 +13,10 @@ export async function GET(req: NextRequest) {
     const status = (url.searchParams.get("status") || "all").toLowerCase();
     const q = (url.searchParams.get("q") || "").trim().toLowerCase();
 
+    // Configurable default loan period (AppSettings.borrowDays); per-loan Scan.dueDate overrides it.
+    const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" }, select: { borrowDays: true } });
+    const borrowDays = settings?.borrowDays && settings.borrowDays > 0 ? settings.borrowDays : undefined; // undefined → loanStatus uses BORROW_DAYS
+
     const scans = await prisma.scan.findMany({
       where: { takeawayQty: { gt: 0 } },
       select: {
@@ -44,11 +48,11 @@ export async function GET(req: NextRequest) {
         returnedQty: s.returnedQty,
         remaining: loanRemaining(s),
         borrowedAt: s.scannedAt,
-        dueDate: effectiveDueDate(s),
+        dueDate: effectiveDueDate(s, borrowDays),
         dueOverridden: !!s.dueDate,
         returnedAt: s.returnedAt,
-        status: loanStatus(s, now),
-        daysOverdue: daysOverdue(s, now),
+        status: loanStatus(s, now, borrowDays),
+        daysOverdue: daysOverdue(s, now, borrowDays),
       };
     });
 

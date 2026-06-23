@@ -151,6 +151,9 @@ model AppSettings {
   graphColor      Int      @default(0)
   takeawayLimit   Int      @default(3)
   takeawayEnabled Boolean  @default(true)
+  // Default loan period (days) for borrow/return — the effective due date is
+  // (Scan.dueDate ?? scannedAt + borrowDays). Per-loan dueDate overrides it. See loanStatus.ts.
+  borrowDays      Int      @default(14)
   visibleWidgets  Json     @default("{\"walkins\":true,\"customerTypes\":true,\"newVsTotal\":true,\"comparisonGraph\":true,\"categoryGraph\":true}")
   // TV display config (was UI-only state with a fake "Save" — now persisted).
   slideDuration   Int      @default(5)   // seconds each product image shows

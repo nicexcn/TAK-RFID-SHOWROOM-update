@@ -110,6 +110,7 @@ export default function SettingsPage() {
   // Takeaway
   const [takeawayLimit, setTakeawayLimit] = useState(3);
   const [takeawayEnabled, setTakeawayEnabled] = useState(true);
+  const [borrowDays, setBorrowDays] = useState(14); // default borrow/return period (days)
   const [takeawaySuccess, setTakeawaySuccess] = useState("");
 
   // ── Effects ────────────────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export default function SettingsPage() {
     fetch("/api/settings").then((r) => r.json()).then((d) => {
       if (d.takeawayLimit !== undefined) setTakeawayLimit(d.takeawayLimit);
       if (d.takeawayEnabled !== undefined) setTakeawayEnabled(d.takeawayEnabled);
+      if (d.borrowDays !== undefined) setBorrowDays(d.borrowDays);
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
@@ -877,12 +879,47 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Borrow / Return period — drives the default due date + "overdue" flag */}
+                <div className="mt-6 pt-5" style={{ borderTop: "1px solid #e6e5d8" }}>
+                  <p className="text-sm font-medium mb-1" style={{ color: "#4c4847" }}>ระยะเวลายืม / Borrow period</p>
+                  <p className="text-xs mb-4" style={{ color: "#9f886c" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
+                  <div className="flex items-center gap-6 mb-4">
+                    <button onClick={() => setBorrowDays((v) => Math.max(1, v - 1))}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
+                      style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>−</button>
+                    <div className="text-center">
+                      <p className="text-5xl font-bold" style={{ color: "#4c4847" }}>{borrowDays}</p>
+                      <p className="text-xs mt-1" style={{ color: "#9f886c" }}>days</p>
+                    </div>
+                    <button onClick={() => setBorrowDays((v) => Math.min(365, v + 1))}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
+                      style={{ background: "#726c5a" }}>+</button>
+                  </div>
+                  <div>
+                    <p className="text-xs mb-2" style={{ color: "#9f886c" }}>Preset</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {[7, 14, 30, 60, 90].map((preset) => (
+                        <button key={preset} onClick={() => setBorrowDays(preset)}
+                          className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                          style={{
+                            background: borrowDays === preset ? "#726c5a" : "#f5f2ee",
+                            color: borrowDays === preset ? "#fff" : "#4c4847",
+                            border: "1px solid " + (borrowDays === preset ? "#726c5a" : "#e6e5d8"),
+                          }}>
+                          {preset}d
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "#4a9f4a" }}>{takeawaySuccess}</p>}
                 <button
                   onClick={async () => {
                     await fetch("/api/settings", {
                       method: "PUT", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ takeawayLimit, takeawayEnabled }),
+                      body: JSON.stringify({ takeawayLimit, takeawayEnabled, borrowDays }),
                     });
                     setTakeawaySuccess("✓ Takeaway settings saved");
                     setTimeout(() => setTakeawaySuccess(""), 2000);

@@ -15,10 +15,11 @@ export interface LoanScanLike {
   dueDate: Date | string | null;
 }
 
-/** Effective due date: an explicit override, else scannedAt + BORROW_DAYS. */
-export function effectiveDueDate(scan: LoanScanLike): Date {
+/** Effective due date: an explicit override, else scannedAt + borrowDays (default BORROW_DAYS,
+ *  configurable via AppSettings.borrowDays — passed in by the loans API). */
+export function effectiveDueDate(scan: LoanScanLike, borrowDays: number = BORROW_DAYS): Date {
   if (scan.dueDate) return new Date(scan.dueDate);
-  return new Date(new Date(scan.scannedAt).getTime() + BORROW_DAYS * DAY_MS);
+  return new Date(new Date(scan.scannedAt).getTime() + borrowDays * DAY_MS);
 }
 
 /** How many items are still out (not yet returned). */
@@ -26,14 +27,14 @@ export function loanRemaining(scan: LoanScanLike): number {
   return Math.max(0, scan.takeawayQty - scan.returnedQty);
 }
 
-export function loanStatus(scan: LoanScanLike, now: Date = new Date()): LoanStatus {
+export function loanStatus(scan: LoanScanLike, now: Date = new Date(), borrowDays: number = BORROW_DAYS): LoanStatus {
   if (loanRemaining(scan) <= 0) return "RETURNED";
-  return effectiveDueDate(scan).getTime() < now.getTime() ? "OVERDUE" : "OUT";
+  return effectiveDueDate(scan, borrowDays).getTime() < now.getTime() ? "OVERDUE" : "OUT";
 }
 
 /** Whole days past the effective due date (0 if not overdue / fully returned). */
-export function daysOverdue(scan: LoanScanLike, now: Date = new Date()): number {
+export function daysOverdue(scan: LoanScanLike, now: Date = new Date(), borrowDays: number = BORROW_DAYS): number {
   if (loanRemaining(scan) <= 0) return 0;
-  const diff = now.getTime() - effectiveDueDate(scan).getTime();
+  const diff = now.getTime() - effectiveDueDate(scan, borrowDays).getTime();
   return diff <= 0 ? 0 : Math.floor(diff / DAY_MS);
 }
