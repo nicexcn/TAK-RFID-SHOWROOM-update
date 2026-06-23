@@ -81,7 +81,8 @@ export default function NewProductPage() {
       if (res.ok) {
         router.push("/admin/products");
       } else {
-        setError("Failed to create product");
+        const body = await res.json().catch(() => ({} as { error?: string }));
+        setError(body.error || "Failed to create product");
       }
     } catch {
       setError("Something went wrong");

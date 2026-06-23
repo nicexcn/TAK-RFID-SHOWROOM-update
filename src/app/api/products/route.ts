@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { syncCover } from "@/lib/productCover";
 
@@ -40,9 +41,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  let rfidTag = ""; // hoisted so the catch can name the conflicting tag without re-reading the body
   try {
     const data = await req.json();
-    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive } = data;
+    rfidTag = data.rfidTag;
+    const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive } = data;
     // imageUrl is a derived cover cache — never written directly. Initial images become
     // gallery images (in order); syncCover() sets the cover from image #0. Accept a list
     // (imageUrls) for multi-image create, or a single imageUrl for back-compat.
@@ -58,8 +61,22 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(product);
   } catch (error) {
+    // Duplicate RFID tag (the only unique field) — a normal data-entry mistake, so give a
+    // clear message instead of a generic 500. The conflicting product may be soft-deleted
+    // (isActive:false) and hidden from the catalog, which makes the tag look free but isn't.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const tag = String(rfidTag || "").trim();
+      const existing = tag
+        ? await prisma.product.findUnique({ where: { rfidTag: tag }, select: { name: true, isActive: true } }).catch(() => null)
+        : null;
+      const who = existing?.name ? ` by “${existing.name}”` : "";
+      const hint = existing && existing.isActive === false ? " — it belongs to a deleted/inactive product" : "";
+      return NextResponse.json(
+        { error: `RFID tag “${tag}” is already in use${who}${hint}.` },
+        { status: 409 },
+      );
+    }
     console.error("CREATE PRODUCT ERROR:", error);
-    console.error(error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
