@@ -286,7 +286,8 @@ export default function DisplayPage() {
         </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
-          <Image src="/w-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
+          {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
+          <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
           <p style={{ color: "#9f886c", fontSize: 14 }}>วางสินค้าบนโต๊ะ หรือส่งรายการขึ้นจอ…</p>
         </div>
       )}
