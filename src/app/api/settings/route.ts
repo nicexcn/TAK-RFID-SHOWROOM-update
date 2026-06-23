@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 const ALLOWED = [
-  "defaultFilter", "yearA", "yearB", "graphColor", "takeawayLimit", "takeawayEnabled",
+  "defaultFilter", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
   "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit",
 ];

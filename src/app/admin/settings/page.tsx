@@ -63,7 +63,6 @@ export default function SettingsPage() {
   // Dashboard
   const [dashboardSettings, setDashboardSettings] = useState({
     defaultFilter: "daily" as "daily" | "weekly" | "monthly" | "annually",
-    comparisonYears: { yearA: 2025, yearB: 2026 },
     graphColor: 0,
     visibleWidgets: {
       walkins: true, customerTypes: true, newVsTotal: true,
@@ -140,7 +139,6 @@ export default function SettingsPage() {
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
-          comparisonYears: { yearA: d.yearA, yearB: d.yearB },
           graphColor: d.graphColor,
           visibleWidgets: d.visibleWidgets,
         });
@@ -387,26 +385,6 @@ export default function SettingsPage() {
               </div>
 
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Comparison Years</h2>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>กำหนดปีที่ใช้เปรียบเทียบใน Comparison Graph</p>
-                <div className="flex items-center gap-4 max-w-xs">
-                  <div className="flex-1">
-                    <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>Year A</label>
-                    <input type="number" value={dashboardSettings.comparisonYears.yearA}
-                      onChange={(e) => setDashboardSettings((p) => ({ ...p, comparisonYears: { ...p.comparisonYears, yearA: +e.target.value } }))}
-                      className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  </div>
-                  <div style={{ color: "#cdc3ad", marginTop: 16 }}>vs</div>
-                  <div className="flex-1">
-                    <label className="block text-xs mb-1" style={{ color: "#9f886c" }}>Year B</label>
-                    <input type="number" value={dashboardSettings.comparisonYears.yearB}
-                      onChange={(e) => setDashboardSettings((p) => ({ ...p, comparisonYears: { ...p.comparisonYears, yearB: +e.target.value } }))}
-                      className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Graph Color Theme</h2>
                 <p className="text-xs mb-4" style={{ color: "#9f886c" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
                 <div className="flex gap-3 flex-wrap mb-4">
@@ -446,8 +424,6 @@ export default function SettingsPage() {
                     method: "PUT", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       defaultFilter: dashboardSettings.defaultFilter,
-                      yearA: dashboardSettings.comparisonYears.yearA,
-                      yearB: dashboardSettings.comparisonYears.yearB,
                       graphColor: dashboardSettings.graphColor,
                       visibleWidgets: dashboardSettings.visibleWidgets,
                     }),

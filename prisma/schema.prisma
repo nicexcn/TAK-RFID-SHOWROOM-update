@@ -146,8 +146,6 @@ model ProductImage {
 model AppSettings {
   id              String   @id @default("singleton")
   defaultFilter   String   @default("daily")
-  yearA           Int      @default(2025)
-  yearB           Int      @default(2026)
   graphColor      Int      @default(0)
   takeawayLimit   Int      @default(3)
   takeawayEnabled Boolean  @default(true)
