@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -84,7 +85,7 @@ export default function AddCustomerPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Register Customer</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Customer Management / Add New</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add New" }]} />
         </div>
         <button onClick={() => router.back()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"

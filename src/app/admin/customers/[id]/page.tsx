@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -83,7 +84,7 @@ export default function CustomerDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>{customer.fullName || customer.customerCode}</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Customer Management / {customer.customerCode}</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: customer.customerCode }]} />
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>

@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -115,7 +116,7 @@ export default function EditProductPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Edit Product</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Product Management / Edit Product</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management", href: "/admin/products" }, { label: "Edit Product" }]} />
         </div>
         <button onClick={() => router.push("/admin/products")}
           className="px-5 py-2 rounded-xl text-sm"

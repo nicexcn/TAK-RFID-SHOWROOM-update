@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -511,7 +512,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Dashboard</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Dashboard</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]} />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Export */}

@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -623,7 +624,7 @@ function RFIDPageInner() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Surface Scan</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Surface Scan</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Surface Scan" }]} />
         </div>
         {session && (
           <div className="flex items-center gap-2">

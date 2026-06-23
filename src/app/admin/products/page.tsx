@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -188,7 +189,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Product Management</h1>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Product Management</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management" }]} />
         </div>
         <div className="flex items-center gap-2">
           {/* Import Button */}

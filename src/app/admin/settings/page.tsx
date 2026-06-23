@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
@@ -289,7 +290,7 @@ export default function SettingsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Settings</h1>
-        <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Settings</p>
+        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Settings" }]} />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">

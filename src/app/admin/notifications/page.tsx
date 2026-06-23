@@ -1,4 +1,5 @@
 "use client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -104,7 +105,7 @@ export default function NotificationsPage() {
               </span>
             )}
           </div>
-          <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Notifications</p>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications" }]} />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link href="/admin/loans"
