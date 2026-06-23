@@ -65,6 +65,8 @@ vercel deploy            # preview build → its own URL (behind Deployment Prot
 vercel deploy --prod     # build + promote to production (tak-rfid-showroom.vercel.app)
 ```
 
+> **One-click** (asks to confirm first): `npm run deploy` deploys the web app to prod; `npm run deploy -- --relay` also runs `fly deploy` for the relay.
+
 - The build runs `prisma generate && next build` automatically; `vercel.json` pins region `sin1`.
 - Preview URLs are auth-gated by **Vercel Deployment Protection**; the canonical domain is public.
 - If GitHub integration is enabled on the project, pushing the production branch also triggers a deploy — pick one method to avoid surprises.

@@ -34,6 +34,8 @@ npm run dev                         # http://localhost:3000
 
 Open <http://localhost:3000>, log in with **admin / admin1234**, then change the password in **Settings → Account**.
 
+> **One-click** (Unix/macOS): `npm run dev:all` does any missing setup (deps, `db:push`, admin user) **and** runs the web app + relay together. Ctrl+C stops both.
+
 ## Environment (`.env`)
 
 Copy `.env.example` to `.env` and fill it in. Variables:
