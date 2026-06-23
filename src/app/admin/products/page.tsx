@@ -13,6 +13,7 @@ interface Product {
   productCode: string | null;
   name: string;
   isActive: boolean;
+  _count?: { scans: number };
 }
 
 interface ImportResult {
@@ -78,13 +79,14 @@ export default function ProductsPage() {
   }, []);
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this product?")) return;
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-    const body = await res.json().catch(() => ({} as { mode?: string }));
-    if (res.ok && body.mode === "archived") {
-      // Couldn't be fully removed because it has scan history — be explicit, and note the tag is reusable.
-      alert("This product has scan history, so it was archived (hidden from the catalog) instead of fully deleted. Its RFID tag is now free to reuse.");
-    }
+    const prod = products.find((p) => p.id === id);
+    const hasHistory = (prod?._count?.scans ?? 0) > 0;
+    // Tailor the confirm to what will actually happen (archive vs hard delete).
+    const msg = hasHistory
+      ? "This product has scan history, so it will be ARCHIVED (hidden but kept — its RFID tag is freed for reuse). You can permanently delete it later from the Archived tab. Continue?"
+      : "Delete this product? This permanently removes it.";
+    if (!confirm(msg)) return;
+    await fetch(`/api/products/${id}`, { method: "DELETE" });
     fetchProducts();
   }
 
@@ -176,6 +178,9 @@ export default function ProductsPage() {
   }
 
   const importHeaders = importPreview[0] ? Object.keys(importPreview[0]) : [];
+  const menuProduct = openMenu ? products.find((p) => p.id === openMenu) || null : null;
+  // A scanned product can't be hard-deleted (history is kept) → the action archives instead.
+  const menuArchives = (menuProduct?._count?.scans ?? 0) > 0;
 
   return (
     <div>
@@ -312,11 +317,11 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Dropdown Menu — Edit/Delete for active products; Restore/Delete-forever for archived */}
-      {openMenu && (
+      {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}
+      {openMenu && menuProduct && (
         <div ref={menuRef} className="fixed z-50 w-40 rounded-xl overflow-hidden"
           style={{ top: menuPosition.top, left: menuPosition.left, background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-          {products.find((p) => p.id === openMenu)?.isActive === false ? (
+          {menuProduct.isActive === false ? (
             <>
               <button onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
@@ -355,19 +360,32 @@ export default function ProductsPage() {
                 </svg>
                 Edit
               </Link>
-              <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                style={{ color: "#9f4a4a" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-                Delete
-              </button>
+              {menuArchives ? (
+                <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
+                  className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                  style={{ color: "#9f886c" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                  </svg>
+                  Archive
+                </button>
+              ) : (
+                <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
+                  className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                  style={{ color: "#9f4a4a" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                  Delete
+                </button>
+              )}
             </>
           )}
         </div>

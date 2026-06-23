@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: "desc" },
+        // Catalog view needs each product's scan count (to label Delete vs Archive); the
+        // scan-lookup map (all=true) doesn't, so keep that path lean.
+        ...(all ? {} : { include: { _count: { select: { scans: true } } } }),
       }),
       prisma.product.count({ where }),
     ]);
