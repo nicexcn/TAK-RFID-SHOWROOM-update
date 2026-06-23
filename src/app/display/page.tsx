@@ -347,7 +347,7 @@ export default function DisplayPage() {
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "#10b981" : "#9f4a4a" }} />
         <span className="text-xs" style={{ color: currentImage ? "#fff" : "#9f886c" }}>
-          {mode === "table" ? "โต๊ะ (สด)" : mode === "session" ? "ส่งขึ้นจอ" : "พัก"} · {simOn ? "จำลอง" : ws.isConnected ? readerIp : readerIp ? "กำลังเชื่อม…" : "ไม่มี reader"}
+          {mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
         </span>
         <button onClick={() => setShowConfig((s) => !s)} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "#fff" }}>⚙</button>
       </div>
