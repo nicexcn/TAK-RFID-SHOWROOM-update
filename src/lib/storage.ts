@@ -19,5 +19,7 @@ export function extFor(mime: string): string {
 export const ALLOWED_IMAGE_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 export const ALLOWED_VIDEO_MIME = ["video/mp4", "video/webm"];
 export const ALLOWED_UPLOAD_MIME = [...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME];
-export const MAX_UPLOAD_MB = 100;
+// Must be ≤ the Supabase PROJECT global max upload size, or updateBucket() fails entirely
+// (and the bucket keeps its old mime/size limits). This project's global cap is 50 MB.
+export const MAX_UPLOAD_MB = 50;
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
