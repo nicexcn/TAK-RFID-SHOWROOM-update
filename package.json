@@ -10,7 +10,12 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:api": "vitest run --config vitest.api.config.ts"
+    "test:api": "vitest run --config vitest.api.config.ts",
+    "relay": "node relay/server.js",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "setup:admin": "node scripts/create-user.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
