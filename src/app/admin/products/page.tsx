@@ -78,7 +78,12 @@ export default function ProductsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this product?")) return;
-    await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const body = await res.json().catch(() => ({} as { mode?: string }));
+    if (res.ok && body.mode === "archived") {
+      // Couldn't be fully removed because it has scan history — be explicit, and note the tag is reusable.
+      alert("This product has scan history, so it was archived (hidden from the catalog) instead of fully deleted. Its RFID tag is now free to reuse.");
+    }
     fetchProducts();
   }
 

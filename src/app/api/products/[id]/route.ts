@@ -36,14 +36,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    // Soft delete: a product that has been scanned cannot be hard-deleted
-    // (Scan.product is a required relation), and we must preserve scan history.
-    // Marking isActive=false hides it from the catalog and the scan lookup map
-    // while keeping past scans intact.
-    await prisma.product.update({ where: { id }, data: { isActive: false } });
-    return NextResponse.json({ success: true });
+    // A product that has been scanned can't be hard-deleted — Scan.product is a required
+    // relation (FK restrict) and those scans are customer-interest history we must keep.
+    // So: no scans → truly delete (images + notifications cascade), which also frees the
+    // RFID tag. Has scans → archive (isActive=false) AND free the tag (tombstone it) so the
+    // physical chip can be reused; scan history references productId, so it stays intact.
+    const scanCount = await prisma.scan.count({ where: { productId: id } });
+    if (scanCount === 0) {
+      await prisma.product.delete({ where: { id } });
+      return NextResponse.json({ success: true, mode: "deleted" });
+    }
+    const prod = await prisma.product.findUnique({ where: { id }, select: { rfidTag: true } });
+    await prisma.product.update({
+      where: { id },
+      data: { isActive: false, rfidTag: `${prod?.rfidTag ?? "tag"}·deleted·${id}` },
+    });
+    return NextResponse.json({ success: true, mode: "archived", reason: "has scan history" });
   } catch (error) {
-    console.error(error);
+    console.error("DELETE PRODUCT ERROR:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

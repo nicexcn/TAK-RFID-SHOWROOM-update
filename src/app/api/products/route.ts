@@ -44,8 +44,22 @@ export async function POST(req: NextRequest) {
   let rfidTag = ""; // hoisted so the catch can name the conflicting tag without re-reading the body
   try {
     const data = await req.json();
-    rfidTag = data.rfidTag;
+    rfidTag = String(data.rfidTag || "").trim();
     const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive } = data;
+
+    // RFID tag reuse: a tag can be held by a SOFT-DELETED product (hidden from the catalog
+    // but still occupying the unique tag). Free it so the physical chip can be re-stuck on a
+    // new product. A tag held by an ACTIVE product is a real conflict → clear 409.
+    if (rfidTag) {
+      const holder = await prisma.product.findUnique({ where: { rfidTag }, select: { id: true, name: true, isActive: true } });
+      if (holder?.isActive) {
+        return NextResponse.json({ error: `RFID tag “${rfidTag}” is already in use by “${holder.name}”.` }, { status: 409 });
+      }
+      if (holder) {
+        await prisma.product.update({ where: { id: holder.id }, data: { rfidTag: `${rfidTag}·deleted·${holder.id}` } });
+      }
+    }
+
     // imageUrl is a derived cover cache — never written directly. Initial images become
     // gallery images (in order); syncCover() sets the cover from image #0. Accept a list
     // (imageUrls) for multi-image create, or a single imageUrl for back-compat.
@@ -61,20 +75,9 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(product);
   } catch (error) {
-    // Duplicate RFID tag (the only unique field) — a normal data-entry mistake, so give a
-    // clear message instead of a generic 500. The conflicting product may be soft-deleted
-    // (isActive:false) and hidden from the catalog, which makes the tag look free but isn't.
+    // Backstop for a race between the holder check above and the insert.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const tag = String(rfidTag || "").trim();
-      const existing = tag
-        ? await prisma.product.findUnique({ where: { rfidTag: tag }, select: { name: true, isActive: true } }).catch(() => null)
-        : null;
-      const who = existing?.name ? ` by “${existing.name}”` : "";
-      const hint = existing && existing.isActive === false ? " — it belongs to a deleted/inactive product" : "";
-      return NextResponse.json(
-        { error: `RFID tag “${tag}” is already in use${who}${hint}.` },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: `RFID tag “${rfidTag}” is already in use.` }, { status: 409 });
     }
     console.error("CREATE PRODUCT ERROR:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
