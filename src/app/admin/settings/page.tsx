@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
 import { uploadFile } from "@/lib/uploadImage";
+import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
 
 const newReaderId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
@@ -261,7 +262,11 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setVideoErr(""); setVideoUploading(true);
+    setVideoErr("");
+    // Fast client-side guard so violations don't cost an upload round-trip (server enforces too).
+    if (!ALLOWED_VIDEO_MIME.includes(file.type)) { setVideoErr("Use an MP4 or WEBM video."); return; }
+    if (file.size > MAX_UPLOAD_BYTES) { setVideoErr(`File too large — max ${MAX_UPLOAD_MB} MB.`); return; }
+    setVideoUploading(true);
     try {
       setIdleVideoUrl(await uploadFile(file));
     } catch (err) {
@@ -791,8 +796,11 @@ export default function SettingsPage() {
                 {/* Idle video — loops full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
-                  <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>
-                    Loops muted, full-screen on the TV when idle (no product). Paste a URL or upload MP4/WEBM. Empty = the logo screen.
+                  <p className="text-xs mb-1" style={{ color: "#cdc3ad" }}>
+                    Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
+                  </p>
+                  <p className="text-xs mb-2" style={{ color: "#9f886c" }}>
+                    Upload limits: <b>MP4 or WEBM</b> only · max <b>{MAX_UPLOAD_MB} MB</b> · plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps the file small.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <input type="text" value={idleVideoUrl} onChange={(e) => setIdleVideoUrl(e.target.value)}

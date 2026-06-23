@@ -13,3 +13,11 @@ const ALLOWED: Record<string, string> = {
 export function extFor(mime: string): string {
   return ALLOWED[mime] || "bin";
 }
+
+// Upload constraints — shared by the signed-upload route (enforcement) AND the UI
+// (so the help text can never drift from what the server actually allows).
+export const ALLOWED_IMAGE_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+export const ALLOWED_VIDEO_MIME = ["video/mp4", "video/webm"];
+export const ALLOWED_UPLOAD_MIME = [...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME];
+export const MAX_UPLOAD_MB = 100;
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
