@@ -40,6 +40,7 @@ export default function DisplayPage() {
   const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
+  const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else Settings)
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
@@ -76,6 +77,7 @@ export default function DisplayPage() {
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
       setSavedReaders(normalizeReaders(c?.readers));
       setIdleVideoUrl(c?.idleVideoUrl || "");
+      setIdleVideoFit(c?.idleVideoFit === "cover" ? "cover" : "contain");
       // ?rotate= per-screen override wins over the Settings default; both must be 0/90/180/270.
       const raw = new URLSearchParams(window.location.search).get("rotate");
       const q = raw === null ? NaN : Number(raw); // null (absent) must NOT coerce to 0
@@ -304,10 +306,11 @@ export default function DisplayPage() {
           )}
         </div>
       ) : idleVideoUrl ? (
-        // Idle with a configured video → loop it (muted; autoplay needs muted). object-contain
-        // shows the WHOLE video (no zoom/crop); mismatched aspect ratios letterbox on the dark bg.
-        <video key={idleVideoUrl} src={idleVideoUrl} autoPlay loop muted playsInline
-          className="w-full h-full object-contain" style={{ background: "#1a1a1a" }} />
+        // Idle with a configured video → loop it (muted; autoplay needs muted). Fit (object-contain)
+        // shows the WHOLE video (letterboxed); Fill (object-cover) crops to fill the screen.
+        <video key={idleVideoUrl + idleVideoFit} src={idleVideoUrl} autoPlay loop muted playsInline
+          className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
+          style={{ background: "#1a1a1a" }} />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}

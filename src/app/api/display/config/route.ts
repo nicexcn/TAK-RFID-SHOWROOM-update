@@ -11,7 +11,7 @@ export async function GET() {
       where: { id: "singleton" },
       select: {
         slideDuration: true, scheduleEnabled: true,
-        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, readers: true, idleVideoUrl: true, displayRotation: true,
+        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, readers: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true,
       },
     });
     return NextResponse.json({
@@ -24,8 +24,9 @@ export async function GET() {
       readers: normalizeReaders(s?.readers),
       idleVideoUrl: s?.idleVideoUrl ?? "",
       displayRotation: s?.displayRotation ?? 0,
+      idleVideoFit: s?.idleVideoFit === "cover" ? "cover" : "contain",
     });
   } catch {
-    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "", readers: [], idleVideoUrl: "", displayRotation: 0 });
+    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "", readers: [], idleVideoUrl: "", displayRotation: 0, idleVideoFit: "contain" });
   }
 }

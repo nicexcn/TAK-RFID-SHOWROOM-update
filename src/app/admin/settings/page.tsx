@@ -109,6 +109,7 @@ export default function SettingsPage() {
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
   const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
+  const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoErr, setVideoErr] = useState("");
   const [displayRotation, setDisplayRotation] = useState(0); // /display screen rotation (deg)
@@ -133,6 +134,7 @@ export default function SettingsPage() {
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
       if (d.idleVideoUrl !== undefined) setIdleVideoUrl(d.idleVideoUrl);
+      if (d.idleVideoFit !== undefined) setIdleVideoFit(d.idleVideoFit);
       if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
       if (Array.isArray(d.readers)) setReaders(d.readers);
       if (d.id) {
@@ -818,8 +820,24 @@ export default function SettingsPage() {
                   </div>
                   {videoErr && <p className="text-xs mt-1" style={{ color: "#9f4a4a" }}>{videoErr}</p>}
                   {idleVideoUrl && (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-xs" style={{ color: "#9f886c" }}>On screen:</span>
+                      {([["contain", "Fit (whole video)"], ["cover", "Fill (crop to screen)"]] as const).map(([v, label]) => (
+                        <button key={v} onClick={() => setIdleVideoFit(v)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                          style={{
+                            background: idleVideoFit === v ? "#726c5a" : "#f5f2ee",
+                            color: idleVideoFit === v ? "#fff" : "#4c4847",
+                            border: "1px solid " + (idleVideoFit === v ? "#726c5a" : "#e6e5d8"),
+                          }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {idleVideoUrl && (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000" }} muted loop playsInline controls />
+                    <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} muted loop playsInline controls />
                   )}
                 </div>
 
@@ -843,7 +861,7 @@ export default function SettingsPage() {
                 </div>
 
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim(), displayRotation }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

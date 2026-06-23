@@ -19,7 +19,7 @@ export async function GET() {
 const ALLOWED = [
   "defaultFilter", "yearA", "yearB", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "borrowDays", "idleVideoUrl", "displayRotation",
+  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit",
 ];
 
 export async function PUT(req: NextRequest) {
@@ -38,6 +38,10 @@ export async function PUT(req: NextRequest) {
     // Display rotation must be one of 0/90/180/270.
     if ("displayRotation" in data) {
       data.displayRotation = [0, 90, 180, 270].includes(Number(data.displayRotation)) ? Number(data.displayRotation) : 0;
+    }
+    // Idle video fit must be "contain" (Fit) or "cover" (Fill).
+    if ("idleVideoFit" in data) {
+      data.idleVideoFit = data.idleVideoFit === "cover" ? "cover" : "contain";
     }
     const settings = await prisma.appSettings.upsert({
       where: { id: "singleton" },

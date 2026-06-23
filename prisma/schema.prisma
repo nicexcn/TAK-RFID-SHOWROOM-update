@@ -160,6 +160,8 @@ model AppSettings {
   // Optional video that loops full-screen on /display when idle (no product showing).
   // Empty = the logo idle screen. Uploaded to storage; this holds its public URL.
   idleVideoUrl    String   @default("")
+  // How the idle video fills the screen: "contain" (Fit — whole video) or "cover" (Fill — crop).
+  idleVideoFit    String   @default("contain")
   // /display screen rotation in degrees (0/90/180/270) for portrait-mounted TVs etc.
   // Global default; a per-screen ?rotate= URL param overrides it.
   displayRotation Int      @default(0)
