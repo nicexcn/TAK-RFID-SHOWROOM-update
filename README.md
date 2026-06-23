@@ -16,7 +16,8 @@ npm run dev               # http://localhost:3000
 
 For live RFID scanning, in a second terminal: `cd relay && npm install && cd .. && npm run relay`.
 
-📖 **Full setup, environment, relay, display, tests, and Vercel deploy → [`docs/LOCAL.md`](docs/LOCAL.md)**
+📖 Local setup, environment, relay, display, tests → **[`docs/LOCAL.md`](docs/LOCAL.md)**
+🚀 Production deployment (Vercel + Fly.io + Supabase) → **[`docs/DEPLOY.md`](docs/DEPLOY.md)**
 
 ## Handy scripts
 

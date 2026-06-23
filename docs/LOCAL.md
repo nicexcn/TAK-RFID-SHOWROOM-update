@@ -115,6 +115,8 @@ npm run test:api    # API tests
 
 ## Deploy to Vercel
 
+> Full production guide (Vercel env, the relay on Fly.io, readers, post-deploy checklist) → **[`DEPLOY.md`](DEPLOY.md)**.
+
 The repo is linked to a Vercel project; the CLI deploys local files directly (no git push needed):
 
 ```bash
