@@ -39,6 +39,7 @@ export default function DisplayPage() {
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base (from Settings)
   const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
+  const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
   const unknownRef = useRef<Map<string, number>>(new Map());
@@ -73,6 +74,7 @@ export default function DisplayPage() {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
       setSavedReaders(normalizeReaders(c?.readers));
+      setIdleVideoUrl(c?.idleVideoUrl || "");
     }).catch(() => {});
     const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     setReaderIp(ip); setIpDraft(ip);
@@ -284,6 +286,10 @@ export default function DisplayPage() {
                 : { zIndex: 1, opacity: 1 }} />
           )}
         </div>
+      ) : idleVideoUrl ? (
+        // Idle with a configured video → loop it full-screen (muted; autoplay needs muted).
+        <video key={idleVideoUrl} src={idleVideoUrl} autoPlay loop muted playsInline
+          className="w-full h-full object-cover" style={{ background: "#1a1a1a" }} />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}

@@ -42,3 +42,6 @@ export async function uploadImage(file: File): Promise<string> {
   }
   throw new Error(lastErr);
 }
+
+// Content-type-agnostic (the signed flow uses file.type) — used for the /display idle video.
+export const uploadFile = uploadImage;

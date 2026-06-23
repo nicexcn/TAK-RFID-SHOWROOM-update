@@ -7,8 +7,8 @@ import { extFor } from "@/lib/storage";
 // never pass through a function, so type/size are enforced at the storage layer
 // (bucket allowed MIME types + size limit), ensured once below.
 
-const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB upload cap
+const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif", "video/mp4", "video/webm"];
+const MAX_BYTES = 100 * 1024 * 1024; // 100 MB cap — covers the /display idle-loop video (images are far smaller)
 
 let bucketEnsured = false; // module-cached: only reconfigure the bucket once per cold start
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const { contentType } = await req.json().catch(() => ({}));
     if (!ALLOWED_MIME.includes(contentType)) {
-      return NextResponse.json({ error: "Unsupported image type. Allowed: PNG, JPG, WEBP, GIF." }, { status: 400 });
+      return NextResponse.json({ error: "Unsupported file type. Allowed: PNG, JPG, WEBP, GIF, MP4, WEBM." }, { status: 400 });
     }
 
     const { createClient } = await import("@supabase/supabase-js");

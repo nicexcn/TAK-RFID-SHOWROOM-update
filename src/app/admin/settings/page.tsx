@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
+import { uploadFile } from "@/lib/uploadImage";
 
 const newReaderId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
@@ -106,6 +107,9 @@ export default function SettingsPage() {
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
   const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
+  const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoErr, setVideoErr] = useState("");
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
 
   // Takeaway
@@ -126,6 +130,7 @@ export default function SettingsPage() {
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
+      if (d.idleVideoUrl !== undefined) setIdleVideoUrl(d.idleVideoUrl);
       if (Array.isArray(d.readers)) setReaders(d.readers);
       if (d.id) {
         setDashboardSettings({
@@ -248,6 +253,21 @@ export default function SettingsPage() {
   const updateReader = (id: string, patch: Partial<SavedReader>) =>
     setReaders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const removeReader = (id: string) => setReaders((rs) => rs.filter((r) => r.id !== id));
+
+  // Idle video upload → fills idleVideoUrl (browser-direct to storage; signed URL).
+  async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setVideoErr(""); setVideoUploading(true);
+    try {
+      setIdleVideoUrl(await uploadFile(file));
+    } catch (err) {
+      setVideoErr(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setVideoUploading(false);
+    }
+  }
 
   async function fetchOptions() {
     const res = await fetch(`/api/dropdown?type=${activeType}`);
@@ -757,8 +777,35 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {/* Idle video — loops full-screen on /display when no product is showing */}
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
+                  <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>
+                    Loops muted, full-screen on the TV when idle (no product). Paste a URL or upload MP4/WEBM. Empty = the logo screen.
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input type="text" value={idleVideoUrl} onChange={(e) => setIdleVideoUrl(e.target.value)}
+                      placeholder="https://… .mp4   (or Upload →)"
+                      className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
+                    <label className={`px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer whitespace-nowrap ${videoUploading ? "opacity-60 pointer-events-none" : ""}`}
+                      style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+                      {videoUploading ? "Uploading…" : "Upload"}
+                      <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleVideoUpload} disabled={videoUploading} />
+                    </label>
+                    {idleVideoUrl && (
+                      <button onClick={() => setIdleVideoUrl("")} className="px-3 py-2.5 rounded-xl text-sm"
+                        style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>Remove</button>
+                    )}
+                  </div>
+                  {videoErr && <p className="text-xs mt-1" style={{ color: "#9f4a4a" }}>{videoErr}</p>}
+                  {idleVideoUrl && (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000" }} muted loop playsInline controls />
+                  )}
+                </div>
+
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim() }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

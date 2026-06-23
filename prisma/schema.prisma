@@ -157,6 +157,9 @@ model AppSettings {
   visibleWidgets  Json     @default("{\"walkins\":true,\"customerTypes\":true,\"newVsTotal\":true,\"comparisonGraph\":true,\"categoryGraph\":true}")
   // TV display config (was UI-only state with a fake "Save" — now persisted).
   slideDuration   Int      @default(5)   // seconds each product image shows
+  // Optional video that loops full-screen on /display when idle (no product showing).
+  // Empty = the logo idle screen. Uploaded to storage; this holds its public URL.
+  idleVideoUrl    String   @default("")
   sessionTimeout  Int      @default(30)  // minutes idle before a session is abandoned
   scheduleEnabled Boolean  @default(false)
   scheduleOn      String   @default("08:00")
