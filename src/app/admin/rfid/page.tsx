@@ -656,7 +656,7 @@ function RFIDPageInner() {
                 <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); }}
                   className="flex-1 py-2 text-xs font-medium transition-colors"
                   style={{ background: searchType === t ? "#726c5a" : "transparent", color: searchType === t ? "#fff" : "#9f886c" }}>
-                  {t === "code" ? "Code" : t === "name" ? "ชื่อ" : "เบอร์"}
+                  {t === "code" ? "ID" : t === "name" ? "ชื่อ" : "เบอร์"}
                 </button>
               ))}
             </div>
