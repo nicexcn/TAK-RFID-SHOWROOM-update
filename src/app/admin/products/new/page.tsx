@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SearchableSelect from "@/components/SearchableSelect";
 import AutocompleteInput from "@/components/AutocompleteInput";
-import ImageUpload from "@/components/ImageUpload";
+import ProductImagePicker from "@/components/ProductImagePicker";
 
 interface DropdownOption {
   id: string;
@@ -26,8 +26,8 @@ export default function NewProductPage() {
     size: "",
     colour: "",
     description: "",
-    imageUrl: "",
   });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const [brands, setBrands] = useState<DropdownOption[]>([]);
   const [materialTypes, setMaterialTypes] = useState<DropdownOption[]>([]);
@@ -76,7 +76,7 @@ export default function NewProductPage() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form }),
+        body: JSON.stringify({ ...form, imageUrls }),
       });
       if (res.ok) {
         router.push("/admin/products");
@@ -201,15 +201,12 @@ export default function NewProductPage() {
           </div>
           </div>
 
-          {/* Image Upload */}
+          {/* Images — multiple, first is the cover */}
           <div>
             <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
-              Product Image
+              Product Images
             </label>
-            <ImageUpload
-              value={form.imageUrl}
-              onChange={(url) => handleSelect("imageUrl", url)}
-            />
+            <ProductImagePicker urls={imageUrls} onChange={setImageUrls} />
           </div>
 
           {error && <p className="text-sm" style={{ color: "#9f4a4a" }}>{error}</p>}

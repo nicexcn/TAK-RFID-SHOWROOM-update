@@ -42,16 +42,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, isActive } = data;
-    // imageUrl is a derived cover cache — never written directly. The initial image
-    // (if any) becomes gallery image #0, and syncCover() sets the cover from it.
+    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive } = data;
+    // imageUrl is a derived cover cache — never written directly. Initial images become
+    // gallery images (in order); syncCover() sets the cover from image #0. Accept a list
+    // (imageUrls) for multi-image create, or a single imageUrl for back-compat.
+    const urls: string[] = (Array.isArray(imageUrls) ? imageUrls : imageUrl ? [imageUrl] : [])
+      .filter((u: unknown): u is string => typeof u === "string" && !!u);
     const product = await prisma.product.create({
       data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive },
     });
-    if (imageUrl) {
-      await prisma.productImage.create({ data: { productId: product.id, url: imageUrl, order: 0 } });
+    if (urls.length) {
+      await prisma.productImage.createMany({ data: urls.map((url, i) => ({ productId: product.id, url, order: i })) });
       await syncCover(product.id);
-      return NextResponse.json({ ...product, imageUrl });
+      return NextResponse.json({ ...product, imageUrl: urls[0] });
     }
     return NextResponse.json(product);
   } catch (error) {
