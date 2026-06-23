@@ -1,11 +1,13 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import SearchableSelect from "@/components/SearchableSelect";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ProductImagePicker from "@/components/ProductImagePicker";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 
 interface DropdownOption {
   id: string;
@@ -47,6 +49,50 @@ export default function NewProductPage() {
     }
     fetchOptions();
   }, []);
+
+  // ── Scan-to-fill the RFID tag (reuses the reader registry + relay) ─────────
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState("");
+  const [relayBase, setRelayBase] = useState("");
+  const [scanReaders, setScanReaders] = useState<SavedReader[]>([]);
+  const [scanReaderId, setScanReaderId] = useState("");
+  const capturedRef = useRef(false);
+
+  useEffect(() => {
+    fetch("/api/display/config").then((r) => r.json()).then((c) => {
+      const cfg = String(c?.relayUrl || "").replace(/\/+$/, "");
+      // HTTPS uses the configured (wss) relay; local HTTP uses the same host on :8081.
+      setRelayBase(typeof window !== "undefined" && window.location.protocol === "https:" ? cfg : `ws://${window.location.hostname}:8081`);
+      const rs = normalizeReaders(c?.readers);
+      setScanReaders(rs);
+      setScanReaderId((id) => id || rs[0]?.id || "");
+    }).catch(() => {});
+  }, []);
+
+  // Listen to the chosen saved reader (or all readers via the relay if none picked).
+  const scanReader = scanReaders.find((r) => r.id === scanReaderId);
+  const scanUrl = scanReader ? readerUrl(scanReader, relayBase) : (relayBase ? `${relayBase}/` : "");
+
+  const onScannedTag = useCallback((epc: string) => {
+    if (capturedRef.current || !epc) return; // capture only the first read per Scan press
+    capturedRef.current = true;
+    setForm((p) => ({ ...p, rfidTag: epc }));
+    setScanning(false);
+    setScanMsg(`✓ Captured tag: ${epc}`);
+  }, []);
+
+  const scanWs = useWebSocket({ url: scanUrl, onTag: onScannedTag, enabled: scanning && !!scanUrl });
+  const scanConnect = scanWs.connect;
+  const scanDisconnect = scanWs.disconnect;
+  useEffect(() => {
+    if (scanning && scanUrl) scanConnect();
+    else scanDisconnect();
+  }, [scanning, scanUrl, scanConnect, scanDisconnect]);
+
+  function toggleScan() {
+    if (scanning) { setScanning(false); return; }
+    setScanMsg(""); setError(""); capturedRef.current = false; setScanning(true);
+  }
 
   const inputStyle = {
     background: "#f5f2ee",
@@ -110,15 +156,38 @@ export default function NewProductPage() {
       <div className="rounded-xl p-6 " style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
         <div className="space-y-4">
 
-          {/* RFID Tag */}
+          {/* RFID Tag — scan with a reader, or type it */}
           <div>
             <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
               RFID Tag <span style={{ color: "#9f4a4a" }}>*</span>
             </label>
-            <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
-              placeholder="สแกน หรือพิมพ์ RFID tag (เช่น WY7204X)"
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
-            <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>การสแกนจริงทำที่หน้า Surface Scan · ที่นี่กรอก tag เพื่อผูกกับสินค้า</p>
+            <div className="flex gap-2">
+              <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
+                placeholder="Scan, or type the RFID tag (e.g. WY7204X)"
+                className="flex-1 px-4 py-3 rounded-xl outline-none text-sm min-w-0" style={inputStyle} />
+              {scanReaders.length > 0 && (
+                <select value={scanReaderId} onChange={(e) => setScanReaderId(e.target.value)} title="Reader to scan with"
+                  className="px-3 py-3 rounded-xl outline-none text-sm" style={inputStyle}>
+                  {scanReaders.map((r) => <option key={r.id} value={r.id}>{r.name || r.device || r.url}</option>)}
+                </select>
+              )}
+              <button type="button" onClick={toggleScan} disabled={!scanning && !scanUrl}
+                className="px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap text-white disabled:opacity-50"
+                style={{ background: scanning ? "#9f4a4a" : "#4a6fa5" }}>
+                {scanning ? "■ Stop" : "📡 Scan"}
+              </button>
+            </div>
+            {scanning ? (
+              <p className="text-xs mt-1" style={{ color: "#4a6fa5" }}>
+                {scanWs.isConnected ? "Listening — hold the tag near the reader…" : "Connecting to reader…"}
+              </p>
+            ) : scanMsg ? (
+              <p className="text-xs mt-1" style={{ color: "#4a7c59" }}>{scanMsg}</p>
+            ) : !scanUrl ? (
+              <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
+            ) : (
+              <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
+            )}
           </div>
 
           {/* Product Code */}
