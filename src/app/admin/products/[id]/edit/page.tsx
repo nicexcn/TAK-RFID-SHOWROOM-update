@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import SearchableSelect from "@/components/SearchableSelect";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ProductGallery from "@/components/ProductGallery";
+import RfidTagField from "@/components/RfidTagField";
 
 interface DropdownOption {
   id: string;
@@ -128,26 +129,8 @@ export default function EditProductPage() {
       <div className="rounded-xl p-6 max-w-3xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
         <div className="space-y-4">
 
-          {/* RFID Tag */}
-          <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
-              RFID Tag <span style={{ color: "#9f4a4a" }}>*</span>
-            </label>
-            <div className="flex gap-2">
-              <input name="rfidTag" value={form.rfidTag} onChange={handleChange}
-                placeholder="Scan or enter RFID tag..."
-                className="flex-1 px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
-              <button type="button" disabled
-                className="px-4 py-3 rounded-xl text-sm flex items-center gap-2"
-                style={{ background: "#e6e5d8", color: "#9f886c", cursor: "not-allowed" }}>
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                  <rect x="9" y="9" width="6" height="6"/>
-                </svg>
-                Scan
-              </button>
-            </div>
-          </div>
+          {/* RFID Tag — scan with a reader, or type it */}
+          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} />
 
           {/* Product Code */}
           <div>
