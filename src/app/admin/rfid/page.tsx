@@ -46,13 +46,6 @@ interface DeviceLog {
 const DEVICES = [1, 2, 3, 4] as const;
 type DeviceId = typeof DEVICES[number];
 
-const DEVICE_COLORS: Record<number, { bg: string; badge: string; border: string; text: string }> = {
-  1: { bg: "#f0f4ff", badge: "#4a6fa5", border: "#a8c0dd", text: "#4a6fa5" },
-  2: { bg: "#f0faf4", badge: "#4a7c59", border: "#a8cbb5", text: "#4a7c59" },
-  3: { bg: "#fdf4ec", badge: "#c07a30", border: "#ddb88a", text: "#c07a30" },
-  4: { bg: "#faf0f5", badge: "#8a4a6e", border: "#cba8ba", text: "#8a4a6e" },
-};
-
 const STATUS_STYLE = {
   NONE:      { label: "",             bg: "transparent", color: "#cdc3ad" },
   PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe",    color: "#3b82f6" },
@@ -92,14 +85,12 @@ function RFIDPageInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Devices — which ones are connected
+  // One station = one reader; connectedDevices stays {1} (the 1–4 multi-device UI was removed).
   const [connectedDevices, setConnectedDevices] = useState<Set<DeviceId>>(new Set([1]));
-  const [activeTab, setActiveTab] = useState<"all" | DeviceId>("all");
 
   // Logs
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
-  const [logFilter, setLogFilter] = useState<"all" | DeviceId>("all");
 
   // Misc
   const [takeaway, setTakeaway] = useState<Record<string, number>>({});
@@ -573,7 +564,7 @@ function RFIDPageInner() {
     seenEpcsRef.current.clear();
     setSession(null); setCustomerQuery(""); setCustomerInfo(null);
     setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]);
-    setConnectedDevices(new Set([1])); setActiveTab("all");
+    setConnectedDevices(new Set([1]));
   }
 
   async function handleSendToDisplay() {
@@ -609,12 +600,7 @@ function RFIDPageInner() {
     } catch { /* the display's fallback poll reconciles */ }
   }
 
-  // Filtered scans by tab
-  const visibleScans = session?.scans.filter((s) =>
-    activeTab === "all" ? true : s.deviceId === activeTab
-  ) ?? [];
-
-  const filteredLogs = deviceLogs.filter((l) => logFilter === "all" || l.deviceId === logFilter);
+  const visibleScans = session?.scans ?? [];
 
   const btnStyle = { background: "#726c5a", color: "#fff" };
 
@@ -852,35 +838,16 @@ function RFIDPageInner() {
             <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
               <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
                 <p className="text-sm font-medium" style={{ color: "#4c4847" }}>Device Log</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex rounded-lg overflow-hidden" style={{ background: "#e6e5d8" }}>
-                    {(["all", ...DEVICES] as ("all" | DeviceId)[]).map((f) => (
-                      <button key={f} onClick={() => setLogFilter(f)}
-                        className="px-3 py-1 text-xs font-medium"
-                        style={{
-                          background: logFilter === f ? "#726c5a" : "transparent",
-                          color: logFilter === f ? "#fff" : "#9f886c",
-                        }}>
-                        {f === "all" ? "ทั้งหมด" : `เครื่อง ${f}`}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => setDeviceLogs([])} className="text-xs px-2 py-1 rounded-lg"
-                    style={{ background: "#f5f2ee", color: "#9f886c" }}>ล้าง</button>
-                </div>
+                <button onClick={() => setDeviceLogs([])} className="text-xs px-2 py-1 rounded-lg"
+                  style={{ background: "#f5f2ee", color: "#9f886c" }}>ล้าง</button>
               </div>
               <div className="max-h-52 overflow-y-auto">
-                {filteredLogs.length === 0 ? (
+                {deviceLogs.length === 0 ? (
                   <p className="text-center py-8 text-sm" style={{ color: "#cdc3ad" }}>ยังไม่มี log</p>
-                ) : filteredLogs.map((log, i) => {
-                  const c = DEVICE_COLORS[log.deviceId];
+                ) : deviceLogs.map((log, i) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-4 py-2.5"
-                      style={{ borderBottom: i < filteredLogs.length - 1 ? "1px solid #f5f2ee" : "none" }}>
-                      <span className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center text-white flex-shrink-0"
-                        style={{ background: c.badge }}>
-                        {log.deviceId}
-                      </span>
+                      style={{ borderBottom: i < deviceLogs.length - 1 ? "1px solid #f5f2ee" : "none" }}>
                       <span className="text-xs flex-shrink-0" style={{ color: "#9f886c" }}>{log.time}</span>
                       <span className="text-xs font-mono flex-shrink-0" style={{ color: "#cdc3ad" }}>{log.tag}</span>
                       <span className={`text-xs flex-1 ${log.ok ? "" : "text-red-500"}`}
@@ -901,28 +868,9 @@ function RFIDPageInner() {
           <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             {/* Tabs */}
             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
-              <div className="flex items-center gap-1">
-                {(["all", ...DEVICES] as ("all" | DeviceId)[]).map((t) => {
-                  const count = t === "all" ? session.scans.length : session.scans.filter((s) => s.deviceId === t).length;
-                  const connected = t === "all" || connectedDevices.has(t as DeviceId);
-                  const c = t !== "all" ? DEVICE_COLORS[t as number] : null;
-                  return (
-                    <button key={t} onClick={() => setActiveTab(t)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                      style={{
-                        background: activeTab === t ? (c ? c.badge : "#726c5a") : "transparent",
-                        color: activeTab === t ? "#fff" : connected ? (c ? c.text : "#726c5a") : "#cdc3ad",
-                        opacity: connected ? 1 : 0.5,
-                      }}>
-                      {t === "all" ? "ทั้งหมด" : `เครื่อง ${t}`}
-                      <span className="px-1.5 py-0.5 rounded-full text-xs"
-                        style={{ background: activeTab === t ? "rgba(255,255,255,0.25)" : "#e6e5d8", color: activeTab === t ? "#fff" : "#9f886c" }}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="text-sm font-medium" style={{ color: "#4c4847" }}>
+                รายการสแกน <span style={{ color: "#9f886c" }}>({session.scans.length})</span>
+              </p>
               {visibleScans.some((s) => s.prepareStatus === "NONE") && (
                 <button onClick={() => {
                   const ready = visibleScans.filter((s) => s.prepareStatus === "NONE" && (takeaway[s.id] ?? 0) >= 1);
@@ -939,16 +887,14 @@ function RFIDPageInner() {
 
             {visibleScans.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-sm" style={{ color: "#cdc3ad" }}>
-                  {activeTab === "all" ? "No items scanned yet" : `เครื่อง ${activeTab} ยังไม่มีรายการ`}
-                </p>
+                <p className="text-sm" style={{ color: "#cdc3ad" }}>No items scanned yet</p>
               </div>
             ) : (
               <div className="overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
-                      {["เครื่อง","Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
+                      {["Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs"
                           style={{ color: "#9f886c" }}>{h}</th>
                       ))}
@@ -957,16 +903,8 @@ function RFIDPageInner() {
                   <tbody>
                     {visibleScans.map((scan) => {
                       const sCfg = STATUS_STYLE[scan.prepareStatus];
-                      const dc = DEVICE_COLORS[scan.deviceId];
                       return (
                         <tr key={scan.id} style={{ borderBottom: "1px solid #f5f2ee" }}>
-                          {/* Device badge */}
-                          <td className="px-4 py-3">
-                            <span className="w-6 h-6 rounded-md text-xs font-bold flex items-center justify-center text-white"
-                              style={{ background: dc.badge }}>
-                              {scan.deviceId}
-                            </span>
-                          </td>
                           <td className="px-4 py-3">
                             {scan.product.imageUrl ? (
                               <img src={scan.product.imageUrl} alt={scan.product.name}

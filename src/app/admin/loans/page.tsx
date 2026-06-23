@@ -96,7 +96,7 @@ export default function LoansPage() {
     <div>
       <div className="mb-5">
         <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Borrow / Return</h1>
-        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Borrow & Return" }]} />
+        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications", href: "/admin/notifications" }, { label: "Borrow & Return" }]} />
         <p className="text-xs mt-1" style={{ color: "#9f886c" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
       </div>
 
