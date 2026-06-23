@@ -304,9 +304,10 @@ export default function DisplayPage() {
           )}
         </div>
       ) : idleVideoUrl ? (
-        // Idle with a configured video → loop it full-screen (muted; autoplay needs muted).
+        // Idle with a configured video → loop it (muted; autoplay needs muted). object-contain
+        // shows the WHOLE video (no zoom/crop); mismatched aspect ratios letterbox on the dark bg.
         <video key={idleVideoUrl} src={idleVideoUrl} autoPlay loop muted playsInline
-          className="w-full h-full object-cover" style={{ background: "#1a1a1a" }} />
+          className="w-full h-full object-contain" style={{ background: "#1a1a1a" }} />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
