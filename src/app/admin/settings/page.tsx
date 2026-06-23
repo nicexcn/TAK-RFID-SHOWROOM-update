@@ -45,7 +45,7 @@ const WIDGETS = [
   { key: "walkins",         label: "Walk-ins" },
   { key: "customerTypes",   label: "Type of Customers" },
   { key: "newVsTotal",      label: "New vs Total Customers" },
-  { key: "comparisonGraph", label: "Comparison Graph by Year" },
+  { key: "comparisonGraph", label: "Walk-ins by Month" },
   { key: "categoryGraph",   label: "Interest by Category Graph" },
 ];
 
