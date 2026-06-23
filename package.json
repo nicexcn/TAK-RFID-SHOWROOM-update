@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:all": "bash scripts/dev.sh",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
@@ -16,8 +15,7 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "setup:admin": "node scripts/create-user.js",
-    "deploy": "bash scripts/deploy.sh"
+    "setup:admin": "node scripts/create-user.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

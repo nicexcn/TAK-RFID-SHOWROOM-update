@@ -19,7 +19,7 @@ For live RFID scanning, in a second terminal: `cd relay && npm install && cd .. 
 **One-click** (does any missing setup, then runs the app + relay together):
 
 ```bash
-npm run dev:all
+./scripts/dev.sh
 ```
 
 📖 Local setup, environment, relay, display, tests → **[`docs/LOCAL.md`](docs/LOCAL.md)**
@@ -29,12 +29,12 @@ npm run dev:all
 
 | Command | What |
 |---|---|
-| **`npm run dev:all`** | **One-click: setup (if needed) + app + relay together** |
+| **`./scripts/dev.sh`** | **One-click: setup (if needed) + app + relay together** |
 | `npm run dev` | Web app (dev), :3000 |
 | `npm run relay` | RFID WebSocket relay, :8081 |
 | `npm run db:push` / `db:studio` / `db:generate` | Prisma schema push / browse / regenerate |
 | `npm run setup:admin` | Create/reset the admin login |
 | `npm run build && npm start` | Production-style build |
 | `npm test` / `npm run test:api` | Tests |
-| **`npm run deploy`** | **One-click: deploy to production (with confirmation)** — `--relay` also deploys the relay |
+| **`./scripts/deploy.sh`** | **One-click: deploy to production (with confirmation)** — `--relay` also deploys the relay |
 | `vercel deploy` / `vercel deploy --prod` | Deploy preview / production (manual) |
