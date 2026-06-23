@@ -11,9 +11,11 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const all = searchParams.get("all") === "true";
     const limit = all ? 10000 : 10;
+    // status: active (default — hides archived from catalog + scan lookup) | archived | all
+    const status = (searchParams.get("status") || "active").toLowerCase();
 
     const where: any = {
-      isActive: true, // hide soft-deleted products from catalog + scan lookup
+      ...(status === "archived" ? { isActive: false } : status === "all" ? {} : { isActive: true }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" } },

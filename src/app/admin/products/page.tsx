@@ -38,6 +38,7 @@ function parseCSV(text: string): Record<string, string>[] {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"active" | "archived" | "all">("active");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -58,7 +59,7 @@ export default function ProductsPage() {
 
   async function fetchProducts() {
     setLoading(true);
-    const res = await fetch(`/api/products?search=${search}&page=${page}`);
+    const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}`);
     const data = await res.json();
     setProducts(data.products || []);
     setTotalPages(data.totalPages || 1);
@@ -66,7 +67,7 @@ export default function ProductsPage() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchProducts(); }, [search, page]);
+  useEffect(() => { fetchProducts(); }, [search, page, status]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -84,6 +85,23 @@ export default function ProductsPage() {
       // Couldn't be fully removed because it has scan history — be explicit, and note the tag is reusable.
       alert("This product has scan history, so it was archived (hidden from the catalog) instead of fully deleted. Its RFID tag is now free to reuse.");
     }
+    fetchProducts();
+  }
+
+  async function handleRestore(id: string) {
+    const res = await fetch(`/api/products/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }),
+    });
+    const body = await res.json().catch(() => ({} as { tagRecovered?: boolean; rfidTag?: string }));
+    if (res.ok && body.tagRecovered === false) {
+      alert(`Restored — but its original RFID tag was already taken, so it kept a placeholder tag (${body.rfidTag}). Edit the product to set a new tag.`);
+    }
+    fetchProducts();
+  }
+
+  async function handlePurge(id: string) {
+    if (!confirm("Permanently delete this product AND its scan history? This cannot be undone.")) return;
+    await fetch(`/api/products/${id}?purge=true`, { method: "DELETE" });
     fetchProducts();
   }
 
@@ -211,6 +229,21 @@ export default function ProductsPage() {
         <p className="text-sm whitespace-nowrap" style={{ color: "#9f886c" }}>Total: {total} products</p>
       </div>
 
+      {/* Status filter: Active (default) / Archived (soft-deleted, kept for history) / All */}
+      <div className="flex gap-2 mb-4">
+        {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
+          <button key={k} onClick={() => { setStatus(k); setPage(1); }}
+            className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
+            style={{
+              background: status === k ? "#726c5a" : "#fff",
+              color: status === k ? "#fff" : "#4c4847",
+              border: "1px solid " + (status === k ? "#726c5a" : "#e6e5d8"),
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Table */}
       <div className="rounded-xl overflow-auto" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
         <table className="w-full text-sm min-w-max">
@@ -228,12 +261,18 @@ export default function ProductsPage() {
               <tr><td colSpan={6} className="text-center py-10" style={{ color: "#cdc3ad" }}>No products found</td></tr>
             ) : (
               products.map((product) => (
-                <tr key={product.id} style={{ borderBottom: "1px solid #f5f2ee" }}>
+                <tr key={product.id} style={{ borderBottom: "1px solid #f5f2ee", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#4c4847" }}>{product.brand || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.materialType || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.category || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.productCode || "-"}</td>
-                  <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#4c4847" }}>{product.name}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#4c4847" }}>
+                    {product.name}
+                    {!product.isActive && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
+                        style={{ background: "#ece8df", color: "#9f886c" }}>Archived</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={(e) => {
@@ -273,34 +312,64 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu — Edit/Delete for active products; Restore/Delete-forever for archived */}
       {openMenu && (
-        <div ref={menuRef} className="fixed z-50 w-36 rounded-xl overflow-hidden"
+        <div ref={menuRef} className="fixed z-50 w-40 rounded-xl overflow-hidden"
           style={{ top: menuPosition.top, left: menuPosition.left, background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-          <Link href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
-            className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-            style={{ color: "#4c4847" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit
-          </Link>
-          <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
-            className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-            style={{ color: "#9f4a4a" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Delete
-          </button>
+          {products.find((p) => p.id === openMenu)?.isActive === false ? (
+            <>
+              <button onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                style={{ color: "#4a7c59" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#eef6f0")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Restore
+              </button>
+              <button onClick={() => { handlePurge(openMenu); setOpenMenu(null); }}
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                style={{ color: "#9f4a4a" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+                Delete forever
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                style={{ color: "#4c4847" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit
+              </Link>
+              <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                style={{ color: "#9f4a4a" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+                Delete
+              </button>
+            </>
+          )}
         </div>
       )}
 
