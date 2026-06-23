@@ -315,7 +315,7 @@ export default function DisplayPage() {
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
           <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
-          <p style={{ color: "#9f886c", fontSize: 14 }}>วางสินค้าบนโต๊ะ หรือส่งรายการขึ้นจอ…</p>
+          <p style={{ color: "#9f886c", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
         </div>
       )}
 
@@ -337,7 +337,7 @@ export default function DisplayPage() {
               </div>
             )}
             <span className="text-white text-sm opacity-80">
-              {mode === "table" ? `${products.length} ชิ้นบนโต๊ะ` : "รายการของลูกค้า"}
+              {mode === "table" ? `${products.length} on table` : "Customer list"}
             </span>
           </div>
         </>
@@ -359,7 +359,7 @@ export default function DisplayPage() {
               <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
               <select value="" onChange={(e) => applySavedReader(e.target.value)}
                 className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }}>
-                <option value="">เลือก reader…</option>
+                <option value="">Select reader…</option>
                 {savedReaders.map((r) => {
                   const url = readerUrl(r, relayUrl);
                   return <option key={r.id} value={url} disabled={!url}>{r.name || r.device || r.url}</option>;
@@ -367,14 +367,14 @@ export default function DisplayPage() {
               </select>
             </div>
           )}
-          <p className="text-white text-sm mb-2">Fix Reader (โต๊ะ)</p>
+          <p className="text-white text-sm mb-2">Fix Reader (table)</p>
           <input value={ipDraft} onChange={(e) => setIpDraft(e.target.value)}
-            placeholder="192.168.1.104  หรือ  wss://xxx.ngrok-free.app"
+            placeholder="192.168.1.104  or  wss://xxx.ngrok-free.app"
             className="w-full px-2 py-1.5 rounded outline-none text-xs mb-2" style={{ background: "#333", color: "#fff" }} />
-          <p className="text-white/40 text-[10px] mb-2">IP บน LAN (HTTP) หรือ wss:// (ngrok) เมื่อหน้านี้เป็น HTTPS</p>
+          <p className="text-white/40 text-[10px] mb-2">LAN IP (HTTP), or wss:// (ngrok) when this page is HTTPS</p>
           <div className="flex gap-2">
-            <button onClick={connect} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: "#4a6fa5" }}>เชื่อมต่อ</button>
-            <button onClick={() => setSimOn((s) => !s)} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: simOn ? "#9f4a4a" : "#726c5a" }}>{simOn ? "หยุดจำลอง" : "จำลอง"}</button>
+            <button onClick={connect} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: "#4a6fa5" }}>Connect</button>
+            <button onClick={() => setSimOn((s) => !s)} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: simOn ? "#9f4a4a" : "#726c5a" }}>{simOn ? "Stop demo" : "Demo"}</button>
           </div>
 
           {relayUrl && (
@@ -385,7 +385,7 @@ export default function DisplayPage() {
               <div className="flex gap-2">
                 <input value={cloudRoom} onChange={(e) => setCloudRoom(e.target.value)} placeholder="empty = all readers / or mac·serial"
                   className="flex-1 px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }} />
-                <button onClick={connectViaRelay} className="px-3 py-1.5 rounded text-xs text-white whitespace-nowrap" style={{ background: "#4a7c59" }}>ใช้ relay</button>
+                <button onClick={connectViaRelay} className="px-3 py-1.5 rounded text-xs text-white whitespace-nowrap" style={{ background: "#4a7c59" }}>Use relay</button>
               </div>
               <p className="text-white/30 text-[10px] mt-1 truncate">relay: {relayUrl}</p>
             </div>
@@ -396,15 +396,15 @@ export default function DisplayPage() {
             <button onClick={() => { ws.disconnect(); setReaderIp(""); }}
               className="w-full mt-2 px-3 py-1.5 rounded text-xs text-white flex items-center justify-center gap-1"
               style={{ background: "#9f4a4a" }}>
-              <span style={{ fontSize: 13, lineHeight: 1 }}>⏏</span> ตัดการเชื่อมต่อ reader
+              <span style={{ fontSize: 13, lineHeight: 1 }}>⏏</span> Disconnect reader
             </button>
           )}
-          <p className="text-white/40 text-[11px] mt-2">สินค้า: {productMap.size} · โต๊ะ: {presenceProducts.length} · list: {sessionProducts.length}</p>
+          <p className="text-white/40 text-[11px] mt-2">Products: {productMap.size} · Table: {presenceProducts.length} · List: {sessionProducts.length}</p>
 
           {/* Unknown tags: streamed by the reader but not in the DB — for setup debugging */}
           {unknownEpcs.length > 0 && (
             <div className="mt-3 pt-2" style={{ borderTop: "1px solid #6b3a3a" }}>
-              <p className="text-[11px] mb-1" style={{ color: "#e0a0a0" }}>⚠️ tag ไม่รู้จัก: {unknownEpcs.length} (วางอยู่แต่ไม่มีในระบบ)</p>
+              <p className="text-[11px] mb-1" style={{ color: "#e0a0a0" }}>⚠️ Unknown tags: {unknownEpcs.length} (on table, not in system)</p>
               <div className="overflow-y-auto" style={{ maxHeight: 120 }}>
                 {unknownEpcs.map((epc) => (
                   <div key={epc} className="px-1.5 py-0.5 text-[11px]" style={{ color: "#f0c8c8", fontFamily: "monospace" }}>• {epc}</div>
@@ -416,7 +416,7 @@ export default function DisplayPage() {
           {/* Queue: every item currently in the rotation, current one highlighted */}
           {products.length > 0 && (
             <div className="mt-3 pt-2" style={{ borderTop: "1px solid #444" }}>
-              <p className="text-white/60 text-[11px] mb-1">คิว: {products.length} ชิ้น{mode === "table" ? " (บนโต๊ะ)" : mode === "session" ? " (รายการลูกค้า)" : ""}</p>
+              <p className="text-white/60 text-[11px] mb-1">Queue: {products.length} item{products.length === 1 ? "" : "s"}{mode === "table" ? " (on table)" : mode === "session" ? " (customer list)" : ""}</p>
               <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
                 {products.map((p, i) => {
                   const isCur = i === idx % products.length;
@@ -425,7 +425,7 @@ export default function DisplayPage() {
                       style={{ background: isCur ? "rgba(16,185,129,0.18)" : "transparent", color: isCur ? "#fff" : "rgba(255,255,255,0.6)" }}>
                       <span style={{ width: 6, height: 6, borderRadius: 9, flexShrink: 0, background: isCur ? "#10b981" : "rgba(255,255,255,0.3)" }} />
                       <span className="truncate">{i + 1}. {p.name}</span>
-                      {isCur && <span className="ml-auto text-[9px] whitespace-nowrap" style={{ color: "#10b981" }}>▶ กำลังโชว์</span>}
+                      {isCur && <span className="ml-auto text-[9px] whitespace-nowrap" style={{ color: "#10b981" }}>▶ Now showing</span>}
                     </div>
                   );
                 })}
