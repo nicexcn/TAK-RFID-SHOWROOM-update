@@ -8,6 +8,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId } from "@/lib/deviceId";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
+import Link from "next/link";
 
 // Remember the last reader URL for this station so it isn't re-typed every reload.
 const STATION_READER_KEY = "tak-station-reader-url";
@@ -91,6 +92,7 @@ function RFIDPageInner() {
   // Logs
   const [deviceLogs, setDeviceLogs] = useState<DeviceLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
+  const [unknownTags, setUnknownTags] = useState<string[]>([]); // scanned EPCs with no matching product
 
   // Misc
   const [takeaway, setTakeaway] = useState<Record<string, number>>({});
@@ -242,7 +244,10 @@ function RFIDPageInner() {
     };
     setDeviceLogs((p) => [logEntry, ...p].slice(0, 200));
 
-    if (!product) return;
+    if (!product) {
+      setUnknownTags((t) => (t.includes(epc) ? t : [epc, ...t])); // surface tags not in the system
+      return;
+    }
 
     const fakeScan: ScanItem = {
       id: `ws-${Date.now()}-${epc}`, scannedAt: new Date().toISOString(),
@@ -563,7 +568,7 @@ function RFIDPageInner() {
     }
     seenEpcsRef.current.clear();
     setSession(null); setCustomerQuery(""); setCustomerInfo(null);
-    setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]);
+    setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]); setUnknownTags([]);
     setConnectedDevices(new Set([1]));
   }
 
@@ -860,6 +865,30 @@ function RFIDPageInner() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Unrecognized tags — scanned EPCs with no matching product (register them) */}
+          {unknownTags.length > 0 && (
+            <div className="rounded-xl p-3" style={{ background: "#fff7ed", border: "1px solid #f0c98a" }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium" style={{ color: "#b26a00" }}>
+                  ⚠️ {unknownTags.length} unrecognized tag{unknownTags.length > 1 ? "s" : ""} — not registered
+                </p>
+                <button onClick={() => setUnknownTags([])} className="text-xs px-2 py-1 rounded-lg"
+                  style={{ background: "#fff", color: "#9f886c", border: "1px solid #f0c98a" }}>Dismiss all</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {unknownTags.map((epc) => (
+                  <div key={epc} className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: "#fff", border: "1px solid #f0c98a" }}>
+                    <code className="text-xs" style={{ color: "#9f886c" }}>{epc}</code>
+                    <Link href={`/admin/products/new?rfid=${encodeURIComponent(epc)}`} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: "#726c5a", color: "#fff" }}>Register</Link>
+                    <button onClick={() => setUnknownTags((t) => t.filter((x) => x !== epc))} title="Dismiss"
+                      className="text-xs" style={{ color: "#cdc3ad" }}>✕</button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

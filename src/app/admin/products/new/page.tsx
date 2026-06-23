@@ -49,6 +49,12 @@ export default function NewProductPage() {
     fetchOptions();
   }, []);
 
+  // Prefill the RFID tag when arriving from "Register" on the Surface Scan page (?rfid=<epc>).
+  useEffect(() => {
+    const rfid = new URLSearchParams(window.location.search).get("rfid");
+    if (rfid) setForm((p) => ({ ...p, rfidTag: rfid }));
+  }, []);
+
   const inputStyle = {
     background: "#f5f2ee",
     border: "1px solid #e6e5d8",
