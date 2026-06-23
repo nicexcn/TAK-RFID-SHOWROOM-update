@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { subscribeNotifications } from "@/lib/notifChannel";
 
 interface Notif {
@@ -105,13 +106,20 @@ export default function NotificationsPage() {
           </div>
           <p className="text-xs mt-1" style={{ color: "#9f886c" }}>Home / Notifications</p>
         </div>
-        {unread > 0 && (
-          <button onClick={markAllRead}
-            className="px-4 py-2 rounded-xl text-sm"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
-            Mark all as read
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/admin/loans"
+            className="px-4 py-2 rounded-xl text-sm font-medium text-white"
+            style={{ background: "#726c5a" }}>
+            ↩ Borrow / Return
+          </Link>
+          {unread > 0 && (
+            <button onClick={markAllRead}
+              className="px-4 py-2 rounded-xl text-sm"
+              style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              Mark all as read
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Tabs */}

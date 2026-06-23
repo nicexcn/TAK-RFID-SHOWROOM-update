@@ -15,7 +15,6 @@ const navItems = [
   { label: "Product Management",  href: "/admin/products" },
   { label: "Customer Management", href: "/admin/customers" },
   { label: "Surface Scan",        href: "/admin/rfid" },
-  { label: "Borrow / Return",     href: "/admin/loans" },
   { label: "Notifications",       href: "/admin/notifications" },
   { label: "Settings",            href: "/admin/settings" },
 ];
