@@ -102,34 +102,30 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 items-start">
-        {/* Total Members */}
-        <div className="p-5 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <p className="text-xs mb-2" style={{ color: "#9f886c" }}>Total Members</p>
-          <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>{customers.length}</p>
+      {/* Stats — total + occupation breakdown in one card (like the dashboard widget) */}
+      <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        {/* Total */}
+        <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "#f0eee6" }}>
+          <p className="text-xs mb-1" style={{ color: "#9f886c" }}>Total Members</p>
+          <p className="text-4xl font-semibold" style={{ color: "#4c4847" }}>{customers.length}</p>
         </div>
-        {/* Type of Customers — occupation breakdown (matches the dashboard widget) */}
-        <div className="p-5 rounded-xl lg:col-span-2" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <p className="text-sm mb-1" style={{ color: "#9f886c" }}>Type of Customers</p>
+        {/* Type of Customers breakdown */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm mb-2" style={{ color: "#9f886c" }}>Type of Customers</p>
           {byTitle.length === 0 ? (
-            <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>-</p>
+            <p className="text-sm" style={{ color: "#cdc3ad" }}>No customers yet</p>
           ) : (
-            <>
-              <p className="text-2xl font-semibold" style={{ color: "#4c4847" }}>{byTitle[0].title}</p>
-              <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>Top type · {byTitle[0].count}</p>
-              <div className="space-y-1.5">
-                {byTitle.map((d) => (
-                  <div key={d.title} className="flex items-center gap-2">
-                    <p className="text-xs w-20 truncate" style={{ color: "#9f886c" }}>{d.title}</p>
-                    <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
-                      <div className="h-full rounded-full" style={{ background: titleColors[d.title] || "#888", width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
-                    </div>
-                    <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{d.count}</p>
+            <div className="space-y-1.5">
+              {byTitle.map((d) => (
+                <div key={d.title} className="flex items-center gap-2">
+                  <p className="text-xs w-20 truncate" style={{ color: "#9f886c" }}>{d.title}</p>
+                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
+                    <div className="h-full rounded-full" style={{ background: titleColors[d.title] || "#888", width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
                   </div>
-                ))}
-              </div>
-            </>
+                  <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{d.count}</p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
