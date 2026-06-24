@@ -42,7 +42,7 @@ Copy `.env.example` to `.env` and fill it in. Variables:
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | ✅ | Supabase Postgres. **Locally use the SESSION pooler (`:5432`)** — it keeps a warm connection (fast). Production uses the **transaction pooler (`:6543`, `?pgbouncer=true&connection_limit=1`)** for serverless. |
+| `DATABASE_URL` | ✅ | Supabase Postgres. The **session pooler (`:5432`)** is fastest locally but caps at **15 connections** — add `?connection_limit=5` so the dev pool doesn't exhaust it. Simplest is to use the **transaction pooler (`:6543`, `?pgbouncer=true&connection_limit=1`)** like production (multiplexes, no 15-client cap). |
 | `JWT_SECRET` | ✅ | Any long random string. The app **refuses to start without it**. |
 | `SUPABASE_URL` | ⬜ | Enables image/video **uploads** (Supabase Storage). Server-side only. |
 | `SUPABASE_SERVICE_KEY` | ⬜ | service_role key — **secret**, never expose / never `NEXT_PUBLIC`. |
@@ -136,7 +136,8 @@ vercel deploy --prod     # promote to production (tak-rfid-showroom.vercel.app)
 |---|---|
 | App won't start | `JWT_SECRET` not set in `.env`. |
 | "Unknown column / field" errors after editing the schema | Restart `npm run dev` (stale cached Prisma client). |
-| DB feels slow locally | Use the **session pooler (`:5432`)** in `DATABASE_URL`, not the transaction pooler. |
+| DB feels slow locally | The **session pooler (`:5432`)** is faster than the transaction pooler — but see the next row. |
+| 500s with `max clients reached in session mode` | The session pooler hit its **15-connection** cap. Switch `DATABASE_URL` to the **transaction pooler** (`:6543`, `pgbouncer=true&connection_limit=1`) — or add `connection_limit=5` to the `:5432` URL — then **restart the dev server**. (`prisma db push` may need the `:5432` URL — pgbouncer transaction mode blocks some DDL.) |
 | Scan button stuck on "Connecting…" | The relay isn't reachable — start `npm run relay`, or set the Cloud Relay URL (HTTPS needs `wss://`). |
 | Upload fails ("not configured") | Set `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`, or paste a URL instead. Idle video is **MP4/WEBM, ≤ 50 MB** (the Supabase project's global cap). |
 | Notifications/TV not updating instantly | Set `NEXT_PUBLIC_SUPABASE_*` for realtime; otherwise it polls every few seconds. |
