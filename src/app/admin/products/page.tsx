@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import BulkImageImport from "@/components/BulkImageImport";
+import { parseCsv } from "@/lib/csv";
 
 interface Product {
   id: string;
@@ -22,19 +23,6 @@ interface ImportResult {
   updated: number;
   failed: number;
   errors: string[];
-}
-
-// ── CSV/Excel parser (ใช้ built-in ไม่ต้อง install library) ──────────────────
-function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter((l) => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-  return lines.slice(1).map((line) => {
-    const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
-    const row: Record<string, string> = {};
-    headers.forEach((h, i) => { row[h] = values[i] || ""; });
-    return row;
-  });
 }
 
 export default function ProductsPage() {
@@ -119,7 +107,7 @@ export default function ProductsPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const rows = parseCSV(text);
+      const rows = parseCsv(text);
       setImportPreview(rows.slice(0, 5)); // preview 5 rows
     };
     reader.readAsText(file, "UTF-8");
@@ -134,7 +122,7 @@ export default function ProductsPage() {
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const text = ev.target?.result as string;
-        const products = parseCSV(text);
+        const products = parseCsv(text);
 
         const res = await fetch("/api/products/import", {
           method: "POST",
