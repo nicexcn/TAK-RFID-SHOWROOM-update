@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent, salesPerson, project } = body;
+  const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent, salesPerson, project, source } = body;
   // Backstop: an "Other" occupation must be specified (the client also enforces this).
   if (title === "Other" && !String(titleOther || "").trim()) {
     return NextResponse.json({ error: "Please specify the occupation when 'Other' is selected." }, { status: 400 });
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
       pdpaConsent: pdpaConsent || false,
       salesPerson: String(salesPerson || "").trim() || null,
       project: String(project || "").trim() || null,
+      source: String(source || "").trim() || null,
     },
   });
   return NextResponse.json(customer, { status: 201 });

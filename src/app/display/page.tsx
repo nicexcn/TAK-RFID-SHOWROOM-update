@@ -42,6 +42,7 @@ export default function DisplayPage() {
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else Settings)
+  const [surveyQr, setSurveyQr] = useState(""); // #3: QR to the public survey, shown on the idle screen
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
   const unknownRef = useRef<Map<string, number>>(new Map());
@@ -88,6 +89,13 @@ export default function DisplayPage() {
     }).catch(() => {});
     const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     setReaderIp(ip); setIpDraft(ip);
+  }, []);
+
+  // #3: render a QR to the public survey (shown on the idle screen for customers to scan).
+  useEffect(() => {
+    import("qrcode")
+      .then((QR) => QR.toDataURL(`${window.location.origin}/survey`, { margin: 1, width: 340 }).then(setSurveyQr).catch(() => {}))
+      .catch(() => {});
   }, []);
 
   // Source 1: fix-reader presence
@@ -355,6 +363,18 @@ export default function DisplayPage() {
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
           <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
           <p style={{ color: "#9f886c", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
+        </div>
+      )}
+
+      {/* #3: survey QR — shown whenever the screen is idle (over the video OR the logo screen). */}
+      {mode === "idle" && surveyQr && (
+        <div className="absolute" style={{ bottom: 28, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,0.95)", borderRadius: 16, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 6px 24px rgba(0,0,0,0.28)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={surveyQr} alt="Survey QR" width={104} height={104} />
+          <div>
+            <p style={{ color: "#4c4847", fontSize: 17, fontWeight: 600 }}>สแกนเพื่อให้คะแนน</p>
+            <p style={{ color: "#9f886c", fontSize: 13 }}>Rate your visit</p>
+          </div>
         </div>
       )}
 

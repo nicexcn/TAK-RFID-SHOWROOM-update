@@ -13,6 +13,15 @@ export const CUSTOMER_TYPES = [
 
 export type CustomerType = (typeof CUSTOMER_TYPES)[number]["value"];
 
+// #2/#4: how a customer came in (the "customer source" report category). value = stored, label = shown.
+export const CUSTOMER_SOURCES = [
+  { value: "Sales invite", label: "Sales invite / เซลล์เชิญ" },
+  { value: "Walk-in", label: "Walk-in / เดินเข้ามาเอง" },
+  { value: "Event", label: "Event / งานอีเวนต์" },
+  { value: "Online", label: "Online / ออนไลน์" },
+  { value: "Referral", label: "Referral / แนะนำต่อ" },
+] as const;
+
 const byValue = new Map(CUSTOMER_TYPES.map((t) => [t.value, t]));
 
 /** Code prefix for a stored title value (falls back to "Ot"). */

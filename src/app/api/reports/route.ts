@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/permissions";
 import { canAccessPath } from "@/lib/roles";
+import { customerTypeLabel } from "@/lib/customerTypes";
 
 // #4 Report: product activity over a period (Daily/Weekly/Monthly/Yearly), searchable by
 // customer code / Project / Sale. Returns the summary + "all scanned" and "taken home" lists
@@ -144,13 +145,48 @@ export async function GET(req: NextRequest) {
       }).sort((a, b) => a.date.localeCompare(b.date));
     }
 
+    // #4 (Excel report list) — visitor & customer insights, from the customers active this period.
+    const visitingIds = [...new Set(filtered.map((s) => s.session.customerId).filter(Boolean) as string[])];
+    let bySource: { name: string; count: number }[] = [];
+    let byType: { name: string; count: number }[] = [];
+    let firstTime = 0, returning = 0;
+    if (visitingIds.length) {
+      const custs = await prisma.customer.findMany({ where: { id: { in: visitingIds } }, select: { id: true, source: true, title: true } });
+      bySource = tally(custs.map((c) => c.source));
+      byType = tally(custs.map((c) => (c.title ? customerTypeLabel(c.title) : null)));
+      // Count first/returning over customers that STILL EXIST (session.customerId isn't an FK, so a
+      // deleted customer's id can linger on old sessions and skew the totals vs bySource/byType).
+      // "Returning" = had a SCAN before this window — real prior activity (robust at day/week boundaries).
+      const liveIds = custs.map((c) => c.id);
+      const priorScans = liveIds.length
+        ? await prisma.scan.findMany({ where: { scannedAt: { lt: from }, session: { customerId: { in: liveIds } } }, select: { session: { select: { customerId: true } } }, take: 10000 })
+        : [];
+      const returningSet = new Set(priorScans.map((s) => s.session.customerId).filter(Boolean));
+      returning = liveIds.filter((id) => returningSet.has(id)).length;
+      firstTime = liveIds.length - returning;
+    }
+
+    // Satisfaction feedback summary — window-scoped, narrowed to the searched customers when a search is active.
+    const surveys = await prisma.surveyResponse.findMany({
+      where: { createdAt: { gte: from, lte: to }, ...(q ? { customerId: { in: visitingIds } } : {}) },
+      select: { answers: true },
+    });
+    const avgOf = (key: string) => {
+      const vals = surveys.map((s) => Number((s.answers as Record<string, unknown>)?.[key])).filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+      return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100 : null;
+    };
+    const satisfaction = { overall: avgOf("overall"), service: avgOf("service"), responses: surveys.length };
+
     return NextResponse.json({
       period: { from, to, label, key: period },
-      summary,
+      summary: { ...summary, firstTime, returning },
       scannedProducts,
       takenHomeProducts,
       byBrand: tally(filtered.map((s) => s.product?.brand)),
       byCategory: tally(filtered.map((s) => s.product?.category)),
+      bySource,
+      byType,
+      satisfaction,
       takeaways,
     });
   } catch (error) {

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 export default function StickerPrintPage() {
   const [d, setD] = useState({ company: "", contact: "", phone: "", project: "", requester: "", code: "" });
+  const [bleed, setBleed] = useState(false); // #9: 0.5cm bleed (9×6cm artwork for a die-cut print house)
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -22,7 +23,7 @@ export default function StickerPrintPage() {
   }, []);
 
   const archer = { fontFamily: "'Archer', sans-serif" };
-  const heavent = { fontFamily: "'DB Heavent', 'Archer', sans-serif" };
+  const heavent = { fontFamily: "'DB Heavent', 'Archer', sans-serif", fontWeight: 300 };
   // Each row is a SINGLE line (long values truncate with … rather than wrapping) so all four
   // rows — critically the ผู้เบิก row — always fit inside the fixed 5cm height and print.
   const row = (label: string, value: string) => (
@@ -36,7 +37,7 @@ export default function StickerPrintPage() {
   return (
     <div className="page-root" style={{ minHeight: "100vh", background: "#e9e6df", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <style>{`
-        @page { size: 8cm 5cm; margin: 0; }
+        @page { size: ${bleed ? "9cm 6cm" : "8cm 5cm"}; margin: 0; }
         @media print {
           .no-print { display: none !important; }
           html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
@@ -56,6 +57,10 @@ export default function StickerPrintPage() {
         <input value={d.requester} onChange={(e) => setD((p) => ({ ...p, requester: e.target.value }))}
           placeholder="ชื่อผู้เบิกสินค้า"
           style={{ ...archer, width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e6e5d8", background: "#fff", color: "#4c4847", fontSize: 14, outline: "none" }} />
+        <label style={{ ...archer, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#4c4847", marginTop: 14, cursor: "pointer" }}>
+          <input type="checkbox" checked={bleed} onChange={(e) => setBleed(e.target.checked)} />
+          Add 0.5 cm bleed (9×6 cm artwork for a die-cut print house)
+        </label>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <button onClick={() => window.close()} style={{ ...archer, padding: "10px 18px", borderRadius: 12, background: "#f5f2ee", color: "#4c4847", border: "none", fontSize: 14, cursor: "pointer" }}>Close</button>
           <button onClick={() => window.print()} style={{ ...archer, flex: 1, padding: "10px 18px", borderRadius: 12, background: "#726c5a", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>🖨 Print</button>
@@ -68,10 +73,15 @@ export default function StickerPrintPage() {
       {/* The sticker — exact 8×5 cm */}
       <div className="sticker-wrap" style={{ padding: "0 16px 32px" }}>
         <div className="sticker" style={{
-          width: "8cm", height: "5cm", background: "#fff", boxSizing: "border-box",
-          padding: "0.45cm 0.5cm", display: "flex", flexDirection: "column",
+          position: "relative",
+          width: bleed ? "9cm" : "8cm", height: bleed ? "6cm" : "5cm", background: "#fff", boxSizing: "border-box",
+          padding: bleed ? "0.95cm 1cm" : "0.45cm 0.5cm", display: "flex", flexDirection: "column",
           border: "1px solid #d8d3c6", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", overflow: "hidden",
         }}>
+          {bleed && (
+            // Trim line at the 8×5 cut (0.5cm inset) — an on-screen guide only, hidden when printing.
+            <div className="no-print" style={{ position: "absolute", top: "0.5cm", left: "0.5cm", right: "0.5cm", bottom: "0.5cm", border: "1px dashed #c9a15a", pointerEvents: "none" }} />
+          )}
           <div style={{ ...archer, fontWeight: 600, fontSize: "17pt", lineHeight: 1.05, color: "#000", marginBottom: "0.28cm" }}>
             Product Sample
           </div>

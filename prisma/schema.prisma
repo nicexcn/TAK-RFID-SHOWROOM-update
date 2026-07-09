@@ -62,6 +62,10 @@ model Customer {
   // #4: the project this customer is associated with (e.g. "Samsung Office"). Used on the
   // sticker (image2) and searchable in Reports (by customer code / Project / Sale).
   project          String?
+  // #2/#4: how the customer came in (Sales invite / Walk-in / Event / Online / Referral).
+  // Distinguishes a TWC-invited customer (salesPerson = TWC rep) from a Walk-in (salesPerson =
+  // showroom staff), and drives the "customer source" report category.
+  source           String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]

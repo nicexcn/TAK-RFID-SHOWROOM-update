@@ -11,11 +11,14 @@ interface ProdLite { id: string; name: string; brand: string | null; category: s
 interface ProductRow { product: ProdLite; scanCount: number; takenQty: number; }
 interface Report {
   period: { from: string; to: string; label: string; key: string };
-  summary: { visits: number; customers: number; totalScans: number; totalTaken: number; uniqueProducts: number };
+  summary: { visits: number; customers: number; totalScans: number; totalTaken: number; uniqueProducts: number; firstTime: number; returning: number };
   scannedProducts: ProductRow[];
   takenHomeProducts: ProductRow[];
   byBrand: { name: string; count: number }[];
   byCategory: { name: string; count: number }[];
+  bySource: { name: string; count: number }[];
+  byType: { name: string; count: number }[];
+  satisfaction: { overall: number | null; service: number | null; responses: number };
 }
 
 const PERIODS = [
@@ -97,6 +100,8 @@ export default function ReportsPage() {
 
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
   const maxCat = Math.max(1, ...(data?.byCategory || []).map((b) => b.count));
+  const maxSource = Math.max(1, ...(data?.bySource || []).map((b) => b.count));
+  const maxType = Math.max(1, ...(data?.byType || []).map((b) => b.count));
 
   const card = (label: string, value: number, hint?: string) => (
     <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
@@ -192,6 +197,26 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {bars("Brands scanned", data.byBrand, maxBrand, "#726c5a")}
             {bars("Categories", data.byCategory, maxCat, "#9f886c")}
+          </div>
+
+          {/* #4 (Excel): customer source + visitor types */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {bars("Customer source", data.bySource, maxSource, "#4a6fa5")}
+            {bars("Visitor types", data.byType, maxType, "#4a7c59")}
+          </div>
+
+          {/* #4 (Excel): first-time vs returning + satisfaction summary */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {card("First-time", data.summary.firstTime, "visitors this period")}
+            {card("Returning", data.summary.returning, "visited before")}
+            <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+              <p className="text-xs mb-1" style={{ color: "#9f886c" }}>Satisfaction (avg / 5)</p>
+              <div className="flex gap-5">
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#cdc3ad" }}>overall</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#cdc3ad" }}>service</p></div>
+              </div>
+              <p className="text-[11px] mt-0.5" style={{ color: "#cdc3ad" }}>{data.satisfaction.responses} responses</p>
+            </div>
           </div>
 
           {/* Two lists: all scanned + taken home */}

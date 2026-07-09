@@ -84,6 +84,13 @@ All **11 code items** from *"สรุปสิ่งที่ต้องดำ
 - **#7** — buy a **sticker printer** (the app produces the 8×5 cm artwork; a label printer prints it).
 - **#12** — provide the **device dimensions** to embed in the table (hardware/fit-out).
 
+## Post-audit refinements (closing the "partial" gaps)
+A compliance audit against the meeting doc + Excel found four items partially covered; all are now closed:
+- **#2/#4 — Customer source.** New **Source** field on the register form (Sales invite / Walk-in / Event / Online / Referral) — distinguishes a TWC-invited customer from a walk-in, and drives a **"Customer source"** breakdown in Reports.
+- **#3 — Survey reachable by customers.** A **QR code** now shows on the **TV display whenever it's idle** (over the idle video or the logo) → customers scan it to open the survey. Plus a per-customer **📋 Survey** link on the customer page (pre-attributed).
+- **#4 — Excel report categories.** Reports now also show **Visitor types**, **First-time vs Returning**, and a **Satisfaction summary** (survey averages) alongside the scanned/taken-home lists.
+- **#9 — Sticker bleed.** A **"0.5 cm bleed"** toggle renders a 9×6 cm artwork with a trim guide for a die-cut print house (the default stays 8×5 cm for label printers).
+
 ## Notes
 - Schema changes are on the **shared Supabase DB** (via `prisma db push`) and the app is deployed to Vercel production.
 - The survey's "Sales" gating currently maps to the **Basic** role; role definitions live in `src/lib/roles.ts`.

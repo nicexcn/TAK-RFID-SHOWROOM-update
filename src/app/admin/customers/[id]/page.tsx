@@ -24,7 +24,7 @@ interface SessionRow {
 interface Contact { id: string; name: string; phone: string; note?: string | null; }
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string; titleOther?: string | null;
-  company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; project?: string | null;
+  company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; project?: string | null; source?: string | null;
   knowChannel: string[]; knowChannelOther?: string | null; pdpaConsent: boolean; createdAt: string;
   sessions: SessionRow[]; contacts?: Contact[];
 }
@@ -101,7 +101,8 @@ export default function CustomerDetailPage() {
     ["Phone", customer.phone || "—"],
     ["Email", customer.email || "—"],
     ["LINE ID", customer.lineId || "—"],
-    ["Source", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
+    ["Heard via", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
+    ["Source", customer.source || "—"],
     ["Sales", customer.salesPerson || "—"],
     ["Project", customer.project || "—"],
     ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
@@ -122,6 +123,9 @@ export default function CustomerDetailPage() {
           <a href={`/print/sticker?${new URLSearchParams({ company: customer.company || "", contact: customer.fullName || "", phone: customer.phone || "", project: customer.project || "", requester: customer.fullName || "", code: customer.customerCode || "" }).toString()}`}
             target="_blank" rel="noopener noreferrer"
             className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>🖨 Print Sticker</a>
+          {/* #3: attributed survey link for this customer (opens the public survey pre-tagged). */}
+          <a href={`/survey?customer=${customer.id}`} target="_blank" rel="noopener noreferrer"
+            className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>📋 Survey</a>
           <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Start Scan</Link>
           <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>Delete</button>
         </div>
