@@ -40,6 +40,7 @@ export default function AddCustomerPage() {
   const phoneRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const pdpaRef = useRef<HTMLElement>(null);
+  const sourceRef = useRef<HTMLDivElement>(null);
 
   const toggleChannel = (ch: string) =>
     setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch]);
@@ -65,6 +66,7 @@ export default function AddCustomerPage() {
     if (!phone) { setError(req); phoneRef.current?.focus(); return; }
     if (!email) { setError(req); emailRef.current?.focus(); return; }
     if (!pdpa) { setError("กรุณายืนยัน PDPA consent"); scrollTo(pdpaRef.current); return; }
+    if (!source) { setError("กรุณาเลือกแหล่งที่มา (Source)"); scrollTo(sourceRef.current); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/customers", {
@@ -251,8 +253,8 @@ export default function AddCustomerPage() {
             For staff use / สำหรับเจ้าหน้าที่
           </h2>
           <p className="text-xs mb-4" style={{ color: "#9f886c" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
-          <div className="mb-4">
-            <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Source / แหล่งที่มา</label>
+          <div className="mb-4" ref={sourceRef}>
+            <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Source / แหล่งที่มา <span style={{ color: "#dc2626" }}>*</span></label>
             <select value={source} onChange={(e) => setSource(e.target.value)}
               className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
               <option value="">— เลือก / select —</option>

@@ -11,7 +11,7 @@ const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => t.value);
 
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string;
-  company: string; phone: string; email: string; knowChannel: string[]; createdAt: string; salesPerson?: string | null;
+  company: string; phone: string; email: string; knowChannel: string[]; createdAt: string; salesPerson?: string | null; source?: string | null;
 }
 
 export default function CustomersPage() {
@@ -40,8 +40,8 @@ export default function CustomersPage() {
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) { alert("ไม่มีข้อมูล"); return; }
     const rows = [
-      ["Code","Full Name","Title","Company","Phone","Email","Channels","Sales","Registered"],
-      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.salesPerson ?? "", new Date(c.createdAt).toLocaleDateString("th-TH")]),
+      ["Code","Full Name","Title","Company","Phone","Email","Channels","Source","Sales","Registered"],
+      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.source ?? "", c.salesPerson ?? "", new Date(c.createdAt).toLocaleDateString("th-TH")]),
     ];
     const csv = toCsv(rows);
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
