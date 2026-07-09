@@ -18,7 +18,9 @@ export async function GET(req: NextRequest) {
     const borrowDays = settings?.borrowDays && settings.borrowDays > 0 ? settings.borrowDays : undefined; // undefined → loanStatus uses BORROW_DAYS
 
     const scans = await prisma.scan.findMany({
-      where: { takeawayQty: { gt: 0 } },
+      // image3: only must-return takeaways are loans. Keyed on the per-scan snapshot (Scan.isLoan),
+      // NOT the live product flag, so flipping a product to give-away can't orphan outstanding loans.
+      where: { takeawayQty: { gt: 0 }, isLoan: true },
       select: {
         id: true, scannedAt: true, takeawayQty: true, returnedQty: true, returnedAt: true, dueDate: true,
         product: { select: { id: true, name: true, productCode: true, imageUrl: true, brand: true, colour: true, size: true } },

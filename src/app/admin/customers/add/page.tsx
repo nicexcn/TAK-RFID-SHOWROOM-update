@@ -1,18 +1,12 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 
-const TITLE_OPTIONS = [
-  { value: "Architect",  label: "Architect / สถาปนิก" },
-  { value: "Interior",   label: "Interior Designer / มัณฑนากร" },
-  { value: "Turnkey",    label: "Turnkey / รับเหมาแบบครบวงจร" },
-  { value: "Contractor", label: "Contractor / ผู้รับเหมา" },
-  { value: "Homeowner",  label: "Homeowner / เจ้าของบ้านหรือโครงการ" },
-  { value: "Other",      label: "Other / อื่นๆ" },
-] as const;
-type TitleType = typeof TITLE_OPTIONS[number]["value"];
+const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => ({ value: t.value, label: `${t.label} / ${t.labelTh}` }));
+type TitleType = string;
 
 const KNOW_CHANNELS = [
   "Facebook","Instagram","Website","Google search","Friend or colleague",
@@ -33,6 +27,9 @@ export default function AddCustomerPage() {
   const [channels, setChannels] = useState<string[]>([]);
   const [channelOther, setChannelOther] = useState("");
   const [pdpa, setPdpa] = useState(false);
+  const [salesPerson, setSalesPerson] = useState(""); // #2: staff-filled — who handles this customer
+  const [project, setProject] = useState(""); // #4: project this customer is associated with
+  const [salesOptions, setSalesOptions] = useState<string[]>([]);
 
   // Refs to move the user to the first missing required field on submit.
   const fullNameRef = useRef<HTMLInputElement>(null);
@@ -47,6 +44,14 @@ export default function AddCustomerPage() {
     setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch]);
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // #2: suggestions for the staff "Sales" field come from the managed list (Settings → Salesperson).
+  useEffect(() => {
+    fetch("/api/dropdown?type=sales")
+      .then((r) => r.json())
+      .then((opts: { value: string }[]) => setSalesOptions(Array.isArray(opts) ? opts.map((o) => o.value) : []))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit() {
     setError("");
@@ -71,6 +76,8 @@ export default function AddCustomerPage() {
           knowChannel: channels,
           knowChannelOther: channels.includes("Other") ? channelOther : undefined,
           pdpaConsent: pdpa,
+          salesPerson: salesPerson || undefined,
+          project: project || undefined,
         }),
       });
       if (res.ok) { router.push("/admin/customers"); }
@@ -234,6 +241,37 @@ export default function AddCustomerPage() {
               registration, event communication, and related promotional purposes.
             </p>
           </button>
+        </section>
+
+        {/* #2: staff-only section — visually separated from the customer-filled fields above */}
+        <section className="rounded-xl p-5" style={{ background: "#f5f2ee", border: "1px dashed #cdc3ad" }}>
+          <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>
+            For staff use / สำหรับเจ้าหน้าที่
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "#9f886c" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Sales / เซลล์ผู้ดูแล</label>
+              <input list="sales-options" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)}
+                placeholder="เลือกหรือพิมพ์ชื่อเซลล์ (walk-in: ใส่ชื่อเซลล์โชว์รูม)"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm"
+                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+              <datalist id="sales-options">
+                {salesOptions.map((s) => <option key={s} value={s} />)}
+              </datalist>
+              <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>
+                จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Project / โปรเจกต์</label>
+              <input value={project} onChange={(e) => setProject(e.target.value)}
+                placeholder="เช่น Samsung Office"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm"
+                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+              <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>Used in Reports search &amp; printed on the sticker</p>
+            </div>
+          </div>
         </section>
 
         {error && <p className="text-sm" style={{ color: "#dc2626" }}>{error}</p>}

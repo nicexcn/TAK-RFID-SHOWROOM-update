@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
 import { uploadFile } from "@/lib/uploadImage";
 import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
+import { ROLES } from "@/lib/roles";
 
 const newReaderId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
@@ -23,6 +24,7 @@ const DROPDOWN_TYPES = [
   { key: "brand", label: "Brand" },
   { key: "materialType", label: "Material Type" },
   { key: "category", label: "Category" },
+  { key: "sales", label: "Salesperson" },
 ];
 
 const TABS = [
@@ -507,19 +509,10 @@ export default function SettingsPage() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
-                        <div className="flex gap-2">
-                          {["user","admin"].map((r) => (
-                            <button key={r} onClick={() => setCreateForm((p) => ({ ...p, role: r }))}
-                              className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
-                              style={{
-                                background: createForm.role === r ? "#726c5a" : "#fff",
-                                color: createForm.role === r ? "#fff" : "#9f886c",
-                                border: "1px solid " + (createForm.role === r ? "#726c5a" : "#e6e5d8"),
-                              }}>
-                              {r === "admin" ? "Admin" : "User"}
-                            </button>
-                          ))}
-                        </div>
+                        <select value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
+                          {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                        </select>
                       </div>
                     </div>
                     {createError && <p className="text-xs mt-3" style={{ color: "#dc2626" }}>{createError}</p>}
@@ -617,19 +610,10 @@ export default function SettingsPage() {
                               </div>
                               <div className="col-span-2">
                                 <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
-                                <div className="flex gap-2">
-                                  {["user","admin"].map((r) => (
-                                    <button key={r} onClick={() => setEditForm((p) => ({ ...p, role: r }))}
-                                      className="flex-1 py-2 rounded-xl text-sm font-medium transition-all"
-                                      style={{
-                                        background: editForm.role === r ? "#726c5a" : "#fff",
-                                        color: editForm.role === r ? "#fff" : "#9f886c",
-                                        border: "1px solid " + (editForm.role === r ? "#726c5a" : "#e6e5d8"),
-                                      }}>
-                                      {r === "admin" ? "Admin" : "User"}
-                                    </button>
-                                  ))}
-                                </div>
+                                <select value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                                  className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
+                                  {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                                </select>
                               </div>
                             </div>
                             {editError && <p className="text-xs mt-2" style={{ color: "#dc2626" }}>{editError}</p>}

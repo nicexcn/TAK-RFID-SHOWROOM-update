@@ -15,7 +15,7 @@ export async function PATCH(
     const { id: sessionId, scanId } = await params;
     const { prepareStatus, takeawayQty, productId } = await req.json();
 
-    const data: { prepareStatus?: string; takeawayQty?: number } = {};
+    const data: { prepareStatus?: string; takeawayQty?: number; isLoan?: boolean } = {};
     if (prepareStatus !== undefined) {
       if (!PREPARE_STATES.includes(prepareStatus)) {
         return NextResponse.json({ error: "Invalid prepareStatus" }, { status: 400 });
@@ -66,6 +66,20 @@ export async function PATCH(
       }
     }
 
+    // image3: snapshot loan-ness from the product's returnable, but ONLY on the INITIAL takeaway
+    // (new scan, or prior qty was 0). Later qty edits preserve the original snapshot, so a mid-loan
+    // product flip to give-away can't downgrade / orphan an outstanding loan (see /api/loans).
+    if (data.takeawayQty !== undefined) {
+      const existing = await prisma.scan.findUnique({
+        where: { sessionId_productId: { sessionId, productId: pid } },
+        select: { takeawayQty: true },
+      });
+      if (!existing || existing.takeawayQty === 0) {
+        const prodR = await prisma.product.findUnique({ where: { id: pid }, select: { returnable: true } });
+        data.isLoan = prodR?.returnable !== false;
+      }
+    }
+
     // Upsert by the stable key so an optimistic/not-yet-flushed scan still works. Require a
     // real session (the FK guards against a forged sessionId; isActive keeps closed sessions clean).
     const session = await prisma.session.findUnique({ where: { id: sessionId }, select: { isActive: true } });
@@ -91,5 +105,36 @@ export async function PATCH(
   } catch (error) {
     console.error("SCAN PATCH ERROR:", error);
     return NextResponse.json({ error: "Failed to update scan" }, { status: 500 });
+  }
+}
+
+// DELETE — remove a scan from a session (e.g. an item added by mistake on the manual
+// picker). Keyed by (sessionId, productId) like PATCH so an optimistic/unflushed id still
+// resolves; falls back to the URL's scanId. Idempotent (deleteMany never throws on absence).
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; scanId: string }> }
+) {
+  try {
+    const { id: sessionId, scanId } = await params;
+    const body = await req.json().catch(() => ({} as { productId?: string }));
+    let pid: string | undefined = typeof body.productId === "string" && body.productId ? body.productId : undefined;
+    if (!pid) {
+      const found = await prisma.scan.findFirst({ where: { id: scanId, sessionId }, select: { productId: true } });
+      pid = found?.productId;
+    }
+    if (!pid) {
+      return NextResponse.json({ error: "Scan not found in session" }, { status: 404 });
+    }
+    await prisma.scan.deleteMany({ where: { sessionId, productId: pid } });
+    // Drop any pending prepare notification for the removed item — mark read too so it
+    // clears the unread bell badge (the count query filters on isRead, not status).
+    await prisma.notification.updateMany({ where: { sessionId, productId: pid }, data: { status: "COMPLETE", isRead: true } });
+    await broadcastDisplayChanged();
+    await broadcastNotifications();
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("SCAN DELETE ERROR:", error);
+    return NextResponse.json({ error: "Failed to delete scan" }, { status: 500 });
   }
 }

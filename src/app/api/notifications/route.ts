@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
     const { productId, customerId, sessionId, title, message } = await req.json();
     if (!productId) return NextResponse.json({ error: "productId required" }, { status: 400 });
 
+    // image3: give-away products (returnable=false) are handed over as-is — no "prepare" alert.
+    const prod = await prisma.product.findUnique({ where: { id: productId }, select: { returnable: true } });
+    if (prod && prod.returnable === false) {
+      return NextResponse.json({ skipped: true, reason: "give-away" }, { status: 200 });
+    }
+
     const existing = sessionId
       ? await prisma.notification.findFirst({
           where: { productId, sessionId, status: { not: "COMPLETE" } },

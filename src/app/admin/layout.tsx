@@ -7,14 +7,18 @@ import Link from "next/link";
 import { Toaster, toast } from "sonner";
 import { subscribeNotifications } from "@/lib/notifChannel";
 import { isNotifyEnabled, setNotifyEnabled, enableNotifications, playBeep, showOsNotification } from "@/lib/notify";
+import { canAccessPath } from "@/lib/roles";
 
 interface UnreadNotif { product?: { name?: string }; customer?: { fullName?: string } | null }
 
 const navItems = [
   { label: "Dashboard",           href: "/admin" },
+  { label: "Reports",             href: "/admin/reports" },
+  { label: "Survey Results",      href: "/admin/survey" },
   { label: "Product Management",  href: "/admin/products" },
   { label: "Customer Management", href: "/admin/customers" },
   { label: "Surface Scan",        href: "/admin/rfid" },
+  { label: "Manual Scan",         href: "/admin/manual-scan" },
   { label: "Notifications",       href: "/admin/notifications" },
   { label: "Settings",            href: "/admin/settings" },
 ];
@@ -24,12 +28,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [username, setUsername] = useState("...");
+  const [role, setRole] = useState(""); // #3: hide Survey Results from the basic/Sales role
   const [notifCount, setNotifCount] = useState(0);
   const [notifOn, setNotifOn] = useState(false);     // sound/alert preference (button UI)
   const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setUsername(d.username); });
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setUsername(d.username); if (d.role) setRole(d.role); });
     setNotifOn(isNotifyEnabled());
   }, []);
 
@@ -148,7 +153,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <p className="text-sm font-semibold tracking-wider" style={{ color: "#4c4847" }}>NimitrLog</p>
         </div>
         <nav className="flex-1 space-y-1">
-          {navItems.map((item) => {
+          {navItems.filter((item) => role !== "" && canAccessPath(role, item.href)).map((item) => {
             const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href}

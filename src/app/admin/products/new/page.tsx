@@ -28,6 +28,7 @@ export default function NewProductPage() {
     size: "",
     colour: "",
     description: "",
+    returnable: true, // image3: true = must-return sample; false = give-away
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
@@ -200,6 +201,18 @@ export default function NewProductPage() {
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
+          </div>
+
+          {/* image3: give-away vs must-return */}
+          <div>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Return policy / นโยบายการคืน</label>
+            <label className="flex items-start gap-3 px-4 py-3 rounded-xl cursor-pointer" style={inputStyle}>
+              <input type="checkbox" name="returnable" checked={form.returnable} onChange={handleChange} className="w-4 h-4 mt-0.5" />
+              <span className="text-sm" style={{ color: "#4c4847" }}>
+                <strong>ต้องคืน</strong> (Must be returned) — มีแจ้งเตือนเตรียมของ + ติดตามการคืน<br />
+                <span style={{ color: "#9f886c" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
+              </span>
+            </label>
           </div>
 
           {/* Images — multiple, first is the cover */}

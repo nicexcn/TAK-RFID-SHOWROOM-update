@@ -20,10 +20,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const data = await req.json();
     // imageUrl is intentionally NOT writable here — it's a derived cover cache
     // owned solely by syncCover() (gallery image #0). See /api/products/[id]/images.
-    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location } = data;
+    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable } = data;
     const product = await prisma.product.update({
       where: { id },
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location },
+      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable },
     });
     return NextResponse.json(product);
   } catch (error) {

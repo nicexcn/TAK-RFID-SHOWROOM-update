@@ -22,7 +22,7 @@ const warn = (msg: string) =>
 interface Product {
   id: string; name: string; brand: string | null; productCode: string | null;
   materialType: string | null; category: string | null; imageUrl: string | null;
-  location: string | null;
+  location: string | null; returnable?: boolean; // image3: false = give-away (no prepare/return)
 }
 interface ScanItem {
   id: string; scannedAt: string; product: Product;
@@ -31,7 +31,7 @@ interface ScanItem {
   deviceId: number; // 1-4
 }
 interface Session {
-  id: string; customerCode: string; customerId: string | null; scans: ScanItem[];
+  id: string; customerCode: string; customerId: string | null; scans: ScanItem[]; contactName?: string | null;
   // When set, a physical reader is bound to this session and the SERVER persists its
   // scans (relay → /api/scan). The browser then shows scans live but does NOT POST them,
   // so there's no double-write. Empty = local/direct mode where the browser persists.
@@ -334,7 +334,22 @@ function RFIDPageInner() {
         if (data?.id && data.customerCode === preloadCode) {
           applyLoadedSession(data);
         } else if (preloadCode) {
-          handleStartSessionWith(preloadCode, null);
+          // Resolve the customer so the contact picker can be offered before starting. If they
+          // have extra contacts, show the Start screen with the picker (don't auto-start); with
+          // no contacts, keep the one-click auto-start.
+          fetch(`/api/customers/search?q=${encodeURIComponent(preloadCode)}&type=code`)
+            .then((r) => r.json())
+            .then(async (cust) => {
+              if (cust?.id) {
+                const cs = await fetch(`/api/customers/${cust.id}/contacts`).then((r) => r.json()).catch(() => []);
+                if (Array.isArray(cs) && cs.length > 0) {
+                  setCustomerInfo(cust); setContacts(cs); setContactName("");
+                  return; // wait for staff to pick a contact + press Start
+                }
+              }
+              handleStartSessionWith(preloadCode, cust?.id || null);
+            })
+            .catch(() => handleStartSessionWith(preloadCode, null));
         }
       });
     } else {
@@ -415,7 +430,7 @@ function RFIDPageInner() {
     return () => clearInterval(t);
   }, [session?.id, hasPreparingScan]);
 
-  async function handleStartSessionWith(code: string, custId: string | null) {
+  async function handleStartSessionWith(code: string, custId: string | null, contact?: string) {
     setLoading(true); setError("");
     try {
       // If a reader is pinned via the relay (?device=<device_id>), bind it so the server
@@ -423,7 +438,7 @@ function RFIDPageInner() {
       const readerId = readerIdFromUrl(deviceIps[wsDeviceId] || "");
       const res = await fetch("/api/sessions", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerCode: code, customerId: custId, deviceId: getDeviceId(), readerId }),
+        body: JSON.stringify({ customerCode: code, customerId: custId, contactName: contact || undefined, deviceId: getDeviceId(), readerId }),
       });
       const data = await res.json();
       // Guard: never enter the active-session branch with a missing id (would make
@@ -437,20 +452,30 @@ function RFIDPageInner() {
     }
   }
 
+  const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]); // #8
+  const [contactName, setContactName] = useState("");
+  const searchSeqRef = useRef(0); // ignore a stale contacts fetch that resolves after a newer search
+
   async function handleSearchCustomer() {
     if (!customerQuery.trim()) return;
-    setSearching(true); setSearchError(""); setCustomerInfo(null);
+    setSearching(true); setSearchError(""); setCustomerInfo(null); setContacts([]); setContactName("");
+    const seq = ++searchSeqRef.current;
     const res = await fetch(`/api/customers/search?q=${encodeURIComponent(customerQuery.trim())}&type=${searchType}`);
     const data = await res.json();
-    if (data?.id) setCustomerInfo(data);
-    else setSearchError("ไม่พบข้อมูลสมาชิก");
+    if (searchSeqRef.current !== seq) return; // superseded by a newer search
+    if (data?.id) {
+      setCustomerInfo(data);
+      setContactName(""); // "" = primary contact; only set when staff pick an extra contact
+      fetch(`/api/customers/${data.id}/contacts`).then((r) => r.json())
+        .then((cs) => { if (searchSeqRef.current === seq) setContacts(Array.isArray(cs) ? cs : []); }).catch(() => {});
+    } else setSearchError("ไม่พบข้อมูลสมาชิก");
     setSearching(false);
   }
 
   async function handleStartSession() {
     const code = customerInfo?.customerCode || customerQuery.trim();
     if (!code) { setError("กรุณาระบุ Customer ID"); return; }
-    await handleStartSessionWith(code, customerInfo?.id || null);
+    await handleStartSessionWith(code, customerInfo?.id || null, contactName);
   }
 
   // Persist a scan's prepare status / takeaway qty (customer req #2) — previously
@@ -501,11 +526,16 @@ function RFIDPageInner() {
       warn("Set a takeaway amount (≥ 1) before preparing.");
       return;
     }
+    // image3: give-away items are handed over as-is — no prepare/notification.
+    if (scan.product.returnable === false) {
+      warn("สินค้าให้ไปเลย — ไม่ต้องเตรียม/แจ้งเตือน");
+      return;
+    }
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "PREPARING" } : s) } : p);
     // The scan PATCH and the notification POST are independent writes; the UI already
     // updated optimistically above, so run them concurrently — perceived latency is the
     // slower of the two, not their sum.
-    await Promise.all([
+    const [, notifRes] = await Promise.all([
       patchScan(scan, { prepareStatus: "PREPARING" }),
       fetch("/api/notifications", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -516,6 +546,14 @@ function RFIDPageInner() {
         }),
       }),
     ]);
+    // image3 safety: if the server skipped the alert (product is give-away — e.g. flipped to
+    // give-away after this station loaded), don't leave the scan stuck PREPARING with no alert.
+    const skipped = await notifRes.json().then((d) => d?.skipped).catch(() => false);
+    if (skipped) {
+      setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "NONE" } : s) } : p);
+      await patchScan(scan, { prepareStatus: "NONE" });
+      warn("สินค้าให้ไปเลย — ไม่ต้องเตรียม/แจ้งเตือน");
+    }
   }
 
   async function handleMarkComplete(scan: ScanItem) {
@@ -567,7 +605,7 @@ function RFIDPageInner() {
       } catch { /* best-effort; UI still resets */ }
     }
     seenEpcsRef.current.clear();
-    setSession(null); setCustomerQuery(""); setCustomerInfo(null);
+    setSession(null); setCustomerQuery(""); setCustomerInfo(null); setContactName(""); setContacts([]);
     setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]); setUnknownTags([]);
     setConnectedDevices(new Set([1]));
   }
@@ -658,7 +696,7 @@ function RFIDPageInner() {
             <p className="text-sm mb-6 text-center" style={{ color: "#9f886c" }}>ค้นหาลูกค้าหรือกรอก ID เพื่อเริ่ม session</p>
             <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: "#f5f2ee" }}>
               {(["code","name","phone"] as const).map((t) => (
-                <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); }}
+                <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
                   className="flex-1 py-2 text-xs font-medium transition-colors"
                   style={{ background: searchType === t ? "#726c5a" : "transparent", color: searchType === t ? "#fff" : "#9f886c" }}>
                   {t === "code" ? "ID" : t === "name" ? "ชื่อ" : "เบอร์"}
@@ -685,6 +723,13 @@ function RFIDPageInner() {
                 </div>
                 <p className="text-xs" style={{ color: "#9f886c" }}>🏢 {customerInfo.company}</p>
                 <p className="text-xs font-mono" style={{ color: "#726c5a" }}>🏷️ {customerInfo.customerCode} · 📞 {customerInfo.phone}</p>
+                {contacts.length > 0 && (
+                  <select value={contactName} onChange={(e) => setContactName(e.target.value)}
+                    className="w-full mt-2 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                    <option value="">{customerInfo.fullName} (หลัก)</option>
+                    {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                )}
               </div>
             )}
             {customerInfo && preloadName && !customerInfo.id && (
@@ -718,6 +763,7 @@ function RFIDPageInner() {
               <p className="text-base font-semibold" style={{ color: "#4c4847" }}>
                 {customerInfo?.fullName ? `${customerInfo.fullName} (${session.customerCode})` : session.customerCode}
               </p>
+              {session.contactName && <p className="text-xs" style={{ color: "#726c5a" }}>ผู้ติดต่อ: {session.contactName}</p>}
             </div>
             <div className="text-right">
               <p className="text-xs" style={{ color: "#9f886c" }}>Total Scans</p>
@@ -900,10 +946,10 @@ function RFIDPageInner() {
               <p className="text-sm font-medium" style={{ color: "#4c4847" }}>
                 รายการสแกน <span style={{ color: "#9f886c" }}>({session.scans.length})</span>
               </p>
-              {visibleScans.some((s) => s.prepareStatus === "NONE") && (
+              {visibleScans.some((s) => s.prepareStatus === "NONE" && s.product.returnable !== false) && (
                 <button onClick={() => {
-                  const ready = visibleScans.filter((s) => s.prepareStatus === "NONE" && (takeaway[s.id] ?? 0) >= 1);
-                  const skipped = visibleScans.filter((s) => s.prepareStatus === "NONE" && (takeaway[s.id] ?? 0) < 1).length;
+                  const ready = visibleScans.filter((s) => s.prepareStatus === "NONE" && s.product.returnable !== false && (takeaway[s.id] ?? 0) >= 1);
+                  const skipped = visibleScans.filter((s) => s.prepareStatus === "NONE" && s.product.returnable !== false && (takeaway[s.id] ?? 0) < 1).length;
                   ready.forEach((s) => handlePrepare(s));
                   if (skipped > 0) warn(`${skipped} item(s) skipped — set a takeaway amount (≥ 1) first.`);
                 }}
@@ -990,12 +1036,17 @@ function RFIDPageInner() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            {scan.prepareStatus === "NONE" && (
+                            {scan.prepareStatus === "NONE" && scan.product.returnable !== false && (
                               <button onClick={() => handlePrepare(scan)}
                                 className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
                                 style={{ background: "#dbeafe", color: "#3b82f6" }}>
                                 🔔 เตรียมสินค้า
                               </button>
+                            )}
+                            {scan.prepareStatus === "NONE" && scan.product.returnable === false && (
+                              <span className="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap" style={{ background: "#f0eee6", color: "#9f886c" }}>
+                                ให้ไปเลย
+                              </span>
                             )}
                             {scan.prepareStatus === "PREPARING" && (
                               <button onClick={() => handleMarkComplete(scan)}

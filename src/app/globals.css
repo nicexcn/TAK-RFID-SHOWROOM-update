@@ -24,6 +24,19 @@
   font-weight: 700;
 }
 
+/* #9 sticker: Archer Semibold (title) + DB Heavent Light (Thai body) */
+@font-face {
+  font-family: 'Archer';
+  src: url('/fonts/Archer-Semibold.otf') format('opentype');
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: 'DB Heavent';
+  src: url('/fonts/DB-Heavent-Li.ttf') format('truetype');
+  font-weight: 300;
+}
+
 @theme {
   --color-primary: #726c5a;
   --color-secondary-1: #4c4847;

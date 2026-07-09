@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     rfidTag = String(data.rfidTag || "").trim();
-    const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive } = data;
+    const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive, returnable } = data;
 
     // RFID tag reuse: a tag can be held by a SOFT-DELETED product (hidden from the catalog
     // but still occupying the unique tag). Free it so the physical chip can be re-stuck on a
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const urls: string[] = (Array.isArray(imageUrls) ? imageUrls : imageUrl ? [imageUrl] : [])
       .filter((u: unknown): u is string => typeof u === "string" && !!u);
     const product = await prisma.product.create({
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive },
+      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive, returnable: returnable !== false },
     });
     if (urls.length) {
       await prisma.productImage.createMany({ data: urls.map((url, i) => ({ productId: product.id, url, order: i })) });

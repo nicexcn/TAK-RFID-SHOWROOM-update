@@ -33,6 +33,9 @@ model Product {
   imageUrl      String?
   location      String?
   isActive      Boolean        @default(true)
+  // image3: false = give-away (customer keeps it) → no prepare notification, not a loan.
+  // true (default) = must be returned → normal prepare notification + borrow/return tracking.
+  returnable    Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   scans         Scan[]
@@ -53,15 +56,47 @@ model Customer {
   knowChannel      String[]       @default([])
   knowChannelOther String?
   pdpaConsent      Boolean        @default(false)
+  // #2: the Sales who handles this customer (TWC rep, or the showroom staff for a walk-in).
+  // Free text, suggestions come from the managed list (DropdownOption type "sales").
+  salesPerson      String?
+  // #4: the project this customer is associated with (e.g. "Samsung Office"). Used on the
+  // sticker (image2) and searchable in Reports (by customer code / Project / Sale).
+  project          String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]
+  contacts         Contact[]
+}
+
+// #8: a customer (company) can have several named contacts; a scan/session picks one.
+model Contact {
+  id         String   @id @default(cuid())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  name       String
+  phone      String   @default("")
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+
+// #3: a satisfaction-survey submission. answers = { questionKey: value|string[] } (see src/lib/survey).
+model SurveyResponse {
+  id         String   @id @default(cuid())
+  customerId String?
+  sessionId  String?
+  answers    Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Session {
   id           String    @id @default(cuid())
   customerCode String
   customerId   String?
+  contactName  String?   // #8: the specific contact (of the customer's several) this visit is for
   deviceId     String?   // station id (one configured staff station/tablet) — concurrent sessions are keyed per station
   // The physical reader (mac/serial) bound to this session. Set when staff serve a
   // customer with a relay-connected reader. Server-side ingest (/api/scan) maps an
@@ -93,6 +128,9 @@ model Scan {
   // Takeaway quantity the customer wants to take home (customer req #2). This is also the
   // BORROW quantity — takeaway == loan. The fields below track the return side.
   takeawayQty   Int    @default(0)
+  // image3: snapshot of Product.returnable AT TAKEAWAY TIME. Loan tracking keys on this (not the
+  // live product flag) so flipping a product to give-away later can't orphan an outstanding loan.
+  isLoan        Boolean @default(true)
   // Borrow/return tracking. returnedQty of takeawayQty have come back; returnedAt is set
   // when fully returned. dueDate is an OPTIONAL override — the effective due date is
   // (dueDate ?? scannedAt + BORROW_DAYS), so existing takeaways get a due date for free
@@ -108,6 +146,7 @@ model Scan {
   @@unique([sessionId, productId])
   @@index([sessionId])
   @@index([productId])
+  @@index([scannedAt]) // #4: reports filter scans by a date window
 }
 
 model Notification {

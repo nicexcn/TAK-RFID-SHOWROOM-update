@@ -50,6 +50,7 @@ export default function DisplayPage() {
   const [sessionProducts, setSessionProducts] = useState<DProduct[]>([]);
   const [idx, setIdx] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
+  const [paused, setPaused] = useState(false); // #10: freeze the slideshow so a viewer can read the details
   // Two ping-pong image layers. The incoming one always REMOUNTS (its key is the
   // src) so the fade keyframe replays every time — including for cached images,
   // which an onLoad/opacity-state approach would skip (cache → no paint at 0 →
@@ -178,6 +179,12 @@ export default function DisplayPage() {
     presenceProducts.length > 0 ? "table" : sessionProducts.length > 0 ? "session" : "idle";
   const products = mode === "table" ? presenceProducts : mode === "session" ? sessionProducts : [];
 
+  // #10: identity of the SET currently shown — changes when a tile is added/removed or a
+  // different list is sent, but NOT when the user steps Prev/Next (same set). Auto-clears
+  // pause so the TV can never stay frozen on content it no longer shows (idle, tile swap, new list).
+  const productSetKey = products.map((p) => p.rfidTag ?? p.name).join("|");
+  useEffect(() => { setPaused(false); }, [productSetKey]);
+
   useEffect(() => { if (idx >= products.length && products.length > 0) { setIdx(0); setImgIdx(0); } }, [products.length, idx]);
 
   // Preload ONLY the images currently on display (tiles placed on the table /
@@ -207,14 +214,46 @@ export default function DisplayPage() {
   const imgCount = curImages.length;
   const curKey = current?.rfidTag ?? current?.name ?? "";
 
+  // #10: manual slideshow nav. Image-aware — steps through the current product's
+  // images first, then wraps to the prev/next product. Stepping never changes the
+  // product SET, so it does not auto-unpause: a viewer can browse a frozen slide freely.
+  const go = useCallback((dir: 1 | -1) => {
+    const n = products.length;
+    if (n === 0) return;
+    if (dir === 1) {
+      if (imgCount > 1 && imgIdx < imgCount - 1) { setImgIdx(imgIdx + 1); return; }
+      setImgIdx(0); setIdx((i) => (i + 1) % n);
+    } else {
+      if (imgIdx > 0) { setImgIdx(imgIdx - 1); return; }
+      setImgIdx(0); setIdx((i) => (i - 1 + n) % n);
+    }
+  }, [products.length, imgCount, imgIdx]);
+
   useEffect(() => {
-    if (products.length === 0) return;
+    if (products.length === 0 || paused) return; // #10: paused → no auto-advance
     const t = setTimeout(() => {
       if (imgCount > 1 && imgIdx < imgCount - 1) setImgIdx(imgIdx + 1);
       else { setImgIdx(0); setIdx((i) => (i + 1) % products.length); }
     }, imgCount ? imageMs : 3000);
     return () => clearTimeout(t);
-  }, [products.length, idx, imgIdx, imgCount, curKey, imageMs]);
+  }, [products.length, idx, imgIdx, imgCount, curKey, imageMs, paused]);
+
+  // #10: keyboard control for a presenter (clicker / keyboard): Space = play/pause,
+  // →/← = next/prev. Ignored while typing in the ⚙ config fields.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (showConfig) return; // let the ⚙ popover own the keyboard while it's open
+      const el = e.target as HTMLElement | null;
+      // don't hijack keys when a focusable/interactive element has focus — native activation wins
+      if (el?.closest("input, textarea, select, button, a, [contenteditable]")) return;
+      if (products.length === 0) return;
+      if (e.key === " ") { e.preventDefault(); setPaused((p) => !p); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go, products.length, showConfig]);
 
   // Crossfade that waits for the image to actually load. The old image stays
   // fully opaque underneath; the new one is mounted hidden and only fades in
@@ -323,9 +362,9 @@ export default function DisplayPage() {
         <>
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 45%)" }} />
           <div className="absolute top-8 left-8"><Image src="/w-logo.png" alt="nimitrlab" width={120} height={40} className="object-contain" /></div>
-          <div className="absolute bottom-12 left-12 text-white">
-            <p className="text-4xl font-semibold drop-shadow">{current?.name}</p>
-            <p className="text-lg opacity-90 mt-1 drop-shadow">{[current?.brand, current?.materialType, current?.category].filter(Boolean).join(" · ")}</p>
+          <div className="absolute bottom-12 left-12 text-white" style={{ maxWidth: "55%" }}>
+            <p className="text-4xl font-semibold drop-shadow truncate">{current?.name}</p>
+            <p className="text-lg opacity-90 mt-1 drop-shadow truncate">{[current?.brand, current?.materialType, current?.category].filter(Boolean).join(" · ")}</p>
           </div>
           {/* source badge + position dots */}
           <div className="absolute bottom-12 right-12 flex items-center gap-3">
@@ -343,13 +382,46 @@ export default function DisplayPage() {
         </>
       )}
 
+      {/* #10: slideshow controls — pause to read the details, step through items */}
+      {currentImage && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+          {paused && (
+            <span role="status" aria-live="polite" className="text-white text-[11px] px-2.5 py-0.5 rounded-full tracking-wide"
+              style={{ background: "rgba(0,0,0,0.5)" }}>PAUSED</span>
+          )}
+          <div className="flex items-center gap-2.5">
+            {(products.length > 1 || imgCount > 1) && (
+              <button onClick={() => go(-1)} aria-label="Previous"
+                className="flex items-center justify-center rounded-full text-white hover:opacity-100"
+                style={{ width: 44, height: 44, background: "rgba(0,0,0,0.45)", opacity: 0.7 }}>
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+              </button>
+            )}
+            <button onClick={() => setPaused((p) => !p)} aria-label={paused ? "Play" : "Pause"}
+              className="flex items-center justify-center rounded-full text-white hover:opacity-100"
+              style={{ width: 54, height: 54, background: "rgba(0,0,0,0.55)", opacity: 0.85 }}>
+              {paused
+                ? <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                : <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>}
+            </button>
+            {(products.length > 1 || imgCount > 1) && (
+              <button onClick={() => go(1)} aria-label="Next"
+                className="flex items-center justify-center rounded-full text-white hover:opacity-100"
+                style={{ width: 44, height: 44, background: "rgba(0,0,0,0.45)", opacity: 0.7 }}>
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* status + config */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "#10b981" : "#9f4a4a" }} />
         <span className="text-xs" style={{ color: currentImage ? "#fff" : "#9f886c" }}>
           {mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
         </span>
-        <button onClick={() => setShowConfig((s) => !s)} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "#fff" }}>⚙</button>
+        <button onClick={() => setShowConfig((s) => !s)} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "#fff" }}>⚙</button>
       </div>
 
       {showConfig && (

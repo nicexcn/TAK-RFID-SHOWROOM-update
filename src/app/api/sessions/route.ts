@@ -17,7 +17,7 @@ const sessionInclude = {
 // Both writes run in one transaction; a partial unique index backstops the invariant.
 export async function POST(req: NextRequest) {
   try {
-    const { customerCode, customerId, deviceId, readerId } = await req.json();
+    const { customerCode, customerId, deviceId, readerId, contactName } = await req.json();
 
     // Resolve the customerId from the code when the client didn't supply one (e.g. staff
     // typed the customer ID directly instead of picking a search result). Otherwise the
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         data: {
           customerCode,
           customerId: resolvedCustomerId,
+          contactName: String(contactName || "").trim() || null,
           deviceId: deviceId || null,
           readerId: readerId ? String(readerId) : null,
           isActive: true,

@@ -1,6 +1,7 @@
 // Shared server-side validation for auth/user inputs.
 
-export const VALID_ROLES = ["user", "admin", "super_admin"] as const;
+// #6: keep in sync with ROLES in src/lib/roles.ts.
+export const VALID_ROLES = ["user", "management", "admin", "super_admin", "prep"] as const;
 
 export function isValidRole(role: unknown): boolean {
   return typeof role === "string" && (VALID_ROLES as readonly string[]).includes(role);

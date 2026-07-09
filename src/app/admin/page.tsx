@@ -8,6 +8,7 @@ import {
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { toCsv } from "@/lib/csv";
+import { customerTypeLabel } from "@/lib/customerTypes";
 
 const GRAPH_COLORS = [
   { primary: "#726c5a", secondary: "#cdc3ad" },
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
       ["Total customers", stats.totalCustomers],
       ["New customers", stats.newCustomers],
       ["Walk-ins (sessions)", stats.totalSessions], [],
-      ["Customer Type", "Count"], ...stats.customersByTitle.map((t) => [t.title, t.count]), [],
+      ["Customer Type", "Count"], ...stats.customersByTitle.map((t) => [customerTypeLabel(t.title), t.count]), [],
       ["Know Channel", "Count"], ...stats.customersByChannel.map((c) => [c.channel, c.count]), [],
       ["Month", "Walk-ins"], ...stats.sessionsByMonth.map((m) => [m.month, m.count]), [],
       ["Category", "Scans"], ...stats.scansByCategory.map((c) => [c.name, c.value]), [],
@@ -355,12 +356,12 @@ export default function AdminDashboard() {
         </div>
         {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
           <>
-            <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{stats!.customersByTitle[0]?.title ?? "-"}</p>
+            <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
             <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
             <div className="space-y-1">
               {stats!.customersByTitle.slice(0, 4).map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-24 truncate" style={{ color: "#9f886c" }}>{d.title}</p>
+                  <p className="text-xs w-24 truncate" style={{ color: "#9f886c" }}>{customerTypeLabel(d.title)}</p>
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
                     <div className="h-full rounded-full" style={{ background: color.primary, width: `${stats!.totalCustomers > 0 ? (d.count / stats!.totalCustomers) * 100 : 0}%` }} />
                   </div>

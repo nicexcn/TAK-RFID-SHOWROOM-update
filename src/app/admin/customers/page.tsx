@@ -5,16 +5,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toCsv } from "@/lib/csv";
+import { CUSTOMER_TYPES, customerTypeLabel, customerTypeColor } from "@/lib/customerTypes";
 
-const TITLE_OPTIONS = ["Architect", "Interior", "Turnkey", "Contractor", "Homeowner", "Other"];
-const titleColors: Record<string, string> = {
-  Architect: "#726c5a", Interior: "#9f886c", Turnkey: "#4a6fa5",
-  Contractor: "#4c4847", Homeowner: "#4a7c59", Other: "#888",
-};
+const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => t.value);
 
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string;
-  company: string; phone: string; email: string; knowChannel: string[]; createdAt: string;
+  company: string; phone: string; email: string; knowChannel: string[]; createdAt: string; salesPerson?: string | null;
 }
 
 export default function CustomersPage() {
@@ -43,8 +40,8 @@ export default function CustomersPage() {
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) { alert("ไม่มีข้อมูล"); return; }
     const rows = [
-      ["Code","Full Name","Title","Company","Phone","Email","Channels","Registered"],
-      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH")]),
+      ["Code","Full Name","Title","Company","Phone","Email","Channels","Sales","Registered"],
+      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.salesPerson ?? "", new Date(c.createdAt).toLocaleDateString("th-TH")]),
     ];
     const csv = toCsv(rows);
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -118,9 +115,9 @@ export default function CustomersPage() {
             <div className="space-y-1.5">
               {byTitle.map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-20 truncate" style={{ color: "#9f886c" }}>{d.title}</p>
+                  <p className="text-xs w-24 truncate" style={{ color: "#9f886c" }}>{customerTypeLabel(d.title)}</p>
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
-                    <div className="h-full rounded-full" style={{ background: titleColors[d.title] || "#888", width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full" style={{ background: customerTypeColor(d.title), width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
                   </div>
                   <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{d.count}</p>
                 </div>
@@ -143,7 +140,7 @@ export default function CustomersPage() {
             className="appearance-none outline-none text-sm pl-3 pr-8 py-2 rounded-xl cursor-pointer"
             style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847", minWidth: "120px" }}>
             <option value="all">All Types</option>
-            {TITLE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+            {TITLE_OPTIONS.map((t) => <option key={t} value={t}>{customerTypeLabel(t)}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
             <svg width="12" height="12" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
@@ -167,7 +164,7 @@ export default function CustomersPage() {
                 พบลูกค้า: {customers[0].fullName}
               </p>
               <p className="text-xs" style={{ color: "#9f886c" }}>
-                {customers[0].customerCode} · {customers[0].title} · {customers[0].company}
+                {customers[0].customerCode} · {customerTypeLabel(customers[0].title)} · {customers[0].company}
               </p>
             </div>
           </div>
@@ -212,8 +209,8 @@ export default function CustomersPage() {
                 <td className="px-4 py-3 font-medium" style={{ color: "#4c4847" }}>{c.fullName}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{ background: `${titleColors[c.title] || "#888"}20`, color: titleColors[c.title] || "#888" }}>
-                    {c.title}
+                    style={{ background: `${customerTypeColor(c.title)}20`, color: customerTypeColor(c.title) }}>
+                    {customerTypeLabel(c.title)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs" style={{ color: "#4c4847" }}>{c.company}</td>
