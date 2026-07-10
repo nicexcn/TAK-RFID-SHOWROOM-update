@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
-import { normalizeDisplays } from "@/lib/displays";
+import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
 
 /**
@@ -24,6 +24,7 @@ const PRESENCE_TTL = 5000;
 const IMAGE_MS = 5000;
 const POLL_MS = 3000;
 const READER_KEY = "tak-table-reader-ip";
+const DISPLAY_KEY = "tak-display-id"; // this device's chosen screen (zone), so a bare /display restores it
 
 interface ImgRef { url: string }
 interface DProduct {
@@ -47,6 +48,8 @@ export default function DisplayPage() {
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else this display, else Settings)
   const [displayName, setDisplayName] = useState(""); // this screen's registry name (?display=<id>), shown in the status bar
+  const [displays, setDisplays] = useState<SavedDisplay[]>([]); // full screen registry, for the ⚙ screen picker
+  const [displayId, setDisplayId] = useState(""); // the current screen id (from the URL) — highlighted in the picker
   const [surveyQr, setSurveyQr] = useState(""); // #3: QR to the public survey, shown on the idle screen
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
@@ -74,6 +77,14 @@ export default function DisplayPage() {
 
   // Product map (for presence lookup) + this screen's reader / rotation / name.
   useEffect(() => {
+    // No ?display= but this device remembers a chosen screen → restore it (URL stays the source
+    // of truth). location.replace so the picked zone survives a reopen without a history entry.
+    const urlDisplay = (new URLSearchParams(window.location.search).get("display") || "").trim();
+    if (!urlDisplay) {
+      const saved = (window.localStorage.getItem(DISPLAY_KEY) || "").trim();
+      if (saved) { window.location.replace(`/display?display=${encodeURIComponent(saved)}`); return; }
+    }
+    setDisplayId(urlDisplay);
     fetch("/api/display/products").then((r) => r.json()).then((items: DProduct[]) => {
       const m = new Map<string, DProduct>();
       for (const p of items || []) if (p.rfidTag) m.set(p.rfidTag, p);
@@ -82,16 +93,17 @@ export default function DisplayPage() {
     // A manually-entered reader (⚙) is sticky per screen and always wins; otherwise this
     // screen auto-connects to the reader its display-registry entry is bound to.
     const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
-    const displayId = (new URLSearchParams(window.location.search).get("display") || "").trim();
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
       const readers = normalizeReaders(c?.readers);
       setSavedReaders(readers);
+      const dl = normalizeDisplays(c?.displays);
+      setDisplays(dl);
       setIdleVideoUrl(c?.idleVideoUrl || "");
       setIdleVideoFit(c?.idleVideoFit === "cover" ? "cover" : "contain");
       // Resolve which physical screen (zone) this is: ?display=<id> → its registry entry.
-      const disp = displayId ? normalizeDisplays(c?.displays).find((d) => d.id === displayId) : undefined;
+      const disp = urlDisplay ? dl.find((d) => d.id === urlDisplay) : undefined;
       setDisplayName(disp?.name || "");
       // ?rotate= per-screen override wins over the display's own rotation, which wins over the
       // global Settings default. All must be 0/90/180/270.
@@ -334,6 +346,14 @@ export default function DisplayPage() {
     window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
 
+  // Pick which screen (zone) this device is. Remember it (so a bare /display restores it) and
+  // navigate to that screen's URL — the mount logic then re-resolves reader/rotation/name/scope
+  // cleanly. "" = the default screen. A full reload here is fine for a set-and-forget kiosk.
+  function pickDisplay(id: string) {
+    window.localStorage.setItem(DISPLAY_KEY, id);
+    window.location.href = id ? `/display?display=${encodeURIComponent(id)}` : "/display";
+  }
+
   // Pick a reader by NAME from the central registry → resolve to its subscriber URL + connect.
   function applySavedReader(url: string) {
     if (!url) return;
@@ -467,6 +487,18 @@ export default function DisplayPage() {
 
       {showConfig && (
         <div className="absolute top-14 right-6 p-4 rounded-xl" style={{ background: "rgba(20,20,20,0.92)", border: "1px solid #444", minWidth: 280 }}>
+          {displays.length > 0 && (
+            // Screen picker — this device self-selects its zone (remembered + put in the URL),
+            // so a TV can be set up by opening plain /display and choosing here.
+            <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
+              <p className="text-white/60 text-[11px] mb-1">This screen</p>
+              <select value={displayId} onChange={(e) => pickDisplay(e.target.value)}
+                className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }}>
+                <option value="">Default screen</option>
+                {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          )}
           {savedReaders.length > 0 && (
             <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
               <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
