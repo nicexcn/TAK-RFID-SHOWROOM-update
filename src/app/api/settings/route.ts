@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { invalidateIdleCache } from "@/lib/sessionConfig";
 import { normalizeReaders } from "@/lib/readers";
+import { normalizeDisplays } from "@/lib/displays";
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
 const ALLOWED = [
   "defaultFilter", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit",
+  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "readers", "displays", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit",
 ];
 
 export async function PUT(req: NextRequest) {
@@ -30,6 +31,8 @@ export async function PUT(req: NextRequest) {
     for (const k of ALLOWED) if (k in body) data[k] = body[k];
     // The reader registry is free-form JSON from the client — coerce to a clean shape.
     if ("readers" in data) data.readers = normalizeReaders(data.readers);
+    // Same for the display (TV screen) registry.
+    if ("displays" in data) data.displays = normalizeDisplays(data.displays);
     // Borrow period must be a positive integer (1..365 days); non-numeric falls back to 14.
     if ("borrowDays" in data) {
       const n = Math.floor(Number(data.borrowDays));

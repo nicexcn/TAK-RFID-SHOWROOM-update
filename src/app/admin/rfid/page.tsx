@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId } from "@/lib/deviceId";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
+import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
 import Link from "next/link";
 
@@ -100,7 +101,9 @@ function RFIDPageInner() {
   const [takeawayEnabled, setTakeawayEnabled] = useState(true); // whether the limit is enforced
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
-  const [displayedId, setDisplayedId] = useState<string | null>(null); // session id currently on the TV
+  const [displayedId, setDisplayedId] = useState<string | null>(null); // session id currently on a TV
+  const [displays, setDisplays] = useState<SavedDisplay[]>([]); // TV screen registry (from Settings)
+  const [targetDisplay, setTargetDisplay] = useState(""); // which screen "Send to Display" targets ("" = default screen)
 
   // ── WebSocket + Pre-loaded Map + Dedup + Batch ──────────────────────────
   const [productMap, setProductMap] = useState<Map<string, Product>>(new Map());
@@ -147,6 +150,7 @@ function RFIDPageInner() {
   useEffect(() => {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       setSavedReaders(normalizeReaders(c?.readers));
+      setDisplays(normalizeDisplays(c?.displays));
       const cfg = String(c?.relayUrl || "").replace(/\/+$/, "");
       if (typeof window === "undefined") { setRelayBase(cfg); return; }
       setRelayBase(window.location.protocol === "https:" ? cfg : `ws://${window.location.hostname}:8081`);
@@ -381,9 +385,29 @@ function RFIDPageInner() {
   // Track which session is on the TV ("Stop Display") AND which readers are in use by a
   // customer. Both change on session start/send/stop, which broadcast on DISPLAY_CHANNEL.
   const [busyReaders, setBusyReaders] = useState<Record<string, { customerCode: string; customerName: string }>>({});
+
+  // Auto-target the screen bound to this session's reader. session.readerId is a device tag,
+  // so map it device → registry reader → display; fall back to the first configured screen.
+  // Staff can still override via the picker; this just re-seeds it when the binding changes.
+  const autoDisplay = useMemo(() => {
+    if (displays.length === 0) return "";
+    const rid = session?.readerId;
+    if (rid) {
+      const reg = savedReaders.find((r) => r.device && r.device === rid);
+      const matched = reg ? displays.find((d) => d.readerId && d.readerId === reg.id) : undefined;
+      if (matched) return matched.id;
+    }
+    return displays[0].id;
+  }, [displays, savedReaders, session?.readerId]);
+  useEffect(() => { setTargetDisplay(autoDisplay); }, [autoDisplay]);
+
   const refreshDisplayed = useCallback(() => {
-    fetch("/api/sessions/display").then((r) => r.json()).then((d) => setDisplayedId(d?.id ?? null)).catch(() => {});
-  }, []);
+    const sid = session?.id;
+    if (!sid) { setDisplayedId(null); return; }
+    // Is THIS session currently live on a screen? (correct across reloads / other stations)
+    fetch(`/api/sessions/display?session=${encodeURIComponent(sid)}`)
+      .then((r) => r.json()).then((d) => setDisplayedId(d?.id ?? null)).catch(() => {});
+  }, [session?.id]);
   const refreshReaders = useCallback(() => {
     fetch("/api/readers").then((r) => r.json()).then((d) => {
       const map: Record<string, { customerCode: string; customerName: string }> = {};
@@ -616,7 +640,8 @@ function RFIDPageInner() {
     try {
       const res = await fetch("/api/sessions/display", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: session.id }),
+        // targetDisplay "" pins to the default screen (single-TV / no ?display=).
+        body: JSON.stringify({ sessionId: session.id, displayId: targetDisplay || undefined }),
       });
       if (res.ok) {
         setDisplayedId(session.id);
@@ -631,12 +656,14 @@ function RFIDPageInner() {
     }
   }
 
-  // Clear the TV (there's one physical screen) → /display returns to idle. Clears whatever
-  // is currently shown, not just this session, so the screen reliably goes blank.
+  // Take THIS session off whatever screen it's on → that screen returns to idle. Scoped by
+  // sessionId so it never blanks another zone's screen (multi-display safe).
   async function handleStopDisplay() {
+    if (!session?.id) return;
     try {
       await fetch("/api/sessions/display", {
-        method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}",
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id }),
       });
       setDisplayedId(null);
       setSendSuccess(false);
@@ -667,6 +694,16 @@ function RFIDPageInner() {
               </svg>
               Device Log {deviceLogs.length > 0 && `(${deviceLogs.length})`}
             </button>
+            {displays.length > 0 && (
+              // Which screen to send to — defaults to the one bound to this session's reader.
+              <select value={targetDisplay} onChange={(e) => setTargetDisplay(e.target.value)}
+                aria-label="Target screen"
+                className="px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <option value="">Default screen</option>
+              </select>
+            )}
             <button onClick={handleSendToDisplay} disabled={sending || session.scans.length === 0}
               className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
               style={{ ...btnStyle, opacity: (sending || session.scans.length === 0) ? 0.5 : 1 }}>

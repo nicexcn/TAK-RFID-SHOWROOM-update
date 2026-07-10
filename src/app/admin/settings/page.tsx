@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
+import { displayUrl, type SavedDisplay } from "@/lib/displays";
 import { uploadFile } from "@/lib/uploadImage";
 import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
 import { ROLES } from "@/lib/roles";
@@ -109,6 +110,7 @@ export default function SettingsPage() {
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
   const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
+  const [displays, setDisplays] = useState<SavedDisplay[]>([]); // central TV screen (zone) registry
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [videoUploading, setVideoUploading] = useState(false);
@@ -138,6 +140,7 @@ export default function SettingsPage() {
       if (d.idleVideoFit !== undefined) setIdleVideoFit(d.idleVideoFit);
       if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
       if (Array.isArray(d.readers)) setReaders(d.readers);
+      if (Array.isArray(d.displays)) setDisplays(d.displays);
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
@@ -258,6 +261,12 @@ export default function SettingsPage() {
   const updateReader = (id: string, patch: Partial<SavedReader>) =>
     setReaders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const removeReader = (id: string) => setReaders((rs) => rs.filter((r) => r.id !== id));
+
+  // Display (TV screen) registry editor — one row per physical screen/zone.
+  const addDisplay = () => setDisplays((ds) => [...ds, { id: newReaderId(), name: "", readerId: "", rotation: 0 }]);
+  const updateDisplay = (id: string, patch: Partial<SavedDisplay>) =>
+    setDisplays((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+  const removeDisplay = (id: string) => setDisplays((ds) => ds.filter((d) => d.id !== id));
 
   // Idle video upload → fills idleVideoUrl (browser-direct to storage; signed URL).
   async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -755,6 +764,48 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {/* Central display (TV screen) registry — one row per physical screen/zone */}
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Displays (TV screens)</label>
+                    <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add display</button>
+                  </div>
+                  <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>
+                    Each screen is a zone. Bind it to a <b>reader</b> (its live table presence) and a <b>rotation</b>, then open that TV at its <b>URL</b> below.
+                    Staff pick a screen by name when they press <b>Send to Display</b>. No displays = one shared default screen.
+                  </p>
+                  {displays.length === 0 ? (
+                    <p className="text-xs py-1" style={{ color: "#cdc3ad" }}>No displays yet — add one per TV to route lists to the right screen.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {displays.map((d) => (
+                        <div key={d.id} className="rounded-lg" style={{ background: "#faf9f6", border: "1px solid #eceadf", padding: 8 }}>
+                          <div className="grid grid-cols-12 gap-2 items-center">
+                            <input value={d.name} onChange={(e) => updateDisplay(d.id, { name: e.target.value })}
+                              placeholder="Name (e.g. Table A)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                            <select value={d.readerId} onChange={(e) => updateDisplay(d.id, { readerId: e.target.value })}
+                              className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS}>
+                              <option value="">No reader</option>
+                              {readers.map((r) => <option key={r.id} value={r.id}>{r.name || r.device || r.url || "(unnamed reader)"}</option>)}
+                            </select>
+                            <select value={d.rotation} onChange={(e) => updateDisplay(d.id, { rotation: Number(e.target.value) })}
+                              className="col-span-3 px-3 py-2 rounded-lg outline-none text-sm" style={iS}>
+                              {[0, 90, 180, 270].map((deg) => <option key={deg} value={deg}>{deg}°</option>)}
+                            </select>
+                            <button onClick={() => removeDisplay(d.id)} title="Remove"
+                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>✕</button>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5 pl-1">
+                            <span className="text-xs" style={{ color: "#9f886c" }}>URL:</span>
+                            <code className="text-xs" style={{ color: "#726c5a", background: "#f5f2ee", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
+                            <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Idle video — loops full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
@@ -821,7 +872,7 @@ export default function SettingsPage() {
                 </div>
 
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
                   Save
                 </button>

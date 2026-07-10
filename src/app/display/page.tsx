@@ -4,10 +4,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
+import { normalizeDisplays } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
 
 /**
- * Unified TV display (one physical screen).
+ * Unified TV display (one physical screen / zone).
+ * Multi-screen: open at `/display?display=<id>` and this screen shows only ITS zone — the
+ * reader its registry entry is bound to (live table presence) and only the customer lists
+ * sent to it. No ?display= → the default screen (all unpinned sends), the original behavior.
  * Two content sources, arbitrated:
  *   1. TABLE (fix reader, presence): a tile physically on the table → show it live;
  *      removed → drops after PRESENCE_TTL. This is the default/ambient mode.
@@ -41,7 +45,8 @@ export default function DisplayPage() {
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
-  const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else Settings)
+  const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else this display, else Settings)
+  const [displayName, setDisplayName] = useState(""); // this screen's registry name (?display=<id>), shown in the status bar
   const [surveyQr, setSurveyQr] = useState(""); // #3: QR to the public survey, shown on the idle screen
   const presentRef = useRef<Map<string, number>>(new Map());
   const preloadedRef = useRef<Set<string>>(new Set());
@@ -67,28 +72,41 @@ export default function DisplayPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [simOn, setSimOn] = useState(false);
 
-  // Product map (for presence lookup) + saved reader IP
+  // Product map (for presence lookup) + this screen's reader / rotation / name.
   useEffect(() => {
     fetch("/api/display/products").then((r) => r.json()).then((items: DProduct[]) => {
       const m = new Map<string, DProduct>();
       for (const p of items || []) if (p.rfidTag) m.set(p.rfidTag, p);
       setProductMap(m);
     }).catch(() => {});
+    // A manually-entered reader (⚙) is sticky per screen and always wins; otherwise this
+    // screen auto-connects to the reader its display-registry entry is bound to.
+    const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
+    const displayId = (new URLSearchParams(window.location.search).get("display") || "").trim();
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
-      setSavedReaders(normalizeReaders(c?.readers));
+      const readers = normalizeReaders(c?.readers);
+      setSavedReaders(readers);
       setIdleVideoUrl(c?.idleVideoUrl || "");
       setIdleVideoFit(c?.idleVideoFit === "cover" ? "cover" : "contain");
-      // ?rotate= per-screen override wins over the Settings default; both must be 0/90/180/270.
+      // Resolve which physical screen (zone) this is: ?display=<id> → its registry entry.
+      const disp = displayId ? normalizeDisplays(c?.displays).find((d) => d.id === displayId) : undefined;
+      setDisplayName(disp?.name || "");
+      // ?rotate= per-screen override wins over the display's own rotation, which wins over the
+      // global Settings default. All must be 0/90/180/270.
       const raw = new URLSearchParams(window.location.search).get("rotate");
       const q = raw === null ? NaN : Number(raw); // null (absent) must NOT coerce to 0
       const fromQuery = [0, 90, 180, 270].includes(q) ? q : null;
       const fromCfg = [0, 90, 180, 270].includes(Number(c?.displayRotation)) ? Number(c.displayRotation) : 0;
-      setRotation(fromQuery ?? fromCfg);
-    }).catch(() => {});
-    const ip = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
-    setReaderIp(ip); setIpDraft(ip);
+      setRotation(fromQuery ?? (disp ? disp.rotation : fromCfg));
+      // Auto-connect the bound reader (unless a manual ⚙ URL is already saved for this screen).
+      // Guard: a display pointing at a since-deleted reader connects to nothing, not all readers.
+      const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
+      const bound = boundReader ? readerUrl(boundReader, String(c?.relayUrl || "")) : "";
+      const ip = stored || bound;
+      setReaderIp(ip); setIpDraft(ip);
+    }).catch(() => { setReaderIp(stored); setIpDraft(stored); });
   }, []);
 
   // #3: render a QR to the public survey (shown on the idle screen for customers to scan).
@@ -152,9 +170,12 @@ export default function DisplayPage() {
   useEffect(() => {
     let alive = true;
     let debounce: ReturnType<typeof setTimeout> | null = null;
+    // Scope the sent-list to THIS screen (?display=<id>); absent → the default screen. The URL
+    // is static per screen, so read it here rather than threading display state into this effect.
+    const dparam = (new URLSearchParams(window.location.search).get("display") || "").trim();
     async function load() {
       try {
-        const r = await fetch("/api/sessions/display");
+        const r = await fetch(`/api/sessions/display?display=${encodeURIComponent(dparam)}`);
         const data = await r.json();
         if (!alive) return;
         const scans: SessionScan[] = data?.scans || [];
@@ -439,7 +460,7 @@ export default function DisplayPage() {
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "#10b981" : "#9f4a4a" }} />
         <span className="text-xs" style={{ color: currentImage ? "#fff" : "#9f886c" }}>
-          {mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
+          {displayName ? `${displayName} · ` : ""}{mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
         </span>
         <button onClick={() => setShowConfig((s) => !s)} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "#fff" }}>⚙</button>
       </div>

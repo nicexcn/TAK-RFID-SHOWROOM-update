@@ -109,11 +109,16 @@ model Session {
   isActive     Boolean   @default(true)
   lastSeenAt   DateTime  @default(now()) // heartbeat; idle past TTL => treated as inactive (abandonment)
   displayedAt  DateTime? // set when this session is explicitly pushed to the TV ("Send to Display")
+  // Which physical TV screen (zone) this session is pinned to when sent — a SavedDisplay.id
+  // (see src/lib/displays.ts). null = the default/unassigned screen, so single-TV deployments
+  // (and any session sent before this field existed) keep working unchanged.
+  displayId    String?
   createdAt    DateTime  @default(now())
   scans        Scan[]
 
   @@index([deviceId, isActive])
   @@index([readerId, isActive])
+  @@index([displayId, isActive])
 }
 
 model Scan {
@@ -219,5 +224,10 @@ model AppSettings {
   // relayUrl); `url` is an optional explicit override (LAN IP / full ws). The scan +
   // display pages render these as a named dropdown. See src/lib/readers.ts.
   readers         Json     @default("[]")
+  // Central display (TV screen) registry. Each entry is { id, name, readerId, rotation }:
+  // one physical screen (zone), its bound reader (a readers[].id, for live table presence)
+  // and its default rotation. Staff pick a screen by name when sending a list. See
+  // src/lib/displays.ts. Empty = a single default screen (?display= absent).
+  displays        Json     @default("[]")
   updatedAt       DateTime @updatedAt
 }
