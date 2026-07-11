@@ -399,7 +399,12 @@ function RFIDPageInner() {
     }
     return displays[0].id;
   }, [displays, savedReaders, session?.readerId]);
-  useEffect(() => { setTargetDisplay(autoDisplay); }, [autoDisplay]);
+  // Re-seed the picker from the auto target ONLY until staff manually pick — otherwise an
+  // async reader (re)bind (readerId is set on ws-connect, after the session starts) would
+  // silently overwrite their choice and send the list to the wrong screen. Reset per session.
+  const userPickedDisplay = useRef(false);
+  useEffect(() => { if (!userPickedDisplay.current) setTargetDisplay(autoDisplay); }, [autoDisplay]);
+  useEffect(() => { userPickedDisplay.current = false; }, [session?.id]);
 
   const refreshDisplayed = useCallback(() => {
     const sid = session?.id;
@@ -696,12 +701,12 @@ function RFIDPageInner() {
             </button>
             {displays.length > 0 && (
               // Which screen to send to — defaults to the one bound to this session's reader.
-              <select value={targetDisplay} onChange={(e) => setTargetDisplay(e.target.value)}
+              <select value={targetDisplay} onChange={(e) => { userPickedDisplay.current = true; setTargetDisplay(e.target.value); }}
                 aria-label="Target screen"
                 className="px-3 py-2 rounded-xl text-sm outline-none"
                 style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
-                {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 <option value="">Default screen</option>
+                {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             )}
             <button onClick={handleSendToDisplay} disabled={sending || session.scans.length === 0}

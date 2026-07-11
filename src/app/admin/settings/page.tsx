@@ -8,7 +8,8 @@ import { uploadFile } from "@/lib/uploadImage";
 import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
 import { ROLES } from "@/lib/roles";
 
-const newReaderId = () =>
+// Mints a stable id for a registry row (reader or display).
+const newRegistryId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
 
 interface DropdownOption { id: string; type: string; value: string; }
@@ -257,13 +258,13 @@ export default function SettingsPage() {
   }
 
   // Reader registry editor
-  const addReader = () => setReaders((rs) => [...rs, { id: newReaderId(), name: "", device: "", url: "" }]);
+  const addReader = () => setReaders((rs) => [...rs, { id: newRegistryId(), name: "", device: "", url: "" }]);
   const updateReader = (id: string, patch: Partial<SavedReader>) =>
     setReaders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const removeReader = (id: string) => setReaders((rs) => rs.filter((r) => r.id !== id));
 
   // Display (TV screen) registry editor — one row per physical screen/zone.
-  const addDisplay = () => setDisplays((ds) => [...ds, { id: newReaderId(), name: "", readerId: "", rotation: 0 }]);
+  const addDisplay = () => setDisplays((ds) => [...ds, { id: newRegistryId(), name: "", readerId: "", rotation: 0 }]);
   const updateDisplay = (id: string, patch: Partial<SavedDisplay>) =>
     setDisplays((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   const removeDisplay = (id: string) => setDisplays((ds) => ds.filter((d) => d.id !== id));
@@ -784,22 +785,30 @@ export default function SettingsPage() {
                             <input value={d.name} onChange={(e) => updateDisplay(d.id, { name: e.target.value })}
                               placeholder="Name (e.g. Table A)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
                             <select value={d.readerId} onChange={(e) => updateDisplay(d.id, { readerId: e.target.value })}
+                              aria-label="Bound reader"
                               className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS}>
                               <option value="">No reader</option>
                               {readers.map((r) => <option key={r.id} value={r.id}>{r.name || r.device || r.url || "(unnamed reader)"}</option>)}
                             </select>
                             <select value={d.rotation} onChange={(e) => updateDisplay(d.id, { rotation: Number(e.target.value) })}
+                              aria-label="Rotation"
                               className="col-span-3 px-3 py-2 rounded-lg outline-none text-sm" style={iS}>
                               {[0, 90, 180, 270].map((deg) => <option key={deg} value={deg}>{deg}°</option>)}
                             </select>
                             <button onClick={() => removeDisplay(d.id)} title="Remove"
                               className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>✕</button>
                           </div>
-                          <div className="flex items-center gap-2 mt-1.5 pl-1">
-                            <span className="text-xs" style={{ color: "#9f886c" }}>URL:</span>
-                            <code className="text-xs" style={{ color: "#726c5a", background: "#f5f2ee", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
-                            <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
-                          </div>
+                          {d.name.trim() ? (
+                            // Only expose the URL once the row has a name — an unnamed row is dropped on
+                            // save, and its id is baked into this URL + any session pinned to it.
+                            <div className="flex items-center gap-2 mt-1.5 pl-1">
+                              <span className="text-xs" style={{ color: "#9f886c" }}>URL:</span>
+                              <code className="text-xs" style={{ color: "#726c5a", background: "#f5f2ee", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
+                              <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
+                            </div>
+                          ) : (
+                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#cdc3ad" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
+                          )}
                         </div>
                       ))}
                     </div>

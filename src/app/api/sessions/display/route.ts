@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     if (sessionId) {
       const session = await prisma.session.findFirst({
         where: { ...base, id: sessionId },
-        select: { id: true, displayId: true, displayedAt: true },
+        select: { id: true, displayId: true },
       });
       return NextResponse.json(session);
     }
