@@ -55,43 +55,43 @@ export default function RegisterPage() {
   }
 
   const inputStyle = {
-    background: "#fff",
-    border: "1px solid #e6e5d8",
-    color: "#4c4847",
+    background: "var(--color-surface)",
+    border: "1px solid var(--color-border)",
+    color: "var(--color-text)",
   };
 
   return (
     <div className="min-h-screen flex">
       {/* Left Panel */}
       <div className="hidden md:flex w-1/2 flex-col items-center justify-center"
-        style={{ background: "#726c5a" }}>
+        style={{ background: "var(--color-primary)" }}>
         <Image src="/w-logo.png" alt="Nimitr Lab" width={280} height={160} className="object-contain" />
       </div>
 
       {/* Right Panel */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-8"
-        style={{ background: "#f5f2ee" }}>
+        style={{ background: "var(--color-bg)" }}>
         <div className="w-full max-w-sm">
 
           {/* Title */}
           <div className="flex flex-col items-center mb-8">
-            <h1 className="text-4xl font-bold tracking-widest mb-4" style={{ color: "#726c5a" }}>
+            <h1 className="text-4xl font-bold tracking-widest mb-4" style={{ color: "var(--color-text-muted)" }}>
               REGISTER
             </h1>
-            <div className="w-full h-px" style={{ background: "#cdc3ad" }} />
+            <div className="w-full h-px" style={{ background: "var(--color-sidebar)" }} />
           </div>
 
           {/* Form */}
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>First Name</label>
+                <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>First Name</label>
                 <input name="firstName" value={form.firstName} onChange={handleChange}
                   placeholder="John"
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
               </div>
               <div>
-                <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Last Name</label>
+                <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Last Name</label>
                 <input name="lastName" value={form.lastName} onChange={handleChange}
                   placeholder="Doe"
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
@@ -99,38 +99,38 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Username</label>
+              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Username</label>
               <input name="username" value={form.username} onChange={handleChange}
                 placeholder="Enter username"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
 
             <div>
-              <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Password</label>
+              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Password</label>
               <input name="password" type="password" value={form.password} onChange={handleChange}
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
 
             <div>
-              <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Confirm Password</label>
+              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Confirm Password</label>
               <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange}
                 placeholder="••••••••"
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
 
-            {error && <p className="text-sm" style={{ color: "#9f4a4a" }}>{error}</p>}
+            {error && <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>{error}</p>}
 
             <button onClick={handleSubmit} disabled={loading}
               className="w-full py-3 rounded-xl text-sm font-medium"
-              style={{ background: "#726c5a", color: "#fff", opacity: loading ? 0.7 : 1 }}>
+              style={{ background: "var(--color-primary)", color: "var(--color-surface)", opacity: loading ? 0.7 : 1 }}>
               {loading ? "Creating account..." : "Create Account"}
             </button>
 
             <Link href="/login"
               className="block text-center w-full py-3 rounded-xl text-sm"
-              style={{ background: "transparent", color: "#6f5f48" }}>
+              style={{ background: "transparent", color: "var(--color-text-muted)" }}>
               ← Back to Login
             </Link>
           </div>

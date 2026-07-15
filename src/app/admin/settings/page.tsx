@@ -54,12 +54,12 @@ const WIDGETS = [
 ];
 
 const cardStyle: React.CSSProperties = {
-  background: "#fff", border: "1px solid #e6e5d8",
+  background: "var(--color-surface)", border: "1px solid var(--color-border)",
   borderRadius: "0.75rem", padding: "1.5rem", marginBottom: "1rem",
 };
 
 // ── small reusable input style ─────────────────────────────────────────────
-const iS = { background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" };
+const iS = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -328,23 +328,23 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Settings</h1>
+        <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Settings</h1>
         <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Settings" }]} />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sidebar */}
         <div className="w-full lg:w-52 shrink-0">
-          <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             {TABS.filter((tab) => tab.key !== "account" || currentUser.role === "super_admin").map((tab) => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className="w-full text-left px-4 py-3 text-sm transition-all"
                 style={{
-                  background: activeTab === tab.key ? "#f5f2ee" : "transparent",
-                  color: activeTab === tab.key ? "#726c5a" : "#4c4847",
+                  background: activeTab === tab.key ? "var(--color-bg)" : "transparent",
+                  color: activeTab === tab.key ? "var(--color-primary)" : "var(--color-text)",
                   fontWeight: activeTab === tab.key ? 600 : 400,
-                  borderLeft: activeTab === tab.key ? "3px solid #726c5a" : "3px solid transparent",
-                  borderBottom: "1px solid #f5f2ee",
+                  borderLeft: activeTab === tab.key ? "3px solid var(--color-primary)" : "3px solid transparent",
+                  borderBottom: "1px solid var(--color-bg)",
                 }}>
                 {tab.label}
               </button>
@@ -359,17 +359,17 @@ export default function SettingsPage() {
           {activeTab === "dashboard" && (
             <div>
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Widget Visibility</h2>
-                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือก widget ที่จะแสดงบน Dashboard</p>
+                <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Widget Visibility</h2>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือก widget ที่จะแสดงบน Dashboard</p>
                 <div className="space-y-2">
                   {WIDGETS.map((w) => {
                     const isOn = dashboardSettings.visibleWidgets[w.key as keyof typeof dashboardSettings.visibleWidgets];
                     return (
-                      <div key={w.key} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: "#f5f2ee" }}>
-                        <span className="text-sm" style={{ color: "#4c4847" }}>{w.label}</span>
+                      <div key={w.key} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: "var(--color-bg)" }}>
+                        <span className="text-sm" style={{ color: "var(--color-text)" }}>{w.label}</span>
                         <div onClick={() => setDashboardSettings((p) => ({ ...p, visibleWidgets: { ...p.visibleWidgets, [w.key]: !isOn } }))}
                           className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
-                          style={{ background: isOn ? "#726c5a" : "#cdc3ad" }}>
+                          style={{ background: isOn ? "var(--color-primary)" : "var(--color-sidebar)" }}>
                           <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: isOn ? "22px" : "4px" }} />
                         </div>
                       </div>
@@ -379,16 +379,16 @@ export default function SettingsPage() {
               </div>
 
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Default Filter</h2>
-                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>ตั้งค่า filter เริ่มต้นของ stats cards</p>
+                <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Default Filter</h2>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>ตั้งค่า filter เริ่มต้นของ stats cards</p>
                 <div className="flex gap-2 flex-wrap">
                   {(["daily","weekly","monthly","annually"] as const).map((f) => (
                     <button key={f} onClick={() => setDashboardSettings((p) => ({ ...p, defaultFilter: f }))}
                       className="px-4 py-2 rounded-xl text-sm font-medium"
                       style={{
-                        background: dashboardSettings.defaultFilter === f ? "#726c5a" : "#f5f2ee",
-                        color: dashboardSettings.defaultFilter === f ? "#fff" : "#6f5f48",
-                        border: "1px solid " + (dashboardSettings.defaultFilter === f ? "#726c5a" : "#e6e5d8"),
+                        background: dashboardSettings.defaultFilter === f ? "var(--color-primary)" : "var(--color-bg)",
+                        color: dashboardSettings.defaultFilter === f ? "var(--color-surface)" : "var(--color-text-muted)",
+                        border: "1px solid " + (dashboardSettings.defaultFilter === f ? "var(--color-primary)" : "var(--color-border)"),
                       }}>
                       {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
@@ -397,29 +397,29 @@ export default function SettingsPage() {
               </div>
 
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Graph Color Theme</h2>
-                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
+                <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Graph Color Theme</h2>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
                 <div className="flex gap-3 flex-wrap mb-4">
                   {GRAPH_COLORS.map((color, i) => (
                     <button key={i} onClick={() => setDashboardSettings((p) => ({ ...p, graphColor: i }))}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all"
                       style={{
-                        border: dashboardSettings.graphColor === i ? `2px solid ${color.primary}` : "1px solid #e6e5d8",
-                        background: dashboardSettings.graphColor === i ? "#f5f2ee" : "#fff",
+                        border: dashboardSettings.graphColor === i ? `2px solid ${color.primary}` : "1px solid var(--color-border)",
+                        background: dashboardSettings.graphColor === i ? "var(--color-bg)" : "var(--color-surface)",
                       }}>
                       <div className="flex gap-1">
                         <div className="w-4 h-4 rounded-full" style={{ background: color.primary }} />
                         <div className="w-4 h-4 rounded-full" style={{ background: color.secondary }} />
                       </div>
-                      <span style={{ color: "#4c4847" }}>{color.label}</span>
+                      <span style={{ color: "var(--color-text)" }}>{color.label}</span>
                       {dashboardSettings.graphColor === i && (
                         <svg width="12" height="12" fill="none" stroke="#726c5a" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                       )}
                     </button>
                   ))}
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: "#f5f2ee" }}>
-                  <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preview</p>
+                <div className="p-4 rounded-xl" style={{ background: "var(--color-bg)" }}>
+                  <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preview</p>
                   <div className="flex items-end gap-1 h-12">
                     {[60,85,45,70,90,55,75].map((h, i) => (
                       <div key={i} className="flex-1 rounded-sm transition-all duration-300"
@@ -444,7 +444,7 @@ export default function SettingsPage() {
                   setTimeout(() => setDashboardSuccess(""), 2000);
                 }}
                 className="px-5 py-2.5 rounded-xl text-sm font-medium"
-                style={{ background: "#726c5a", color: "#fff" }}>
+                style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                 Save Settings
               </button>
             </div>
@@ -457,12 +457,12 @@ export default function SettingsPage() {
               <div style={cardStyle}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>User Management</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>จัดการ account ผู้ใช้งานในระบบ</p>
+                    <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>User Management</h2>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>จัดการ account ผู้ใช้งานในระบบ</p>
                   </div>
                   <button onClick={() => { setShowCreate(true); setEditingUser(null); setCreateError(""); setCreateSuccess(""); }}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-                    style={{ background: "#726c5a" }}>
+                    style={{ background: "var(--color-primary)" }}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
@@ -472,69 +472,69 @@ export default function SettingsPage() {
 
                 {/* Search */}
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
-                  style={{ background: "#f5f2ee", border: "1px solid #e6e5d8" }}>
+                  style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
                   <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
                   <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
                     placeholder="Global Search"
                     className="outline-none text-sm w-full"
-                    style={{ background: "transparent", color: "#4c4847" }} />
+                    style={{ background: "transparent", color: "var(--color-text)" }} />
                   {userSearch && (
-                    <button onClick={() => setUserSearch("")} style={{ color: "#71654c" }}>✕</button>
+                    <button onClick={() => setUserSearch("")} style={{ color: "var(--color-text-subtle)" }}>✕</button>
                   )}
                 </div>
 
                 {/* Create form inline */}
                 {showCreate && (
-                  <div className="rounded-xl p-5 mb-4" style={{ background: "#f5f2ee", border: "1.5px solid #726c5a" }}>
+                  <div className="rounded-xl p-5 mb-4" style={{ background: "var(--color-bg)", border: "1.5px solid var(--color-primary)" }}>
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>สร้าง User ใหม่</p>
-                      <button onClick={() => setShowCreate(false)} style={{ color: "#6f5f48" }}>✕</button>
+                      <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>สร้าง User ใหม่</p>
+                      <button onClick={() => setShowCreate(false)} style={{ color: "var(--color-text-muted)" }}>✕</button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Username <span style={{ color: "#dc2626" }}>*</span></label>
+                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username <span style={{ color: "var(--color-danger)" }}>*</span></label>
                         <input value={createForm.username} onChange={(e) => setCreateForm((p) => ({ ...p, username: e.target.value }))}
                           placeholder="username"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Password <span style={{ color: "#dc2626" }}>*</span></label>
+                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Password <span style={{ color: "var(--color-danger)" }}>*</span></label>
                         <input type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
                           placeholder="password"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>First Name</label>
+                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
                         <input value={createForm.firstName} onChange={(e) => setCreateForm((p) => ({ ...p, firstName: e.target.value }))}
                           placeholder="ชื่อ"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Last Name</label>
+                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
                         <input value={createForm.lastName} onChange={(e) => setCreateForm((p) => ({ ...p, lastName: e.target.value }))}
                           placeholder="นามสกุล"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
+                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
                         <select aria-label="Role" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                           {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                         </select>
                       </div>
                     </div>
-                    {createError && <p className="text-xs mt-3" style={{ color: "#dc2626" }}>{createError}</p>}
+                    {createError && <p className="text-xs mt-3" style={{ color: "var(--color-danger)" }}>{createError}</p>}
                     {createSuccess && <p className="text-xs mt-3" style={{ color: "#4a9f4a" }}>{createSuccess}</p>}
                     <div className="flex gap-2 mt-4">
                       <button onClick={() => setShowCreate(false)}
-                        className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>
+                        className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
                         Cancel
                       </button>
                       <button onClick={handleCreateUser} disabled={createLoading}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
-                        style={{ background: "#726c5a" }}>
+                        style={{ background: "var(--color-primary)" }}>
                         {createLoading && <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />}
                         {createLoading ? "Saving..." : "Create User"}
                       </button>
@@ -545,10 +545,10 @@ export default function SettingsPage() {
                 {/* User list */}
                 {usersLoading ? (
                   <div className="flex justify-center py-10">
-                    <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+                    <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
                   </div>
                 ) : filteredUsers.length === 0 ? (
-                  <p className="text-center text-sm py-8" style={{ color: "#71654c" }}>
+                  <p className="text-center text-sm py-8" style={{ color: "var(--color-text-subtle)" }}>
                     {userSearch ? "ไม่พบ user" : "ยังไม่มี user"}
                   </p>
                 ) : (
@@ -556,37 +556,37 @@ export default function SettingsPage() {
                     {filteredUsers.map((u) => (
                       <div key={u.id}>
                         <div className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all"
-                          style={{ background: editingUser?.id === u.id ? "rgba(114,108,90,0.06)" : "#f5f2ee", border: editingUser?.id === u.id ? "1.5px solid #726c5a" : "1px solid transparent" }}>
+                          style={{ background: editingUser?.id === u.id ? "rgba(114,108,90,0.06)" : "var(--color-bg)", border: editingUser?.id === u.id ? "1.5px solid var(--color-primary)" : "1px solid transparent" }}>
                           {/* Avatar */}
                           <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                            style={{ background: u.role === "admin" ? "#726c5a" : "#9f886c" }}>
+                            style={{ background: u.role === "admin" ? "var(--color-primary)" : "#9f886c" }}>
                             {u.username.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold truncate" style={{ color: "#4c4847" }}>{u.username}</p>
+                              <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text)" }}>{u.username}</p>
                               <span className="text-xs px-2 py-0.5 rounded-full"
-                                style={{ background: u.role === "admin" ? "rgba(114,108,90,0.15)" : "#e6e5d8", color: u.role === "admin" ? "#726c5a" : "#6f5f48" }}>
+                                style={{ background: u.role === "admin" ? "rgba(114,108,90,0.15)" : "var(--color-border)", color: u.role === "admin" ? "var(--color-primary)" : "var(--color-text-muted)" }}>
                                 {u.role}
                               </span>
                               {u.id === currentUser.id && (
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#dbeafe", color: "#3b82f6" }}>คุณ</span>
                               )}
                             </div>
-                            <p className="text-xs truncate" style={{ color: "#6f5f48" }}>
+                            <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
                               {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"} · สร้าง {new Date(u.createdAt).toLocaleDateString("th-TH")}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button onClick={() => editingUser?.id === u.id ? setEditingUser(null) : openEdit(u)}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                              style={{ background: editingUser?.id === u.id ? "#726c5a" : "#fff", color: editingUser?.id === u.id ? "#fff" : "#726c5a", border: "1px solid #e6e5d8" }}>
+                              style={{ background: editingUser?.id === u.id ? "var(--color-primary)" : "var(--color-surface)", color: editingUser?.id === u.id ? "var(--color-surface)" : "var(--color-primary)", border: "1px solid var(--color-border)" }}>
                               {editingUser?.id === u.id ? "ยกเลิก" : "แก้ไข"}
                             </button>
                             <button onClick={() => handleDeleteUser(u)}
                               disabled={u.id === currentUser.id}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30"
-                              style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
+                              style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
                               ลบ
                             </button>
                           </div>
@@ -594,48 +594,48 @@ export default function SettingsPage() {
 
                         {/* Inline edit form */}
                         {editingUser?.id === u.id && (
-                          <div className="rounded-xl p-4 mt-1" style={{ background: "#faf9f7", border: "1px solid #e6e5d8" }}>
-                            <p className="text-xs font-semibold mb-3" style={{ color: "#6f5f48" }}>แก้ไขข้อมูล</p>
+                          <div className="rounded-xl p-4 mt-1" style={{ background: "#faf9f7", border: "1px solid var(--color-border)" }}>
+                            <p className="text-xs font-semibold mb-3" style={{ color: "var(--color-text-muted)" }}>แก้ไขข้อมูล</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Username</label>
+                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username</label>
                                 <input value={editForm.username} onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Password ใหม่ (ถ้าต้องการเปลี่ยน)</label>
+                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Password ใหม่ (ถ้าต้องการเปลี่ยน)</label>
                                 <input type="password" value={editForm.password} onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
                                   placeholder="เว้นว่างถ้าไม่ต้องการเปลี่ยน"
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>First Name</label>
+                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
                                 <input value={editForm.firstName} onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Last Name</label>
+                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
                                 <input value={editForm.lastName} onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div className="col-span-2">
-                                <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
+                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
                                 <select aria-label="Role" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                                   {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                                 </select>
                               </div>
                             </div>
-                            {editError && <p className="text-xs mt-2" style={{ color: "#dc2626" }}>{editError}</p>}
+                            {editError && <p className="text-xs mt-2" style={{ color: "var(--color-danger)" }}>{editError}</p>}
                             {editSuccess && <p className="text-xs mt-2" style={{ color: "#4a9f4a" }}>{editSuccess}</p>}
                             <div className="flex gap-2 mt-3">
                               <button onClick={() => setEditingUser(null)}
-                                className="px-4 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847" }}>
+                                className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
                                 Cancel
                               </button>
                               <button onClick={handleSaveEdit} disabled={editLoading}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
-                                style={{ background: "#726c5a" }}>
+                                style={{ background: "var(--color-primary)" }}>
                                 {editLoading && <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />}
                                 {editLoading ? "Saving..." : "บันทึก"}
                               </button>
@@ -653,18 +653,18 @@ export default function SettingsPage() {
           {/* ── Product Management ── */}
           {activeTab === "product" && (
             <div style={cardStyle}>
-              <h2 className="text-base font-semibold mb-4" style={{ color: "#4c4847" }}>Dropdown Options</h2>
+              <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>Dropdown Options</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e6e5d8" }}>
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
                   {DROPDOWN_TYPES.map((type) => (
                     <button key={type.key} onClick={() => setActiveType(type.key)}
                       className="w-full text-left px-4 py-3 text-sm transition-all"
                       style={{
-                        background: activeType === type.key ? "#f5f2ee" : "transparent",
-                        color: activeType === type.key ? "#726c5a" : "#4c4847",
+                        background: activeType === type.key ? "var(--color-bg)" : "transparent",
+                        color: activeType === type.key ? "var(--color-primary)" : "var(--color-text)",
                         fontWeight: activeType === type.key ? 600 : 400,
-                        borderLeft: activeType === type.key ? "3px solid #726c5a" : "3px solid transparent",
-                        borderBottom: "1px solid #f5f2ee",
+                        borderLeft: activeType === type.key ? "3px solid var(--color-primary)" : "3px solid transparent",
+                        borderBottom: "1px solid var(--color-bg)",
                       }}>
                       {type.label}
                     </button>
@@ -678,18 +678,18 @@ export default function SettingsPage() {
                       className="flex-1 px-4 py-2 rounded-xl outline-none text-sm" style={iS} />
                     <button onClick={handleAddOption} disabled={dropdownLoading}
                       className="px-4 py-2 rounded-xl text-sm font-medium"
-                      style={{ background: "#726c5a", color: "#fff" }}>+ Add</button>
+                      style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>+ Add</button>
                   </div>
                   {dropdownMessage && <p className="text-sm mb-2" style={{ color: "#4a9f4a" }}>{dropdownMessage}</p>}
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {options.length === 0 ? (
-                      <p className="text-sm text-center py-6" style={{ color: "#71654c" }}>No options yet</p>
+                      <p className="text-sm text-center py-6" style={{ color: "var(--color-text-subtle)" }}>No options yet</p>
                     ) : options.map((opt) => (
-                      <div key={opt.id} className="flex items-center justify-between px-4 py-2 rounded-xl" style={{ background: "#f5f2ee" }}>
-                        <span className="text-sm" style={{ color: "#4c4847" }}>{opt.value}</span>
+                      <div key={opt.id} className="flex items-center justify-between px-4 py-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
+                        <span className="text-sm" style={{ color: "var(--color-text)" }}>{opt.value}</span>
                         <button onClick={() => handleDeleteOption(opt.id)}
                           className="text-xs px-2 py-1 rounded-lg"
-                          style={{ color: "#9f4a4a", background: "#fff0f0" }}>Delete</button>
+                          style={{ color: "var(--color-danger-soft)", background: "#fff0f0" }}>Delete</button>
                       </div>
                     ))}
                   </div>
@@ -704,49 +704,49 @@ export default function SettingsPage() {
               <div style={cardStyle}>
                 <div className="flex items-start justify-between gap-2 mb-4">
                   <div>
-                    <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Display Settings</h2>
-                    <p className="text-xs" style={{ color: "#6f5f48" }}>ตั้งค่าการแสดงผลบน TV display</p>
+                    <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Display Settings</h2>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>ตั้งค่าการแสดงผลบน TV display</p>
                   </div>
                   <a href="/display" target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
-                    style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+                    style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                     Open /display ↗
                   </a>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                   <div>
-                    <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Slide Duration (sec)</label>
+                    <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Slide Duration (sec)</label>
                     <input type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#71654c" }}>ต่อ 1 รูป</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>ต่อ 1 รูป</p>
                   </div>
                   <div>
-                    <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Session Reset (min)</label>
+                    <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Session Reset (min)</label>
                     <input type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#71654c" }}>Auto-clear หลังไม่มีการใช้งาน</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Auto-clear หลังไม่มีการใช้งาน</p>
                   </div>
                 </div>
                 <div className="mt-4 max-w-md">
-                  <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Cloud Relay URL (Option E)</label>
+                  <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Cloud Relay URL (Option E)</label>
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#71654c" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
                 </div>
 
                 {/* Central reader registry — one source of truth, shown as a dropdown on Scan & Display */}
-                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Readers</label>
-                    <button onClick={addReader} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add reader</button>
+                    <label className="block text-sm font-medium" style={{ color: "var(--color-text)" }}>Readers</label>
+                    <button onClick={addReader} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+ Add reader</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#71654c" }}>
+                  <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>
                     Named readers shown as a dropdown on Scan &amp; Display, so staff pick a name instead of typing an address.
                     Set <b>Device tag</b> for a relay reader (connects via the relay URL above), or a full <b>URL / IP</b> for a direct LAN reader.
                   </p>
                   {readers.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#71654c" }}>No readers yet — add one to get started.</p>
+                    <p className="text-xs py-1" style={{ color: "var(--color-text-subtle)" }}>No readers yet — add one to get started.</p>
                   ) : (
                     <div className="space-y-2">
                       {readers.map((r) => (
@@ -758,7 +758,7 @@ export default function SettingsPage() {
                           <input value={r.url} onChange={(e) => updateReader(r.id, { url: e.target.value })}
                             placeholder="or full URL / IP (direct)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
                           <button onClick={() => removeReader(r.id)} title="Remove"
-                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>✕</button>
+                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>✕</button>
                         </div>
                       ))}
                     </div>
@@ -766,17 +766,17 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Central display (TV screen) registry — one row per physical screen/zone */}
-                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Displays (TV screens)</label>
-                    <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add display</button>
+                    <label className="block text-sm font-medium" style={{ color: "var(--color-text)" }}>Displays (TV screens)</label>
+                    <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+ Add display</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#71654c" }}>
+                  <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>
                     Each screen is a zone. Bind it to a <b>reader</b> (its live table presence) and a <b>rotation</b>, then open that TV at its <b>URL</b> below.
                     Staff pick a screen by name when they press <b>Send to Display</b>. No displays = one shared default screen.
                   </p>
                   {displays.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#71654c" }}>No displays yet — add one per TV to route lists to the right screen.</p>
+                    <p className="text-xs py-1" style={{ color: "var(--color-text-subtle)" }}>No displays yet — add one per TV to route lists to the right screen.</p>
                   ) : (
                     <div className="space-y-2">
                       {displays.map((d) => (
@@ -796,18 +796,18 @@ export default function SettingsPage() {
                               {[0, 90, 180, 270].map((deg) => <option key={deg} value={deg}>{deg}°</option>)}
                             </select>
                             <button onClick={() => removeDisplay(d.id)} title="Remove"
-                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>✕</button>
+                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>✕</button>
                           </div>
                           {d.name.trim() ? (
                             // Only expose the URL once the row has a name — an unnamed row is dropped on
                             // save, and its id is baked into this URL + any session pinned to it.
                             <div className="flex items-center gap-2 mt-1.5 pl-1">
-                              <span className="text-xs" style={{ color: "#6f5f48" }}>URL:</span>
-                              <code className="text-xs" style={{ color: "#726c5a", background: "#f5f2ee", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
+                              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>URL:</span>
+                              <code className="text-xs" style={{ color: "var(--color-text-muted)", background: "var(--color-bg)", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
                               <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
                             </div>
                           ) : (
-                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#71654c" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
+                            <p className="text-xs mt-1.5 pl-1" style={{ color: "var(--color-text-subtle)" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
                           )}
                         </div>
                       ))}
@@ -816,12 +816,12 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Idle video — loops full-screen on /display when no product is showing */}
-                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
-                  <p className="text-xs mb-1" style={{ color: "#71654c" }}>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle video (/display)</label>
+                  <p className="text-xs mb-1" style={{ color: "var(--color-text-subtle)" }}>
                     Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
                   </p>
-                  <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>
+                  <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>
                     Upload limits: <b>MP4 or WEBM</b> only · max <b>{MAX_UPLOAD_MB} MB</b> · plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps the file small.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -829,26 +829,26 @@ export default function SettingsPage() {
                       placeholder="https://… .mp4   (or Upload →)"
                       className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                     <label className={`px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer whitespace-nowrap ${videoUploading ? "opacity-60 pointer-events-none" : ""}`}
-                      style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+                      style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                       {videoUploading ? "Uploading…" : "Upload"}
                       <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleVideoUpload} disabled={videoUploading} />
                     </label>
                     {idleVideoUrl && (
                       <button onClick={() => setIdleVideoUrl("")} className="px-3 py-2.5 rounded-xl text-sm"
-                        style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>Remove</button>
+                        style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>Remove</button>
                     )}
                   </div>
-                  {videoErr && <p className="text-xs mt-1" style={{ color: "#9f4a4a" }}>{videoErr}</p>}
+                  {videoErr && <p className="text-xs mt-1" style={{ color: "var(--color-danger-soft)" }}>{videoErr}</p>}
                   {idleVideoUrl && (
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <span className="text-xs" style={{ color: "#6f5f48" }}>On screen:</span>
+                      <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>On screen:</span>
                       {([["contain", "Fit (whole video)"], ["cover", "Fill (crop to screen)"]] as const).map(([v, label]) => (
                         <button key={v} onClick={() => setIdleVideoFit(v)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium"
                           style={{
-                            background: idleVideoFit === v ? "#726c5a" : "#f5f2ee",
-                            color: idleVideoFit === v ? "#fff" : "#4c4847",
-                            border: "1px solid " + (idleVideoFit === v ? "#726c5a" : "#e6e5d8"),
+                            background: idleVideoFit === v ? "var(--color-primary)" : "var(--color-bg)",
+                            color: idleVideoFit === v ? "var(--color-surface)" : "var(--color-text)",
+                            border: "1px solid " + (idleVideoFit === v ? "var(--color-primary)" : "var(--color-border)"),
                           }}>
                           {label}
                         </button>
@@ -862,17 +862,17 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Screen rotation — for portrait-mounted TVs etc. */}
-                <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Screen rotation</label>
-                  <p className="text-xs mb-2" style={{ color: "#71654c" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Screen rotation</label>
+                  <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "var(--color-bg)", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
                   <div className="flex gap-2 flex-wrap">
                     {[0, 90, 180, 270].map((deg) => (
                       <button key={deg} onClick={() => setDisplayRotation(deg)}
                         className="px-4 py-2 rounded-xl text-sm font-medium"
                         style={{
-                          background: displayRotation === deg ? "#726c5a" : "#f5f2ee",
-                          color: displayRotation === deg ? "#fff" : "#4c4847",
-                          border: "1px solid " + (displayRotation === deg ? "#726c5a" : "#e6e5d8"),
+                          background: displayRotation === deg ? "var(--color-primary)" : "var(--color-bg)",
+                          color: displayRotation === deg ? "var(--color-surface)" : "var(--color-text)",
+                          border: "1px solid " + (displayRotation === deg ? "var(--color-primary)" : "var(--color-border)"),
                         }}>
                         {deg}°{deg === 0 ? " (normal)" : deg === 90 ? " ↻" : deg === 270 ? " ↺" : ""}
                       </button>
@@ -882,7 +882,7 @@ export default function SettingsPage() {
 
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
                 <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
-                  className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
+                  className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                   Save
                 </button>
               </div>
@@ -890,31 +890,31 @@ export default function SettingsPage() {
               <div style={cardStyle}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Media Files</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
+                    <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Media Files</h2>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
-                  style={{ background: "#f5f2ee", border: "1px solid #e6e5d8" }}>
+                  style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
                   <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
                   <input value={mediaSearch} onChange={(e) => setMediaSearch(e.target.value)}
                     placeholder="Search by product name or code..."
-                    className="outline-none text-sm w-full" style={{ background: "transparent", color: "#4c4847" }} />
+                    className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
                 </div>
                 {mediaSuccess && <p className="text-sm mb-3" style={{ color: "#4a9f4a" }}>{mediaSuccess}</p>}
                 {mediaLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+                    <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
                   </div>
                 ) : filteredMedia.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-sm" style={{ color: "#71654c" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
+                    <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <div className="grid grid-cols-12 px-3 pb-1 text-xs font-medium" style={{ color: "#6f5f48" }}>
+                    <div className="grid grid-cols-12 px-3 pb-1 text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
                       <div className="col-span-1">Image</div>
                       <div className="col-span-5">Product</div>
                       <div className="col-span-3">Code</div>
@@ -922,17 +922,17 @@ export default function SettingsPage() {
                       <div className="col-span-1" />
                     </div>
                     {filteredMedia.map((file) => (
-                      <div key={file.id} className="grid grid-cols-12 items-center px-3 py-2 rounded-xl" style={{ background: "#f5f2ee" }}>
+                      <div key={file.id} className="grid grid-cols-12 items-center px-3 py-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                         <div className="col-span-1">
-                          <div className="w-8 h-10 rounded overflow-hidden" style={{ background: "#e6e5d8" }}>
+                          <div className="w-8 h-10 rounded overflow-hidden" style={{ background: "var(--color-border)" }}>
                             <img src={file.url} alt="" className="w-full h-full object-cover" />
                           </div>
                         </div>
-                        <div className="col-span-5 text-sm truncate pr-2" style={{ color: "#4c4847" }}>{file.product?.name ?? "–"}</div>
-                        <div className="col-span-3 text-xs" style={{ color: "#6f5f48" }}>{file.product?.productCode ?? "–"}</div>
-                        <div className="col-span-2 text-center text-xs" style={{ color: "#6f5f48" }}>#{file.order + 1}</div>
+                        <div className="col-span-5 text-sm truncate pr-2" style={{ color: "var(--color-text)" }}>{file.product?.name ?? "–"}</div>
+                        <div className="col-span-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{file.product?.productCode ?? "–"}</div>
+                        <div className="col-span-2 text-center text-xs" style={{ color: "var(--color-text-muted)" }}>#{file.order + 1}</div>
                         <div className="col-span-1 flex gap-1 justify-end">
-                          <a href={file.url} download className="w-6 h-6 flex items-center justify-center rounded-lg" style={{ background: "#e6e5d8" }}>
+                          <a href={file.url} download className="w-6 h-6 flex items-center justify-center rounded-lg" style={{ background: "var(--color-border)" }}>
                             <svg width="11" height="11" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                               <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -959,43 +959,43 @@ export default function SettingsPage() {
           {activeTab === "takeaway" && (
             <div>
               <div style={cardStyle}>
-                <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Takeaway Limit</h2>
-                <p className="text-xs mb-6" style={{ color: "#6f5f48" }}>กำหนดจำนวนสินค้าตัวอย่างสูงสุดที่ลูกค้าสามารถนำออกได้ต่อครั้ง</p>
-                <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "#f5f2ee" }}>
+                <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Takeaway Limit</h2>
+                <p className="text-xs mb-6" style={{ color: "var(--color-text-muted)" }}>กำหนดจำนวนสินค้าตัวอย่างสูงสุดที่ลูกค้าสามารถนำออกได้ต่อครั้ง</p>
+                <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "var(--color-bg)" }}>
                   <div>
-                    <p className="font-medium text-sm" style={{ color: "#4c4847" }}>เปิดใช้งาน Takeaway Limit</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>จำกัดจำนวนสินค้าที่ลูกค้านำออกได้</p>
+                    <p className="font-medium text-sm" style={{ color: "var(--color-text)" }}>เปิดใช้งาน Takeaway Limit</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>จำกัดจำนวนสินค้าที่ลูกค้านำออกได้</p>
                   </div>
                   <div onClick={() => setTakeawayEnabled((p) => !p)}
                     className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
-                    style={{ background: takeawayEnabled ? "#726c5a" : "#cdc3ad" }}>
+                    style={{ background: takeawayEnabled ? "var(--color-primary)" : "var(--color-sidebar)" }}>
                     <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: takeawayEnabled ? "22px" : "4px" }} />
                   </div>
                 </div>
                 <div className={takeawayEnabled ? "" : "opacity-40 pointer-events-none"}>
-                  <p className="text-sm font-medium mb-4" style={{ color: "#4c4847" }}>จำนวนสินค้าสูงสุดต่อครั้ง</p>
+                  <p className="text-sm font-medium mb-4" style={{ color: "var(--color-text)" }}>จำนวนสินค้าสูงสุดต่อครั้ง</p>
                   <div className="flex items-center gap-6 mb-6">
                     <button onClick={() => setTakeawayLimit((v) => Math.max(1, v - 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
-                      style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>−</button>
+                      style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>−</button>
                     <div className="text-center">
-                      <p className="text-5xl font-bold" style={{ color: "#4c4847" }}>{takeawayLimit}</p>
-                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>ชิ้น / ครั้ง</p>
+                      <p className="text-5xl font-bold" style={{ color: "var(--color-text)" }}>{takeawayLimit}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>ชิ้น / ครั้ง</p>
                     </div>
                     <button onClick={() => setTakeawayLimit((v) => Math.min(20, v + 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
-                      style={{ background: "#726c5a" }}>+</button>
+                      style={{ background: "var(--color-primary)" }}>+</button>
                   </div>
                   <div>
-                    <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preset</p>
+                    <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preset</p>
                     <div className="flex gap-2 flex-wrap">
                       {[1,2,3,5,10].map((preset) => (
                         <button key={preset} onClick={() => setTakeawayLimit(preset)}
                           className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
                           style={{
-                            background: takeawayLimit === preset ? "#726c5a" : "#f5f2ee",
-                            color: takeawayLimit === preset ? "#fff" : "#4c4847",
-                            border: "1px solid " + (takeawayLimit === preset ? "#726c5a" : "#e6e5d8"),
+                            background: takeawayLimit === preset ? "var(--color-primary)" : "var(--color-bg)",
+                            color: takeawayLimit === preset ? "var(--color-surface)" : "var(--color-text)",
+                            border: "1px solid " + (takeawayLimit === preset ? "var(--color-primary)" : "var(--color-border)"),
                           }}>
                           {preset}
                         </button>
@@ -1005,31 +1005,31 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Borrow / Return period — drives the default due date + "overdue" flag */}
-                <div className="mt-6 pt-5" style={{ borderTop: "1px solid #e6e5d8" }}>
-                  <p className="text-sm font-medium mb-1" style={{ color: "#4c4847" }}>ระยะเวลายืม / Borrow period</p>
-                  <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
+                <div className="mt-6 pt-5" style={{ borderTop: "1px solid var(--color-border)" }}>
+                  <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>ระยะเวลายืม / Borrow period</p>
+                  <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
                   <div className="flex items-center gap-6 mb-4">
                     <button onClick={() => setBorrowDays((v) => Math.max(1, v - 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
-                      style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>−</button>
+                      style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>−</button>
                     <div className="text-center">
-                      <p className="text-5xl font-bold" style={{ color: "#4c4847" }}>{borrowDays}</p>
-                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>days</p>
+                      <p className="text-5xl font-bold" style={{ color: "var(--color-text)" }}>{borrowDays}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>days</p>
                     </div>
                     <button onClick={() => setBorrowDays((v) => Math.min(365, v + 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
-                      style={{ background: "#726c5a" }}>+</button>
+                      style={{ background: "var(--color-primary)" }}>+</button>
                   </div>
                   <div>
-                    <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preset</p>
+                    <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preset</p>
                     <div className="flex gap-2 flex-wrap">
                       {[7, 14, 30, 60, 90].map((preset) => (
                         <button key={preset} onClick={() => setBorrowDays(preset)}
                           className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
                           style={{
-                            background: borrowDays === preset ? "#726c5a" : "#f5f2ee",
-                            color: borrowDays === preset ? "#fff" : "#4c4847",
-                            border: "1px solid " + (borrowDays === preset ? "#726c5a" : "#e6e5d8"),
+                            background: borrowDays === preset ? "var(--color-primary)" : "var(--color-bg)",
+                            color: borrowDays === preset ? "var(--color-surface)" : "var(--color-text)",
+                            border: "1px solid " + (borrowDays === preset ? "var(--color-primary)" : "var(--color-border)"),
                           }}>
                           {preset}d
                         </button>
@@ -1049,7 +1049,7 @@ export default function SettingsPage() {
                     setTimeout(() => setTakeawaySuccess(""), 2000);
                   }}
                   className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium"
-                  style={{ background: "#726c5a", color: "#fff" }}>
+                  style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                   Save Settings
                 </button>
               </div>

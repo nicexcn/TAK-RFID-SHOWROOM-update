@@ -40,32 +40,32 @@ export default function StickerPrintPage() {
         @page { size: ${bleed ? "9cm 6cm" : "8cm 5cm"}; margin: 0; }
         @media print {
           .no-print { display: none !important; }
-          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
-          .page-root { min-height: 0 !important; background: #fff !important; display: block !important; }
-          .sticker-wrap { background: #fff !important; padding: 0 !important; }
+          html, body { margin: 0 !important; padding: 0 !important; background: var(--color-surface) !important; }
+          .page-root { min-height: 0 !important; background: var(--color-surface) !important; display: block !important; }
+          .sticker-wrap { background: var(--color-surface) !important; padding: 0 !important; }
           .sticker { box-shadow: none !important; border: none !important; }
         }
       `}</style>
 
       {/* Toolbar (hidden when printing) */}
       <div className="no-print" style={{ width: "100%", maxWidth: 560, padding: "20px 16px" }}>
-        <h1 style={{ ...archer, fontWeight: 600, fontSize: 20, color: "#4c4847", marginBottom: 4 }}>Print sample sticker</h1>
-        <p style={{ ...archer, fontSize: 13, color: "#6f5f48", marginBottom: 16 }}>
+        <h1 style={{ ...archer, fontWeight: 600, fontSize: 20, color: "var(--color-text)", marginBottom: 4 }}>Print sample sticker</h1>
+        <p style={{ ...archer, fontSize: 13, color: "var(--color-text-muted)", marginBottom: 16 }}>
           Size 8 × 5 cm{d.code ? ` · ${d.code}` : ""}. Check the details, then Print. (For a die-cut print house, add 0.5 cm bleed.)
         </p>
-        <label style={{ ...archer, display: "block", fontSize: 13, color: "#4c4847", marginBottom: 6 }}>ผู้เบิก / Requester</label>
+        <label style={{ ...archer, display: "block", fontSize: 13, color: "var(--color-text)", marginBottom: 6 }}>ผู้เบิก / Requester</label>
         <input value={d.requester} onChange={(e) => setD((p) => ({ ...p, requester: e.target.value }))}
           placeholder="ชื่อผู้เบิกสินค้า"
-          style={{ ...archer, width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e6e5d8", background: "#fff", color: "#4c4847", fontSize: 14, outline: "none" }} />
-        <label style={{ ...archer, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#4c4847", marginTop: 14, cursor: "pointer" }}>
+          style={{ ...archer, width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text)", fontSize: 14, outline: "none" }} />
+        <label style={{ ...archer, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--color-text)", marginTop: 14, cursor: "pointer" }}>
           <input type="checkbox" checked={bleed} onChange={(e) => setBleed(e.target.checked)} />
           Add 0.5 cm bleed (9×6 cm artwork for a die-cut print house)
         </label>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <button onClick={() => window.close()} style={{ ...archer, padding: "10px 18px", borderRadius: 12, background: "#f5f2ee", color: "#4c4847", border: "none", fontSize: 14, cursor: "pointer" }}>Close</button>
-          <button onClick={() => window.print()} style={{ ...archer, flex: 1, padding: "10px 18px", borderRadius: 12, background: "#726c5a", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>🖨 Print</button>
+          <button onClick={() => window.close()} style={{ ...archer, padding: "10px 18px", borderRadius: 12, background: "var(--color-bg)", color: "var(--color-text)", border: "none", fontSize: 14, cursor: "pointer" }}>Close</button>
+          <button onClick={() => window.print()} style={{ ...archer, flex: 1, padding: "10px 18px", borderRadius: 12, background: "var(--color-primary)", color: "var(--color-surface)", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>🖨 Print</button>
         </div>
-        <p style={{ ...archer, fontSize: 12, color: "#71654c", marginTop: 12 }}>
+        <p style={{ ...archer, fontSize: 12, color: "var(--color-text-subtle)", marginTop: 12 }}>
           Tip: in the print dialog set paper size to <strong>8×5 cm</strong> (or your label size) and margins to <strong>None</strong>.
         </p>
       </div>
@@ -74,7 +74,7 @@ export default function StickerPrintPage() {
       <div className="sticker-wrap" style={{ padding: "0 16px 32px" }}>
         <div className="sticker" style={{
           position: "relative",
-          width: bleed ? "9cm" : "8cm", height: bleed ? "6cm" : "5cm", background: "#fff", boxSizing: "border-box",
+          width: bleed ? "9cm" : "8cm", height: bleed ? "6cm" : "5cm", background: "var(--color-surface)", boxSizing: "border-box",
           padding: bleed ? "0.95cm 1cm" : "0.45cm 0.5cm", display: "flex", flexDirection: "column",
           border: "1px solid #d8d3c6", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", overflow: "hidden",
         }}>

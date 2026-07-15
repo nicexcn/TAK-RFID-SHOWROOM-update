@@ -213,33 +213,33 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
               : <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>}
           </svg>
         </div>
-        <h3 className="text-lg font-semibold mb-1" style={{ color: "#4c4847" }}>
+        <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--color-text)" }}>
           {result.failed === 0 ? "Images imported!" : "Done — some files were skipped"}
         </h3>
         <div className="flex justify-center gap-6 my-5">
           <div className="text-center">
-            <p className="text-2xl font-bold" style={{ color: "#10b981" }}>{result.added}</p>
-            <p className="text-xs" style={{ color: "#6f5f48" }}>images added</p>
+            <p className="text-2xl font-bold" style={{ color: "var(--color-success)" }}>{result.added}</p>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>images added</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>{result.products}</p>
-            <p className="text-xs" style={{ color: "#6f5f48" }}>products</p>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>products</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold" style={{ color: "#6f5f48" }}>{result.unmatched}</p>
-            <p className="text-xs" style={{ color: "#6f5f48" }}>unmatched</p>
+            <p className="text-2xl font-bold" style={{ color: "var(--color-text-muted)" }}>{result.unmatched}</p>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>unmatched</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold" style={{ color: "#ef4444" }}>{result.failed}</p>
-            <p className="text-xs" style={{ color: "#6f5f48" }}>failed</p>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>failed</p>
           </div>
         </div>
         {result.errors.length > 0 && (
           <div className="text-left p-3 rounded-xl mb-4 max-h-32 overflow-y-auto" style={{ background: "#fff0f0", border: "1px solid #f5c0c0" }}>
-            {result.errors.map((e, i) => <p key={i} className="text-xs" style={{ color: "#9f4a4a" }}>{e}</p>)}
+            {result.errors.map((e, i) => <p key={i} className="text-xs" style={{ color: "var(--color-danger-soft)" }}>{e}</p>)}
           </div>
         )}
-        <button onClick={reset} className="px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "#726c5a", color: "#fff" }}>
+        <button onClick={reset} className="px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
           Import more
         </button>
       </div>
@@ -249,14 +249,14 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
   // ── Picker + preview ───────────────────────────────────────────────────────
   return (
     <div>
-      <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid #e6e5d8" }}>
-        <p className="text-xs font-medium mb-1" style={{ color: "#4c4847" }}>How to name your files</p>
-        <p className="text-xs" style={{ color: "#6f5f48" }}>
+      <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
+        <p className="text-xs font-medium mb-1" style={{ color: "var(--color-text)" }}>How to name your files</p>
+        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           Name each photo after the product&apos;s <strong>Product Code</strong> or <strong>RFID tag</strong>.
-          Add <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}>-2</code>,
-          <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}> -3</code> for extra images.
+          Add <code className="px-1 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>-2</code>,
+          <code className="px-1 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}> -3</code> for extra images.
         </p>
-        <p className="text-xs mt-1" style={{ color: "#71654c" }}>
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>
           e.g. <code>PC-001.jpg</code> (cover), <code>PC-001-2.jpg</code>, <code>PC-001-3.jpg</code> · added after any existing images
         </p>
       </div>
@@ -264,7 +264,7 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
       {/* Dropzone */}
       <div
         className="border-2 border-dashed rounded-xl p-8 text-center mb-4 cursor-pointer transition-colors"
-        style={{ borderColor: matched.length || unmatched.length ? "#726c5a" : "#cdc3ad" }}
+        style={{ borderColor: matched.length || unmatched.length ? "var(--color-primary)" : "var(--color-sidebar)" }}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={async (e) => { e.preventDefault(); handleFiles(await filesFromDrop(e.dataTransfer)); }}
@@ -274,38 +274,38 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
         <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="#cdc3ad" strokeWidth="2" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <p className="text-sm" style={{ color: "#6f5f48" }}>Drag a folder of photos here, or click to select files</p>
-        <p className="text-xs mt-1" style={{ color: "#71654c" }}>
+        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Drag a folder of photos here, or click to select files</p>
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>
           {loadingProducts ? "Loading products…" : `${products.length} products available to match`}
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>{error}</div>
+        <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>{error}</div>
       )}
 
       {/* Match summary */}
       {(matched.length > 0 || unmatched.length > 0) && (
         <div className="mb-4">
           <div className="flex gap-4 mb-2 text-xs">
-            <span style={{ color: "#10b981" }}><strong>{matched.length}</strong> matched → {groups.length} products</span>
+            <span style={{ color: "var(--color-success)" }}><strong>{matched.length}</strong> matched → {groups.length} products</span>
             {unmatched.length > 0 && <span style={{ color: "#ef4444" }}><strong>{unmatched.length}</strong> unmatched</span>}
           </div>
-          <div className="overflow-auto rounded-xl max-h-56" style={{ border: "1px solid #e6e5d8" }}>
+          <div className="overflow-auto rounded-xl max-h-56" style={{ border: "1px solid var(--color-border)" }}>
             <table className="w-full text-xs min-w-max">
               <thead>
-                <tr style={{ background: "#f5f2ee", borderBottom: "1px solid #e6e5d8" }}>
-                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#6f5f48" }}>Product</th>
-                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#6f5f48" }}>Code / RFID</th>
-                  <th className="px-3 py-2 text-center font-medium" style={{ color: "#6f5f48" }}>Images</th>
+                <tr style={{ background: "var(--color-bg)", borderBottom: "1px solid var(--color-border)" }}>
+                  <th className="px-3 py-2 text-left font-medium" style={{ color: "var(--color-text-muted)" }}>Product</th>
+                  <th className="px-3 py-2 text-left font-medium" style={{ color: "var(--color-text-muted)" }}>Code / RFID</th>
+                  <th className="px-3 py-2 text-center font-medium" style={{ color: "var(--color-text-muted)" }}>Images</th>
                 </tr>
               </thead>
               <tbody>
                 {groups.map((g) => (
-                  <tr key={g.product.id} style={{ borderBottom: "1px solid #f5f2ee" }}>
-                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "#4c4847" }}>{g.product.name}</td>
-                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "#6f5f48" }}>{g.product.productCode || g.product.rfidTag}</td>
-                    <td className="px-3 py-2 text-center" style={{ color: "#4c4847" }}>{g.files.length}</td>
+                  <tr key={g.product.id} style={{ borderBottom: "1px solid var(--color-bg)" }}>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{g.product.name}</td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{g.product.productCode || g.product.rfidTag}</td>
+                    <td className="px-3 py-2 text-center" style={{ color: "var(--color-text)" }}>{g.files.length}</td>
                   </tr>
                 ))}
               </tbody>
@@ -313,9 +313,9 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
           </div>
           {unmatched.length > 0 && (
             <details className="mt-2">
-              <summary className="text-xs cursor-pointer" style={{ color: "#9f4a4a" }}>Show {unmatched.length} unmatched file(s)</summary>
+              <summary className="text-xs cursor-pointer" style={{ color: "var(--color-danger-soft)" }}>Show {unmatched.length} unmatched file(s)</summary>
               <div className="mt-1 p-2 rounded-lg max-h-28 overflow-y-auto" style={{ background: "#fff7f7" }}>
-                {unmatched.map((n) => <p key={n} className="text-xs" style={{ color: "#9f4a4a" }}>{n}</p>)}
+                {unmatched.map((n) => <p key={n} className="text-xs" style={{ color: "var(--color-danger-soft)" }}>{n}</p>)}
               </div>
             </details>
           )}
@@ -325,11 +325,11 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
       {/* Progress */}
       {uploading && (
         <div className="mb-4">
-          <div className="flex justify-between text-xs mb-1" style={{ color: "#6f5f48" }}>
+          <div className="flex justify-between text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>
             <span>Uploading…</span><span>{progress.done} / {progress.total}</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "#f5f2ee" }}>
-            <div className="h-full rounded-full transition-all" style={{ background: "#726c5a", width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }} />
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-bg)" }}>
+            <div className="h-full rounded-full transition-all" style={{ background: "var(--color-primary)", width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }} />
           </div>
         </div>
       )}
@@ -337,12 +337,12 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
       {/* Actions */}
       <div className="flex gap-3">
         <button onClick={reset} disabled={uploading}
-          className="flex-1 py-2.5 rounded-xl text-sm disabled:opacity-50" style={{ background: "#f5f2ee", color: "#4c4847" }}>
+          className="flex-1 py-2.5 rounded-xl text-sm disabled:opacity-50" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
           Clear
         </button>
         <button onClick={handleUpload} disabled={matched.length === 0 || uploading}
           className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{ background: "#726c5a" }}>
+          style={{ background: "var(--color-primary)" }}>
           {uploading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
           {uploading ? "Uploading…" : `Upload ${matched.length} image${matched.length === 1 ? "" : "s"}`}
         </button>

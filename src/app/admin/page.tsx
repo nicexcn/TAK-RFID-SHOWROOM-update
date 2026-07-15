@@ -38,7 +38,7 @@ function FilterButtons({ value, onChange }: { value: FilterPeriod | null; onChan
       {(["daily", "weekly", "monthly", "annually"] as FilterPeriod[]).map((o) => (
         <button key={o} onClick={() => onChange(o)}
           className="px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all"
-          style={{ background: value === o ? "#726c5a" : "#f5f2ee", color: value === o ? "#fff" : "#6f5f48", border: "1px solid " + (value === o ? "#726c5a" : "#e6e5d8") }}>
+          style={{ background: value === o ? "var(--color-primary)" : "var(--color-bg)", color: value === o ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (value === o ? "var(--color-primary)" : "var(--color-border)") }}>
           {o.charAt(0).toUpperCase() + o.slice(1)}
         </button>
       ))}
@@ -49,18 +49,18 @@ function FilterButtons({ value, onChange }: { value: FilterPeriod | null; onChan
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#f5f2ee" }}>
+      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
         <svg width="18" height="18" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
         </svg>
       </div>
-      <p className="text-xs text-center" style={{ color: "#71654c" }}>{label}</p>
+      <p className="text-xs text-center" style={{ color: "var(--color-text-subtle)" }}>{label}</p>
     </div>
   );
 }
 
 function Spinner() {
-  return <div className="w-5 h-5 rounded-full border-2 animate-spin my-2" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />;
+  return <div className="w-5 h-5 rounded-full border-2 animate-spin my-2" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />;
 }
 
 // ── Draggable Card Wrapper ──────────────────────────────────────────────────
@@ -83,8 +83,8 @@ function DraggableCard({
       onDragOver={(e) => e.preventDefault()}
       className="rounded-xl transition-all duration-200"
       style={{
-        background: "#fff",
-        border: "1px solid " + (dragOver === id ? "#726c5a" : "#e6e5d8"),
+        background: "var(--color-surface)",
+        border: "1px solid " + (dragOver === id ? "var(--color-primary)" : "var(--color-border)"),
         opacity: dragOver === id ? 0.7 : 1,
         cursor: "grab",
         transform: dragOver === id ? "scale(0.98)" : "scale(1)",
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
 
   if (!settingsLoaded) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
     </div>
   );
 
@@ -325,9 +325,9 @@ export default function AdminDashboard() {
     if (id === "walkins") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#6f5f48" }}>Walk-ins</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Walk-ins</p>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -343,8 +343,8 @@ export default function AdminDashboard() {
         </div>
         {loadingStats ? <Spinner /> : (
           <>
-            <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
-            <p className="text-xs" style={{ color: "#71654c" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
+            <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
+            <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
           </>
         )}
       </div>
@@ -353,9 +353,9 @@ export default function AdminDashboard() {
     if (id === "customerTypes") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#6f5f48" }}>Type of Customers</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
                 <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
@@ -370,16 +370,16 @@ export default function AdminDashboard() {
         </div>
         {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
           <>
-            <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
-            <p className="text-xs mb-3" style={{ color: "#71654c" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
+            <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
+            <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
             <div className="space-y-1">
               {stats!.customersByTitle.slice(0, 4).map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-24 truncate" style={{ color: "#6f5f48" }}>{customerTypeLabel(d.title)}</p>
-                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
+                  <p className="text-xs w-24 truncate" style={{ color: "var(--color-text-muted)" }}>{customerTypeLabel(d.title)}</p>
+                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-bg)" }}>
                     <div className="h-full rounded-full" style={{ background: color.primary, width: `${stats!.totalCustomers > 0 ? (d.count / stats!.totalCustomers) * 100 : 0}%` }} />
                   </div>
-                  <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{d.count}</p>
+                  <p className="text-xs w-6 text-right" style={{ color: "var(--color-text-muted)" }}>{d.count}</p>
                 </div>
               ))}
             </div>
@@ -391,9 +391,9 @@ export default function AdminDashboard() {
     if (id === "newVsTotal") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#6f5f48" }}>New vs Returning</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>New vs Returning</p>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />
               </svg>
@@ -419,7 +419,7 @@ export default function AdminDashboard() {
               {pieData.map((d) => (
                 <div key={d.name} className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                  <span className="text-xs" style={{ color: "#6f5f48" }}>{d.name} ({d.value})</span>
+                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{d.name} ({d.value})</span>
                 </div>
               ))}
             </div>
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold" style={{ color: "#4c4847" }}>Walk-ins by Month</h2>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Walk-ins by Month</h2>
             <svg width="14" height="14" fill="none" stroke="#cdc3ad" viewBox="0 0 24 24">
               <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
               <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
@@ -445,13 +445,13 @@ export default function AdminDashboard() {
           </div>
           <button onClick={() => copyChartData("sessions", compData.map((d) => `${d.month}: ${d.count}`).join("\n"))}
             className="px-2 py-1 rounded-lg text-xs"
-            style={{ background: "#f5f2ee", color: copiedChart === "sessions" ? "#10b981" : "#6f5f48" }}>
+            style={{ background: "var(--color-bg)", color: copiedChart === "sessions" ? "var(--color-success)" : "var(--color-text-muted)" }}>
             {copiedChart === "sessions" ? "✓ Copied" : "Copy"}
           </button>
         </div>
         {loadingStats ? (
           <div className="flex items-center justify-center h-48">
-            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
           </div>
         ) : compData.length === 0 ? <EmptyState label="ยังไม่มี session / walk-in" /> : (
           <ResponsiveContainer width="100%" height={200}>
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
       <div className="p-5">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold" style={{ color: "#4c4847" }}>Interest by Category</h2>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Interest by Category</h2>
             <svg width="14" height="14" fill="none" stroke="#cdc3ad" viewBox="0 0 24 24">
               <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
               <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
@@ -480,7 +480,7 @@ export default function AdminDashboard() {
           </div>
           <button onClick={() => copyChartData("category", (rightChartData[rightFilter] ?? []).map((d) => `${d.name}: ${d.value}`).join("\n"))}
             className="px-2 py-1 rounded-lg text-xs"
-            style={{ background: "#f5f2ee", color: copiedChart === "category" ? "#10b981" : "#6f5f48" }}>
+            style={{ background: "var(--color-bg)", color: copiedChart === "category" ? "var(--color-success)" : "var(--color-text-muted)" }}>
             {copiedChart === "category" ? "✓ Copied" : "Copy"}
           </button>
         </div>
@@ -488,14 +488,14 @@ export default function AdminDashboard() {
           {[{ key: "category", label: "Category" }, { key: "material", label: "Material" }, { key: "brand", label: "Brand" }].map((opt) => (
             <button key={opt.key} onClick={() => setRightFilter(opt.key as typeof rightFilter)}
               className="px-2 py-1 rounded-lg text-xs font-medium"
-              style={{ background: rightFilter === opt.key ? "#726c5a" : "#f5f2ee", color: rightFilter === opt.key ? "#fff" : "#6f5f48", border: "1px solid " + (rightFilter === opt.key ? "#726c5a" : "#e6e5d8") }}>
+              style={{ background: rightFilter === opt.key ? "var(--color-primary)" : "var(--color-bg)", color: rightFilter === opt.key ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (rightFilter === opt.key ? "var(--color-primary)" : "var(--color-border)") }}>
               {opt.label}
             </button>
           ))}
         </div>
         {loadingStats ? (
           <div className="flex items-center justify-center h-48">
-            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
           </div>
         ) : (rightChartData[rightFilter] ?? []).length === 0 ? <EmptyState label="ยังไม่มีข้อมูล scan" /> : (
           <ResponsiveContainer width="100%" height={200}>
@@ -526,7 +526,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Dashboard</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Dashboard</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]} />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -534,7 +534,7 @@ export default function AdminDashboard() {
           <div className="relative">
             <button onClick={() => setShowExport(!showExport)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-              style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -543,23 +543,23 @@ export default function AdminDashboard() {
             </button>
             {showExport && (
               <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 p-5"
-                style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: "#4c4847" }}>Export CSV</p>
-                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: "var(--color-text)" }}>Export CSV</p>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
                   Range: {dateRange.from} → {dateRange.to}
                 </p>
                 <button onClick={handleExportSummary} disabled={!stats}
                   className="w-full mb-2 py-2.5 rounded-xl text-sm font-medium text-white text-left px-4"
-                  style={{ background: "#726c5a", opacity: stats ? 1 : 0.5 }}>
+                  style={{ background: "var(--color-primary)", opacity: stats ? 1 : 0.5 }}>
                   📊 Dashboard Summary
                   <span className="block text-[11px] font-normal opacity-80">Aggregated stats for the selected range</span>
                 </button>
                 {role === "super_admin" && (
                   <button onClick={handleExportCustomers} disabled={exportingCustomers}
                     className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4 disabled:cursor-wait"
-                    style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8", opacity: exportingCustomers ? 0.6 : 1 }}>
+                    style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)", opacity: exportingCustomers ? 0.6 : 1 }}>
                     {exportingCustomers ? "⏳ Exporting…" : "👤 Customers (raw)"}
-                    <span className="block text-[11px] font-normal" style={{ color: "#6f5f48" }}>Customers registered in this range</span>
+                    <span className="block text-[11px] font-normal" style={{ color: "var(--color-text-muted)" }}>Customers registered in this range</span>
                   </button>
                 )}
               </div>
@@ -567,12 +567,12 @@ export default function AdminDashboard() {
           </div>
           {/* Search */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 min-w-0 sm:flex-none sm:w-56"
-            style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
             <input placeholder="Search product..." className="outline-none text-sm w-full"
-              style={{ background: "transparent", color: "#4c4847" }} />
+              style={{ background: "transparent", color: "var(--color-text)" }} />
           </div>
         </div>
       </div>
@@ -580,30 +580,30 @@ export default function AdminDashboard() {
 
       {/* Filter row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <p className="text-xs font-medium" style={{ color: "#6f5f48" }}>
-          Showing stats for: <span style={{ color: "#726c5a" }}>{dateRange.from} → {dateRange.to}</span>
+        <p className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
+          Showing stats for: <span style={{ color: "var(--color-text-muted)" }}>{dateRange.from} → {dateRange.to}</span>
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { userPickedRange.current = true; setRangeMode("preset"); setStatFilter(v); }} />
           <button onClick={() => { userPickedRange.current = true; setRangeMode("custom"); }}
             className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
-            style={{ background: rangeMode === "custom" ? "#726c5a" : "#f5f2ee", color: rangeMode === "custom" ? "#fff" : "#6f5f48", border: "1px solid " + (rangeMode === "custom" ? "#726c5a" : "#e6e5d8") }}>
+            style={{ background: rangeMode === "custom" ? "var(--color-primary)" : "var(--color-bg)", color: rangeMode === "custom" ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (rangeMode === "custom" ? "var(--color-primary)" : "var(--color-border)") }}>
             Custom
           </button>
           {rangeMode === "custom" && (
             <div className="flex items-center gap-1">
               <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => { userPickedRange.current = true; setCustomFrom(e.target.value); }}
-                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-              <span className="text-xs" style={{ color: "#6f5f48" }}>–</span>
+                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>–</span>
               <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => { userPickedRange.current = true; setCustomTo(e.target.value); }}
-                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+                className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
             </div>
           )}
         </div>
       </div>
 
       {/* ── Stats Cards (draggable) ── */}
-      <p className="text-xs mb-2" style={{ color: "#71654c" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
+      <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {cardOrder.filter(isWidgetVisible).map((id) => (
           <DraggableCard key={id} id={id} dragOver={dragOver}
@@ -614,8 +614,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="rounded-xl p-5 mb-6" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-        <h2 className="text-base font-semibold mb-4" style={{ color: "#4c4847" }}>Quick Actions</h2>
+      <div className="rounded-xl p-5 mb-6" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: "Add Customer", sub: "Register new customer", href: "/admin/customers/add" },
@@ -623,16 +623,16 @@ export default function AdminDashboard() {
           ].map((action) => (
             <Link key={action.label} href={action.href}
               className="flex flex-col items-center justify-center p-6 rounded-xl transition-all"
-              style={{ border: "1.5px dashed #cdc3ad", background: "transparent" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
+              style={{ border: "1.5px dashed var(--color-sidebar)", background: "transparent" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "#f5f2ee" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "var(--color-bg)" }}>
                 <svg width="18" height="18" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </div>
-              <p className="text-sm font-medium" style={{ color: "#4c4847" }}>{action.label}</p>
-              <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>{action.sub}</p>
+              <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>{action.label}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>{action.sub}</p>
             </Link>
           ))}
         </div>

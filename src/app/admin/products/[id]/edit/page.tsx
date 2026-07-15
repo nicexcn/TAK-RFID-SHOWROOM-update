@@ -39,9 +39,9 @@ export default function EditProductPage() {
   const [categories, setCategories] = useState<DropdownOption[]>([]);
 
   const inputStyle = {
-    background: "#f5f2ee",
-    border: "1px solid #e6e5d8",
-    color: "#4c4847",
+    background: "var(--color-bg)",
+    border: "1px solid var(--color-border)",
+    color: "var(--color-text)",
   };
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function EditProductPage() {
 
   if (fetching) return (
     <div className="flex items-center justify-center h-64">
-      <p style={{ color: "#71654c" }}>Loading...</p>
+      <p style={{ color: "var(--color-text-subtle)" }}>Loading...</p>
     </div>
   );
 
@@ -118,17 +118,17 @@ export default function EditProductPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Edit Product</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Edit Product</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management", href: "/admin/products" }, { label: "Edit Product" }]} />
         </div>
         <button onClick={() => router.push("/admin/products")}
           className="px-5 py-2 rounded-xl text-sm"
-          style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+          style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
           ← Back
         </button>
       </div>
 
-      <div className="rounded-xl p-6 max-w-3xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+      <div className="rounded-xl p-6 max-w-3xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="space-y-4">
 
           {/* RFID Tag — scan with a reader, or type it */}
@@ -136,7 +136,7 @@ export default function EditProductPage() {
 
           {/* Product Code */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Code</label>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
             <input name="productCode" value={form.productCode} onChange={handleChange}
               className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
           </div>
@@ -144,12 +144,12 @@ export default function EditProductPage() {
           {/* Brand + Material Type */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Brand</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Brand</label>
               <SearchableSelect options={brands} value={form.brand}
                 onChange={(v) => handleSelect("brand", v)} placeholder="Select brand" />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Material Type</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Material Type</label>
               <SearchableSelect options={materialTypes} value={form.materialType}
                 onChange={(v) => handleSelect("materialType", v)} placeholder="Select material type" />
             </div>
@@ -158,13 +158,13 @@ export default function EditProductPage() {
           {/* Category + Product Name */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Category</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Category</label>
               <SearchableSelect options={categories} value={form.category}
                 onChange={(v) => handleSelect("category", v)} placeholder="Select category" searchable />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
-                Product Name <span style={{ color: "#9f4a4a" }}>*</span>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>
+                Product Name <span style={{ color: "var(--color-danger-soft)" }}>*</span>
               </label>
               <AutocompleteInput
                 value={form.name}
@@ -178,24 +178,24 @@ export default function EditProductPage() {
           {/* Location + physical attributes (customer req #2: track product location) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Location (ตำแหน่งในโชว์รูม)</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Location (ตำแหน่งในโชว์รูม)</label>
               <input name="location" value={form.location} onChange={handleChange} placeholder="เช่น โซน A ชั้น 2"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Size</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Size</label>
               <input name="size" value={form.size} onChange={handleChange} placeholder="เช่น 60x60 cm"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Colour</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Colour</label>
               <input name="colour" value={form.colour} onChange={handleChange} placeholder="เช่น Walnut"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Description</label>
+              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Description</label>
               <input name="description" value={form.description} onChange={handleChange} placeholder="รายละเอียดสั้นๆ"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
@@ -203,36 +203,36 @@ export default function EditProductPage() {
 
           {/* image3: give-away vs must-return */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Return policy / นโยบายการคืน</label>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Return policy / นโยบายการคืน</label>
             <label className="flex items-start gap-3 px-4 py-3 rounded-xl cursor-pointer" style={inputStyle}>
               <input type="checkbox" checked={form.returnable} onChange={(e) => setForm((p) => ({ ...p, returnable: e.target.checked }))} className="w-4 h-4 mt-0.5" />
-              <span className="text-sm" style={{ color: "#4c4847" }}>
+              <span className="text-sm" style={{ color: "var(--color-text)" }}>
                 <strong>ต้องคืน</strong> (Must be returned) — มีแจ้งเตือนเตรียมของ + ติดตามการคืน<br />
-                <span style={{ color: "#6f5f48" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
+                <span style={{ color: "var(--color-text-muted)" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
               </span>
             </label>
           </div>
 
           {/* Product Images — first image is the cover (synced to imageUrl) */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>Product Images</label>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Images</label>
             <ProductGallery
               productId={String(id)}
               onCoverChange={(url) => handleSelect("imageUrl", url)}
             />
           </div>
 
-          {error && <p className="text-sm" style={{ color: "#9f4a4a" }}>{error}</p>}
+          {error && <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <button onClick={handleSubmit} disabled={loading}
               className="px-6 py-3 rounded-xl text-sm font-medium"
-              style={{ background: "#726c5a", color: "#fff", opacity: loading ? 0.7 : 1 }}>
+              style={{ background: "var(--color-primary)", color: "var(--color-surface)", opacity: loading ? 0.7 : 1 }}>
               {loading ? "Saving..." : "Save Changes"}
             </button>
             <button onClick={() => router.push("/admin/products")}
               className="px-6 py-3 rounded-xl text-sm"
-              style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>
+              style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
               Cancel
             </button>
           </div>

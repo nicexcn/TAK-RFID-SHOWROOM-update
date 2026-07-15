@@ -18,7 +18,7 @@ interface Notif {
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   PENDING:   { label: "รอดำเนินการ", color: "#f59e0b", bg: "#fef3c7" },
   PREPARING: { label: "กำลังเตรียม", color: "#3b82f6", bg: "#dbeafe" },
-  COMPLETE:  { label: "เสร็จสิ้น",   color: "#10b981", bg: "#d1fae5" },
+  COMPLETE:  { label: "เสร็จสิ้น",   color: "var(--color-success)", bg: "#d1fae5" },
 };
 
 export default function NotificationsPage() {
@@ -98,9 +98,9 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Notifications</h1>
+            <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Notifications</h1>
             {unread > 0 && (
-              <span className="text-xs font-bold text-white px-2 py-0.5 rounded-full" style={{ background: "#dc2626" }}>
+              <span className="text-xs font-bold text-white px-2 py-0.5 rounded-full" style={{ background: "var(--color-danger)" }}>
                 {unread}
               </span>
             )}
@@ -110,13 +110,13 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link href="/admin/loans"
             className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-            style={{ background: "#726c5a" }}>
+            style={{ background: "var(--color-primary)" }}>
             ↩ Borrow / Return
           </Link>
           {unread > 0 && (
             <button onClick={markAllRead}
               className="px-4 py-2 rounded-xl text-sm"
-              style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               Mark all as read
             </button>
           )}
@@ -134,9 +134,9 @@ export default function NotificationsPage() {
           <button key={tab.key} onClick={() => setFilter(tab.key)}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
             style={{
-              background: filter === tab.key ? "#726c5a" : "#fff",
-              color: filter === tab.key ? "#fff" : "#726c5a",
-              border: "1px solid " + (filter === tab.key ? "#726c5a" : "#e6e5d8"),
+              background: filter === tab.key ? "var(--color-primary)" : "var(--color-surface)",
+              color: filter === tab.key ? "var(--color-surface)" : "var(--color-primary)",
+              border: "1px solid " + (filter === tab.key ? "var(--color-primary)" : "var(--color-border)"),
             }}>
             {tab.label}
           </button>
@@ -146,11 +146,11 @@ export default function NotificationsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-6 h-6 rounded-full border-2 animate-spin"
-            style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
+            style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <p className="text-sm" style={{ color: "#71654c" }}>ไม่มีการแจ้งเตือน</p>
+        <div className="text-center py-20 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>ไม่มีการแจ้งเตือน</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -159,14 +159,14 @@ export default function NotificationsPage() {
             return (
               <div key={n.id} className="rounded-xl p-5 transition-all"
                 style={{
-                  background: "#fff",
-                  border: `1px solid ${n.isRead ? "#e6e5d8" : "#9f886c"}`,
+                  background: "var(--color-surface)",
+                  border: `1px solid ${n.isRead ? "var(--color-border)" : "#9f886c"}`,
                   opacity: n.isRead ? 0.85 : 1,
                 }}>
                 <div className="flex items-start gap-4">
                   {/* Product thumbnail — lets prep staff identify the right sample at a glance */}
                   <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
-                    style={{ background: "#f5f2ee" }}>
+                    style={{ background: "var(--color-bg)" }}>
                     {n.product.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={n.product.imageUrl} alt={n.product.name} className="w-full h-full object-cover" />
@@ -182,27 +182,27 @@ export default function NotificationsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <p className="font-semibold text-sm" style={{ color: "#4c4847" }}>{n.title}</p>
+                          <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{n.title}</p>
                           {!!n.takeawayQty && n.takeawayQty > 0 && (
                             <span className="px-1.5 py-0.5 rounded-md text-[11px] font-semibold"
-                              style={{ background: "#726c5a", color: "#fff" }}>×{n.takeawayQty}</span>
+                              style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>×{n.takeawayQty}</span>
                           )}
-                          {!n.isRead && <div className="w-2 h-2 rounded-full" style={{ background: "#dc2626" }} />}
+                          {!n.isRead && <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-danger)" }} />}
                         </div>
-                        <p className="text-sm font-medium mb-1" style={{ color: "#4c4847" }}>
+                        <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>
                           {n.product.name}
-                          {n.product.productCode && <span style={{ color: "#6f5f48" }}> · {n.product.productCode}</span>}
+                          {n.product.productCode && <span style={{ color: "var(--color-text-muted)" }}> · {n.product.productCode}</span>}
                         </p>
                         {(n.product.brand || n.product.colour || n.product.size) && (
-                          <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>
+                          <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>
                             {[n.product.brand, n.product.colour, n.product.size].filter(Boolean).join(" · ")}
                           </p>
                         )}
-                        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "#6f5f48" }}>
+                        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
                           {n.product.location && <span>📍 {n.product.location}</span>}
                           {n.customer && (
                             <a href={`/admin/customers/${n.customer.id}`} target="_blank" rel="noopener noreferrer"
-                              className="hover:underline" title="Open customer details (new tab)" style={{ color: "#726c5a" }}>
+                              className="hover:underline" title="Open customer details (new tab)" style={{ color: "var(--color-text-muted)" }}>
                               👤 {n.customer.fullName} ({n.customer.customerCode})
                               {n.customer.company ? ` · ${n.customer.company}` : ""}
                               {n.customer.phone ? ` · 📞 ${n.customer.phone}` : ""}
@@ -218,7 +218,7 @@ export default function NotificationsPage() {
                         </span>
                         <button onClick={() => deleteNotif(n.id)} title="Delete"
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-colors"
-                          style={{ background: "#faf0f0", color: "#9f4a4a" }}>✕</button>
+                          style={{ background: "#faf0f0", color: "var(--color-danger-soft)" }}>✕</button>
                       </div>
                     </div>
 
@@ -234,7 +234,7 @@ export default function NotificationsPage() {
                         )}
                         <button onClick={() => updateStatus(n.id, "COMPLETE")}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                          style={{ background: "#d1fae5", color: "#10b981" }}>
+                          style={{ background: "#d1fae5", color: "var(--color-success)" }}>
                           เสร็จสิ้น
                         </button>
                       </div>

@@ -39,11 +39,11 @@ interface Customer {
   sessions: SessionRow[]; contacts?: Contact[];
 }
 
-const card = { background: "#fff", border: "1px solid #e6e5d8", borderRadius: 16 };
+const card = { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 16 };
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  NONE: { label: "—", bg: "#f5f2ee", color: "#6f5f48" },
+  NONE: { label: "—", bg: "var(--color-bg)", color: "var(--color-text-muted)" },
   PREPARING: { label: "Preparing", bg: "#dbeafe", color: "#3b82f6" },
-  COMPLETE: { label: "Complete", bg: "#d1fae5", color: "#10b981" },
+  COMPLETE: { label: "Complete", bg: "#d1fae5", color: "var(--color-success)" },
 };
 
 export default function CustomerDetailPage() {
@@ -126,11 +126,11 @@ export default function CustomerDetailPage() {
     } catch { setContacts(prev); }
   }
 
-  if (loading) return <p style={{ color: "#6f5f48" }}>Loading…</p>;
+  if (loading) return <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>;
   if (error || !customer) return (
     <div>
-      <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm mb-4" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
-      <p style={{ color: "#9f4a4a" }}>{error || "Not found"}</p>
+      <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm mb-4" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>
+      <p style={{ color: "var(--color-danger-soft)" }}>{error || "Not found"}</p>
     </div>
   );
 
@@ -159,24 +159,24 @@ export default function CustomerDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>{customer.fullName || customer.customerCode}</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>{customer.fullName || customer.customerCode}</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: customer.customerCode }]} />
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
+          <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>
           {/* #9: print the 8×5cm sample sticker (opens a standalone print view). */}
           <a href={`/print/sticker?${new URLSearchParams({ company: customer.company || "", contact: customer.fullName || "", phone: customer.phone || "", project: customer.project || "", requester: customer.fullName || "", code: customer.customerCode || "" }).toString()}`}
             target="_blank" rel="noopener noreferrer"
-            className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>🖨 Print Sticker</a>
+            className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>🖨 Print Sticker</a>
           {/* #3: attributed survey link for this customer (opens the public survey pre-tagged). */}
           <a href={`/survey?customer=${customer.id}`} target="_blank" rel="noopener noreferrer"
-            className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>📋 Survey</a>
-          <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Start Scan</Link>
+            className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>📋 Survey</a>
+          <Link href={`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>Start Scan</Link>
           {canEdit && !editing && (
-            <button onClick={startEdit} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff", color: "#4c4847", border: "1px solid #e6e5d8" }}>✎ Edit</button>
+            <button onClick={startEdit} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>✎ Edit</button>
           )}
           {canDelete && (
-            <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>Delete</button>
+            <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>Delete</button>
           )}
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function CustomerDetailPage() {
         <div className="lg:col-span-1 space-y-4">
         {/* Customer info */}
         <div className="p-5" style={card}>
-          <h2 className="text-base font-semibold mb-3" style={{ color: "#4c4847" }}>Customer Info</h2>
+          <h2 className="text-base font-semibold mb-3" style={{ color: "var(--color-text)" }}>Customer Info</h2>
           {editing && form ? (
             <div className="space-y-2.5">
               {([
@@ -198,28 +198,28 @@ export default function CustomerDetailPage() {
                 ["Project", "project"],
               ] as [string, keyof EditForm][]).map(([label, key]) => (
                 <label key={key} className="block">
-                  <span className="text-xs" style={{ color: "#6f5f48" }}>{label}</span>
+                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</span>
                   <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+                    className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 </label>
               ))}
               {/* Occupation / customer type */}
               <label className="block">
-                <span className="text-xs" style={{ color: "#6f5f48" }}>Occupation</span>
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Occupation</span>
                 <select aria-label="Occupation" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                   {CUSTOMER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </label>
               {form.title === "Other" && (
                 <input value={form.titleOther} onChange={(e) => setForm({ ...form, titleOther: e.target.value })} placeholder="Specify occupation"
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               )}
               {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
               <label className="block">
-                <span className="text-xs" style={{ color: "#6f5f48" }}>Sales (เซลล์ผู้ดูแล)</span>
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales (เซลล์ผู้ดูแล)</span>
                 <select aria-label="Sales" value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                   <option value="">— none —</option>
                   {[...new Set([form.salesPerson, ...salesOptions].filter(Boolean))].map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -227,16 +227,16 @@ export default function CustomerDetailPage() {
                 </select>
               </label>
               <div className="flex gap-2 pt-1">
-                <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "#726c5a" }}>{saving ? "Saving…" : "Save"}</button>
-                <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>Cancel</button>
+                <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? "Saving…" : "Save"}</button>
+                <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               {visibleFields.map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-3 text-sm">
-                  <span style={{ color: "#6f5f48" }}>{label}</span>
-                  <span className="text-right font-medium" style={{ color: "#4c4847" }}>{value}</span>
+                  <span style={{ color: "var(--color-text-muted)" }}>{label}</span>
+                  <span className="text-right font-medium" style={{ color: "var(--color-text)" }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -246,28 +246,28 @@ export default function CustomerDetailPage() {
         {/* #8: contacts — one customer, multiple contact people */}
         <div className="p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Contacts</h2>
-            <span className="text-xs" style={{ color: "#6f5f48" }}>{contacts.length}</span>
+            <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Contacts</h2>
+            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{contacts.length}</span>
           </div>
           <div className="space-y-2 mb-3">
             {contacts.length === 0 ? (
-              <p className="text-sm" style={{ color: "#71654c" }}>No extra contacts yet</p>
+              <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No extra contacts yet</p>
             ) : contacts.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
+              <div key={c.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm truncate" style={{ color: "#4c4847" }}>{c.name}</p>
-                  {c.phone && <p className="text-[11px]" style={{ color: "#6f5f48" }}>{c.phone}</p>}
+                  <p className="text-sm truncate" style={{ color: "var(--color-text)" }}>{c.name}</p>
+                  {c.phone && <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{c.phone}</p>}
                 </div>
-                <button onClick={() => removeContact(c.id)} aria-label="Remove contact" className="text-base px-2 leading-none" style={{ color: "#9f4a4a" }}>×</button>
+                <button onClick={() => removeContact(c.id)} aria-label="Remove contact" className="text-base px-2 leading-none" style={{ color: "var(--color-danger-soft)" }}>×</button>
               </div>
             ))}
           </div>
           <div className="flex gap-2">
             <input value={cName} onChange={(e) => setCName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addContact()}
-              placeholder="Contact name" className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+              placeholder="Contact name" className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
             <input value={cPhone} onChange={(e) => setCPhone(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addContact()}
-              placeholder="Phone" className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-            <button onClick={addContact} className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "#726c5a" }}>Add</button>
+              placeholder="Phone" className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+            <button onClick={addContact} className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "var(--color-primary)" }}>Add</button>
           </div>
         </div>
         </div>
@@ -275,30 +275,30 @@ export default function CustomerDetailPage() {
         {/* Interest history */}
         <div className="lg:col-span-2 p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Scan history</h2>
-            <span className="text-xs" style={{ color: "#6f5f48" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
+            <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Scan history</h2>
+            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
           </div>
           {uniqueProducts.size === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: "#71654c" }}>No scan history yet</p>
+            <p className="text-sm py-6 text-center" style={{ color: "var(--color-text-subtle)" }}>No scan history yet</p>
           ) : (
             <div className="space-y-2">
               {[...uniqueProducts.values()].map((scan) => {
                 const st = STATUS[scan.prepareStatus] || STATUS.NONE;
                 return (
-                  <div key={scan.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
+                  <div key={scan.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                     {scan.product.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={scan.product.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                    ) : <div className="w-12 h-12 rounded-lg" style={{ background: "#e6e5d8" }} />}
+                    ) : <div className="w-12 h-12 rounded-lg" style={{ background: "var(--color-border)" }} />}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "#4c4847" }}>{scan.product.name}</p>
-                      <p className="text-xs truncate" style={{ color: "#6f5f48" }}>
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{scan.product.name}</p>
+                      <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
                         {[scan.product.brand, scan.product.location, new Date(scan.scannedAt).toLocaleString("en-GB")].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     {scan.takeawayQty > 0 && scan.isLoan !== false && (
                       scan.returnedQty >= scan.takeawayQty ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#d1fae5", color: "#10b981" }}>Returned ✓</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#d1fae5", color: "var(--color-success)" }}>Returned ✓</span>
                       ) : (
                         <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "#fdf0e3", color: "#c07a30" }}>
                           {scan.returnedQty > 0 ? `Borrowed ${scan.takeawayQty} · ${scan.returnedQty} back` : `Borrowed ${scan.takeawayQty}`}

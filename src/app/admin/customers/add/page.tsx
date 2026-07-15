@@ -102,51 +102,51 @@ export default function AddCustomerPage() {
     } finally { setSaving(false); }
   }
 
-  const inputStyle = { background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" };
+  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Register Customer</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Register Customer</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add New" }]} />
         </div>
         <button onClick={() => router.back()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
-          style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
           ← Back
         </button>
       </div>
 
-      <div className="rounded-xl p-8 space-y-8" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+      <div className="rounded-xl p-8 space-y-8" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         {/* Personal */}
         <section>
-          <h2 className="text-base font-semibold mb-5" style={{ color: "#4c4847" }}>Personal Information</h2>
+          <h2 className="text-base font-semibold mb-5" style={{ color: "var(--color-text)" }}>Personal Information</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
-                Full Name / ชื่อ-นามสกุล <span style={{ color: "#dc2626" }}>*</span>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+                Full Name / ชื่อ-นามสกุล <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <input ref={fullNameRef} value={fullName} onChange={(e) => setFullName(e.target.value)}
                 placeholder="กรอกชื่อ-นามสกุล"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div ref={occupationRef}>
-              <label className="block text-sm mb-2" style={{ color: "#4c4847" }}>
-                You are a ... / คุณคือ... <span style={{ color: "#dc2626" }}>*</span>
+              <label className="block text-sm mb-2" style={{ color: "var(--color-text)" }}>
+                You are a ... / คุณคือ... <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {TITLE_OPTIONS.map((t) => (
                   <button key={t.value} type="button" onClick={() => setTitle(t.value)}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition-all text-left"
                     style={{
-                      borderColor: title === t.value ? "#726c5a" : "#e6e5d8",
+                      borderColor: title === t.value ? "var(--color-primary)" : "var(--color-border)",
                       background: title === t.value ? "rgba(114,108,90,0.07)" : "transparent",
-                      color: title === t.value ? "#4c4847" : "#6f5f48",
+                      color: title === t.value ? "var(--color-text)" : "var(--color-text-muted)",
                     }}>
                     <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                      style={{ borderColor: title === t.value ? "#726c5a" : "#cdc3ad" }}>
-                      {title === t.value && <div className="w-2 h-2 rounded-full" style={{ background: "#726c5a" }} />}
+                      style={{ borderColor: title === t.value ? "var(--color-primary)" : "var(--color-sidebar)" }}>
+                      {title === t.value && <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-primary)" }} />}
                     </div>
                     {t.label}
                   </button>
@@ -161,37 +161,37 @@ export default function AddCustomerPage() {
           </div>
         </section>
 
-        <hr style={{ borderColor: "#e6e5d8" }} />
+        <hr style={{ borderColor: "var(--color-border)" }} />
 
         {/* Contact */}
         <section>
-          <h2 className="text-base font-semibold mb-5" style={{ color: "#4c4847" }}>Company & Contact</h2>
+          <h2 className="text-base font-semibold mb-5" style={{ color: "var(--color-text)" }}>Company & Contact</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
-                Company / บริษัท <span style={{ color: "#dc2626" }}>*</span>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+                Company / บริษัท <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <input ref={companyRef} value={company} onChange={(e) => setCompany(e.target.value)}
                 placeholder="ชื่อบริษัท / หน่วยงาน"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
-                Mobile Phone <span style={{ color: "#dc2626" }}>*</span>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+                Mobile Phone <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <input ref={phoneRef} value={phone} onChange={(e) => setPhone(e.target.value)}
                 placeholder="0XX-XXX-XXXX"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>LINE ID</label>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>LINE ID</label>
               <input value={lineId} onChange={(e) => setLineId(e.target.value)}
                 placeholder="LINE ID"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>
-                Email <span style={{ color: "#dc2626" }}>*</span>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+                Email <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@example.com"
@@ -200,14 +200,14 @@ export default function AddCustomerPage() {
           </div>
         </section>
 
-        <hr style={{ borderColor: "#e6e5d8" }} />
+        <hr style={{ borderColor: "var(--color-border)" }} />
 
         {/* Channels */}
         <section>
-          <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>
+          <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>
             How do you know us? / คุณรู้จักเราจากที่ไหน
           </h2>
-          <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือกได้มากกว่า 1 ช่องทาง</p>
+          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือกได้มากกว่า 1 ช่องทาง</p>
           <div className="grid grid-cols-2 gap-2">
             {KNOW_CHANNELS.map((ch) => {
               const active = channels.includes(ch);
@@ -215,12 +215,12 @@ export default function AddCustomerPage() {
                 <button key={ch} type="button" onClick={() => toggleChannel(ch)}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition-all text-left"
                   style={{
-                    borderColor: active ? "#726c5a" : "#e6e5d8",
+                    borderColor: active ? "var(--color-primary)" : "var(--color-border)",
                     background: active ? "rgba(114,108,90,0.07)" : "transparent",
-                    color: active ? "#4c4847" : "#6f5f48",
+                    color: active ? "var(--color-text)" : "var(--color-text-muted)",
                   }}>
                   <div className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                    style={{ borderColor: active ? "#726c5a" : "#cdc3ad", background: active ? "#726c5a" : "transparent" }}>
+                    style={{ borderColor: active ? "var(--color-primary)" : "var(--color-sidebar)", background: active ? "var(--color-primary)" : "transparent" }}>
                     {active && (
                       <svg viewBox="0 0 10 8" className="w-2.5 h-2" fill="none">
                         <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -239,21 +239,21 @@ export default function AddCustomerPage() {
           )}
         </section>
 
-        <hr style={{ borderColor: "#e6e5d8" }} />
+        <hr style={{ borderColor: "var(--color-border)" }} />
 
         {/* PDPA */}
         <section ref={pdpaRef}>
           <button type="button" onClick={() => setPdpa(!pdpa)} className="flex items-start gap-3 w-full text-left">
             <div className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
-              style={{ borderColor: pdpa ? "#726c5a" : "#cdc3ad", background: pdpa ? "#726c5a" : "transparent" }}>
+              style={{ borderColor: pdpa ? "var(--color-primary)" : "var(--color-sidebar)", background: pdpa ? "var(--color-primary)" : "transparent" }}>
               {pdpa && (
                 <svg viewBox="0 0 10 8" className="w-3 h-2.5" fill="none">
                   <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: "#726c5a" }}>
-              <span style={{ color: "#dc2626" }}>*</span>{" "}
+            <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              <span style={{ color: "var(--color-danger)" }}>*</span>{" "}
               I consent to <strong>nimitrlab</strong> collecting and using my personal data for showroom
               registration, event communication, and related promotional purposes.
             </p>
@@ -261,55 +261,55 @@ export default function AddCustomerPage() {
         </section>
 
         {/* #2: staff-only section — visually separated from the customer-filled fields above */}
-        <section className="rounded-xl p-5" style={{ background: "#f5f2ee", border: "1px dashed #cdc3ad" }}>
-          <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>
+        <section className="rounded-xl p-5" style={{ background: "var(--color-bg)", border: "1px dashed var(--color-sidebar)" }}>
+          <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>
             For staff use / สำหรับเจ้าหน้าที่
           </h2>
-          <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
+          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
           <div className="mb-4" ref={sourceRef}>
-            <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Source / แหล่งที่มา <span style={{ color: "#dc2626" }}>*</span></label>
+            <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Source / แหล่งที่มา <span style={{ color: "var(--color-danger)" }}>*</span></label>
             <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               <option value="">— เลือก / select —</option>
               {CUSTOMER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>Sales invite = เซลล์ TWC เชิญ · Walk-in = เดินเข้ามาเอง (Sales = ทีมโชว์รูม)</p>
+            <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Sales invite = เซลล์ TWC เชิญ · Walk-in = เดินเข้ามาเอง (Sales = ทีมโชว์รูม)</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Sales / เซลล์ผู้ดูแล</label>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales / เซลล์ผู้ดูแล</label>
               <select value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                 <option value="">— เลือกเซลล์ / select sales —</option>
                 {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
-              <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>
+              <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
                 Walk-in จะตั้งชื่อเซลล์โชว์รูมผู้ดูแลให้อัตโนมัติ · จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
               </p>
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Project / โปรเจกต์</label>
+              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project / โปรเจกต์</label>
               <input value={project} onChange={(e) => setProject(e.target.value)}
                 placeholder="เช่น Samsung Office"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-              <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>Used in Reports search &amp; printed on the sticker</p>
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Used in Reports search &amp; printed on the sticker</p>
             </div>
           </div>
         </section>
 
-        {error && <p className="text-sm" style={{ color: "#dc2626" }}>{error}</p>}
+        {error && <p className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p>}
 
         <div className="flex gap-3">
           <button onClick={() => router.back()}
             className="px-6 py-3 rounded-xl text-sm font-medium"
-            style={{ background: "#f5f2ee", color: "#4c4847" }}>
+            style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-50"
-            style={{ background: "#726c5a" }}>
+            style={{ background: "var(--color-primary)" }}>
             {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {saving ? "Saving..." : "Register Customer"}
           </button>

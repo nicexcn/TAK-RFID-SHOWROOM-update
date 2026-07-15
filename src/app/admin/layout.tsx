@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#e6e5d8" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--color-border)" }}>
       {/* In-app toasts for new notifications — stacks, auto-dismisses, a11y live region.
           Works on iOS PWA too. */}
       <Toaster
@@ -132,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         visibleToasts={5}     /* preparing several different products shows several toasts */
         toastOptions={{
           className: "text-sm font-medium",
-          style: { background: "#726c5a", color: "#fff", border: "none", borderRadius: "0.75rem" },
+          style: { background: "var(--color-primary)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" },
         }}
       />
       {/* Mobile drawer backdrop (tap to close); hidden on desktop where the sidebar is a push-panel */}
@@ -146,12 +146,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ? "translate-x-0 px-4 lg:w-56"
             : "-translate-x-full px-4 lg:translate-x-0 lg:w-0 lg:px-0 lg:overflow-hidden"
         }`}
-        style={{ background: "#cdc3ad", minHeight: "100vh" }}>
+        style={{ background: "var(--color-sidebar)", minHeight: "100vh" }}>
         <div className="mb-2 px-2 flex-shrink-0">
           <Image src="/b-logo.png" alt="Nimitr Lab" width={160} height={55} className="object-contain" />
         </div>
         <div className="px-2 mb-8 mt-4 flex-shrink-0">
-          <p className="text-sm font-semibold tracking-wider" style={{ color: "#4c4847" }}>NimitrLog</p>
+          <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--color-text)" }}>NimitrLog</p>
         </div>
         <nav className="flex-1 space-y-1">
           {navItems.filter((item) => role !== "" && canAccessPath(role, item.href)).map((item) => {
@@ -160,10 +160,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link key={item.href} href={item.href}
                 onClick={() => { if (isMobile()) setSidebarOpen(false); }} // close the drawer on mobile
                 className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center justify-between"
-                style={{ background: isActive ? "rgba(255,255,255,0.5)" : "transparent", color: "#4c4847", fontWeight: isActive ? 600 : 400, borderLeft: isActive ? "3px solid #726c5a" : "3px solid transparent" }}>
+                style={{ background: isActive ? "rgba(255,255,255,0.5)" : "transparent", color: "var(--color-text)", fontWeight: isActive ? 600 : 400, borderLeft: isActive ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
                 <span>{item.label}</span>
                 {item.label === "Notifications" && notifCount > 0 && (
-                  <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "#dc2626", fontSize: "10px" }}>
+                  <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-danger)", fontSize: "10px" }}>
                     {notifCount}
                   </span>
                 )}
@@ -172,16 +172,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="mt-4 space-y-1 flex-shrink-0">
-          <p className="px-3 text-xs" style={{ color: "#4c4847" }}>{username}</p>
-          <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm" style={{ color: "#4c4847" }}>Logout</button>
+          <p className="px-3 text-xs" style={{ color: "var(--color-text)" }}>{username}</p>
+          <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm" style={{ color: "var(--color-text)" }}>Logout</button>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center px-4 sm:px-6 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #cdc3ad", background: "#e6e5d8" }}>
+        <div className="flex items-center px-4 sm:px-6 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--color-sidebar)", background: "var(--color-border)" }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu" className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg">
-            <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />
-            <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />
-            <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />
+            <span className="block w-5 h-0.5 rounded" style={{ background: "var(--color-primary)" }} />
+            <span className="block w-5 h-0.5 rounded" style={{ background: "var(--color-primary)" }} />
+            <span className="block w-5 h-0.5 rounded" style={{ background: "var(--color-primary)" }} />
           </button>
           <button onClick={toggleNotify}
             title={notifOn ? "Notification sound is on" : "Sound is off — alerts still show as a toast, but no beep/pop-up until you enable sound"}
@@ -189,7 +189,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             style={{
               background: notifOn ? "#e8f5e9" : "#fff3e0",
               color: notifOn ? "#2e7d32" : "#b26a00",
-              border: `1px solid ${notifOn ? "#cdc3ad" : "#f0c98a"}`,
+              border: `1px solid ${notifOn ? "var(--color-sidebar)" : "#f0c98a"}`,
             }}>
             {!notifOn && <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#e58a00" }} aria-hidden />}
             <span>{notifOn ? "🔔" : "🔕"}</span>

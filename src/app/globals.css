@@ -37,13 +37,24 @@
   font-weight: 300;
 }
 
+/* ── Design tokens (single source of truth for colour). Change here → whole app.
+   All values are WCAG-AA checked for body text on the app's light surfaces. ── */
 @theme {
-  --color-primary: #726c5a;
-  --color-secondary-1: #4c4847;
-  --color-secondary-2: #9f886c;
-  --color-secondary-3: #cdc3ad;
-  --color-secondary-4: #e6e5d8;
-  --color-bg-light: #f5f2ee;
+  /* text */
+  --color-text:        #4c4847;  /* primary text / headings */
+  --color-text-muted:  #6f5f48;  /* secondary text / labels (AA) */
+  --color-text-subtle: #71654c;  /* hints / captions (AA) */
+  /* surfaces + structure */
+  --color-surface:     #ffffff;  /* cards / white text on accents */
+  --color-bg:          #f5f2ee;  /* app background / light fill */
+  --color-border:      #e6e5d8;  /* borders + light panels */
+  --color-sidebar:     #cdc3ad;  /* sidebar / dividers */
+  /* accent */
+  --color-primary:     #726c5a;  /* buttons / accent surfaces */
+  /* semantic */
+  --color-danger:      #dc2626;  /* required / destructive */
+  --color-danger-soft: #9f4a4a;  /* softer danger text */
+  --color-success:     #10b981;  /* success / connected */
   --font-sans: 'Archer', sans-serif;
 }
 
@@ -52,8 +63,8 @@
 }
 
 body {
-  background-color: #f5f2ee;
-  color: #4c4847;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

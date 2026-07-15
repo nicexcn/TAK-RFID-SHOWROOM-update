@@ -228,15 +228,15 @@ export default function ManualScanPage() {
     if (sid) await fetch(`/api/sessions/${sid}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
   }
 
-  const inputStyle = { background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" };
+  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Manual Scan</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Manual Scan</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Manual Scan" }]} />
-          <p className="text-sm mt-1" style={{ color: "#6f5f48" }}>เลือกสินค้าด้วยตนเอง (ไม่ต้องใช้ RFID) — สำหรับหลังบ้าน / ของชำร่วย</p>
+          <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>เลือกสินค้าด้วยตนเอง (ไม่ต้องใช้ RFID) — สำหรับหลังบ้าน / ของชำร่วย</p>
         </div>
       </div>
 
@@ -251,13 +251,13 @@ export default function ManualScanPage() {
 
       {!session ? (
         /* Step 1 — choose a customer (or start a walk-in) */
-        <div className="rounded-xl p-6 max-w-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <h2 className="text-base font-semibold mb-4" style={{ color: "#4c4847" }}>เลือกลูกค้า</h2>
+        <div className="rounded-xl p-6 max-w-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+          <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>เลือกลูกค้า</h2>
           <div className="flex gap-2 mb-3">
             {SEARCH_TYPES.map((t) => (
               <button key={t.key} onClick={() => setSearchType(t.key)}
                 className="px-3 py-1.5 rounded-lg text-sm"
-                style={{ background: searchType === t.key ? "#726c5a" : "#f5f2ee", color: searchType === t.key ? "#fff" : "#6f5f48" }}>
+                style={{ background: searchType === t.key ? "var(--color-primary)" : "var(--color-bg)", color: searchType === t.key ? "var(--color-surface)" : "var(--color-text-muted)" }}>
                 {t.label}
               </button>
             ))}
@@ -267,17 +267,17 @@ export default function ManualScanPage() {
               placeholder={searchType === "code" ? "รหัสลูกค้า เช่น Ar00001" : searchType === "name" ? "ชื่อลูกค้า" : "เบอร์โทร"}
               className="flex-1 px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle} />
             <button onClick={searchCustomer} disabled={searching}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50" style={{ background: "#726c5a" }}>
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50" style={{ background: "var(--color-primary)" }}>
               {searching ? "..." : "ค้นหา"}
             </button>
           </div>
-          {searchError && <p className="text-sm mt-3" style={{ color: "#dc2626" }}>{searchError}</p>}
+          {searchError && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{searchError}</p>}
           {customer && (
-            <div className="mt-4 p-4 rounded-xl" style={{ background: "#f5f2ee" }}>
+            <div className="mt-4 p-4 rounded-xl" style={{ background: "var(--color-bg)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: "#4c4847" }}>{customer.customerCode} · {customer.fullName}</p>
-                  <p className="text-xs truncate" style={{ color: "#6f5f48" }}>{[customer.company, customer.phone].filter(Boolean).join(" · ")}</p>
+                  <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text)" }}>{customer.customerCode} · {customer.fullName}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{[customer.company, customer.phone].filter(Boolean).join(" · ")}</p>
                 </div>
                 <button onClick={() => startSession(customer.customerCode, customer.id, contactName)} disabled={starting}
                   className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 flex-shrink-0" style={{ background: "#4a7c59" }}>
@@ -286,9 +286,9 @@ export default function ManualScanPage() {
               </div>
               {contacts.length > 0 && (
                 <div className="mt-3">
-                  <label className="block text-[11px] mb-1" style={{ color: "#6f5f48" }}>ผู้ติดต่อ / Contact</label>
+                  <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>ผู้ติดต่อ / Contact</label>
                   <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                     <option value="">{customer.fullName} (หลัก)</option>
                     {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
@@ -298,7 +298,7 @@ export default function ManualScanPage() {
           )}
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f0eee6" }}>
             <button onClick={() => startSession("WALK-IN", null)} disabled={starting}
-              className="text-sm underline disabled:opacity-50" style={{ color: "#6f5f48" }}>
+              className="text-sm underline disabled:opacity-50" style={{ color: "var(--color-text-muted)" }}>
               หรือเริ่มแบบไม่ระบุลูกค้า (Walk-in)
             </button>
           </div>
@@ -307,12 +307,12 @@ export default function ManualScanPage() {
         /* Step 2 — pick products + review the taken list */
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Catalog */}
-          <div className="lg:col-span-3 rounded-xl p-5" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+          <div className="lg:col-span-3 rounded-xl p-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <div className="flex items-center gap-2 mb-3">
               <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
               <input value={pQuery} onChange={(e) => setPQuery(e.target.value)}
                 placeholder="ค้นหาสินค้า (ชื่อ / รหัส / แบรนด์)"
-                className="flex-1 outline-none text-sm" style={{ background: "transparent", color: "#4c4847" }} />
+                className="flex-1 outline-none text-sm" style={{ background: "transparent", color: "var(--color-text)" }} />
             </div>
             {matches.length > SHOWN_CAP && (
               <p className="text-[11px] mb-2" style={{ color: "#9a6a2f" }}>
@@ -323,9 +323,9 @@ export default function ManualScanPage() {
               <p className="text-[11px] mb-2" style={{ color: "#9a6a2f" }}>ถึงขีดจำกัดการหยิบแล้ว (สูงสุด {takeawayLimit} ชิ้น)</p>
             )}
             {catalogLoading ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>กำลังโหลดสินค้า…</p>
+              <p className="text-sm py-8 text-center" style={{ color: "var(--color-text-subtle)" }}>กำลังโหลดสินค้า…</p>
             ) : shown.length === 0 ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>ไม่พบสินค้า</p>
+              <p className="text-sm py-8 text-center" style={{ color: "var(--color-text-subtle)" }}>ไม่พบสินค้า</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
                 {shown.map((p) => {
@@ -334,16 +334,16 @@ export default function ManualScanPage() {
                   return (
                     <button key={p.id} onClick={() => addProduct(p)} disabled={disabled}
                       className="flex items-center gap-3 p-2.5 rounded-xl border text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{ borderColor: added ? "#cfe6d8" : "#e6e5d8", background: added ? "#f0f7f2" : "#fff" }}>
-                      <div className="w-11 h-11 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#f5f2ee" }}>
+                      style={{ borderColor: added ? "#cfe6d8" : "var(--color-border)", background: added ? "#f0f7f2" : "var(--color-surface)" }}>
+                      <div className="w-11 h-11 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "var(--color-bg)" }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : null}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm truncate" style={{ color: "#4c4847" }}>{p.name}</p>
-                        <p className="text-xs truncate" style={{ color: "#6f5f48" }}>{[p.productCode, p.brand].filter(Boolean).join(" · ") || "—"}</p>
+                        <p className="text-sm truncate" style={{ color: "var(--color-text)" }}>{p.name}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{[p.productCode, p.brand].filter(Boolean).join(" · ") || "—"}</p>
                       </div>
-                      <span className="text-lg flex-shrink-0" style={{ color: added ? "#4a7c59" : "#726c5a" }}>{added ? "✓" : "+"}</span>
+                      <span className="text-lg flex-shrink-0" style={{ color: added ? "#4a7c59" : "var(--color-primary)" }}>{added ? "✓" : "+"}</span>
                     </button>
                   );
                 })}
@@ -352,30 +352,30 @@ export default function ManualScanPage() {
           </div>
 
           {/* Taken list */}
-          <div className="lg:col-span-2 rounded-xl p-5 flex flex-col" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+          <div className="lg:col-span-2 rounded-xl p-5 flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>รายการที่เลือก</h2>
-              <span className="text-xs" style={{ color: "#6f5f48" }}>{session.customerCode}</span>
+              <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>รายการที่เลือก</h2>
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{session.customerCode}</span>
             </div>
-            <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>
+            <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
               {session.scans.length} รายการ · หยิบไป {totalTaken}{takeawayEnabled ? ` / ${takeawayLimit}` : ""} ชิ้น
             </p>
 
             <div className="flex-1 space-y-2 min-h-[200px] max-h-[52vh] overflow-y-auto">
               {session.scans.length === 0 ? (
-                <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
+                <p className="text-sm py-8 text-center" style={{ color: "var(--color-text-subtle)" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
               ) : (
                 session.scans.map((s) => (
-                  <div key={s.product.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
+                  <div key={s.product.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate" style={{ color: "#4c4847" }}>{s.product.name}</p>
-                      <p className="text-[11px] truncate" style={{ color: "#6f5f48" }}>{s.product.productCode || s.product.brand || "—"}</p>
+                      <p className="text-sm truncate" style={{ color: "var(--color-text)" }}>{s.product.name}</p>
+                      <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>{s.product.productCode || s.product.brand || "—"}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button onClick={() => changeQty(s, -1)} aria-label="ลดจำนวน" className="w-7 h-7 rounded-lg text-sm" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#726c5a" }}>−</button>
-                      <span className="w-5 text-center text-sm" style={{ color: "#4c4847" }}>{s.takeawayQty}</span>
-                      <button onClick={() => changeQty(s, 1)} aria-label="เพิ่มจำนวน" disabled={atLimit} className="w-7 h-7 rounded-lg text-sm disabled:opacity-40" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#726c5a" }}>+</button>
-                      <button onClick={() => removeScan(s)} aria-label="ลบออก" className="w-7 h-7 rounded-lg text-sm" style={{ background: "#fff", border: "1px solid #e6d8d8", color: "#9f4a4a" }}>×</button>
+                      <button onClick={() => changeQty(s, -1)} aria-label="ลดจำนวน" className="w-7 h-7 rounded-lg text-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>−</button>
+                      <span className="w-5 text-center text-sm" style={{ color: "var(--color-text)" }}>{s.takeawayQty}</span>
+                      <button onClick={() => changeQty(s, 1)} aria-label="เพิ่มจำนวน" disabled={atLimit} className="w-7 h-7 rounded-lg text-sm disabled:opacity-40" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>+</button>
+                      <button onClick={() => removeScan(s)} aria-label="ลบออก" className="w-7 h-7 rounded-lg text-sm" style={{ background: "var(--color-surface)", border: "1px solid #e6d8d8", color: "var(--color-danger-soft)" }}>×</button>
                     </div>
                   </div>
                 ))
@@ -384,9 +384,9 @@ export default function ManualScanPage() {
 
             <div className="flex gap-2 pt-4 mt-2" style={{ borderTop: "1px solid #f0eee6" }}>
               <button onClick={() => closeSession()}
-                className="px-4 py-2.5 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847" }}>เปลี่ยนลูกค้า</button>
+                className="px-4 py-2.5 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>เปลี่ยนลูกค้า</button>
               <button onClick={() => closeSession("บันทึกรายการเรียบร้อย")}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>เสร็จสิ้น / บันทึก</button>
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>เสร็จสิ้น / บันทึก</button>
             </div>
           </div>
         </div>

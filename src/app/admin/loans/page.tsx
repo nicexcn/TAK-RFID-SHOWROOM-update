@@ -26,11 +26,11 @@ interface Loan {
 }
 interface Counts { all: number; outstanding: number; overdue: number; returned: number }
 
-const card = { background: "#fff", border: "1px solid #e6e5d8", borderRadius: 16 };
+const card = { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 16 };
 const STATUS: Record<Loan["status"], { label: string; bg: string; color: string }> = {
   OUT:      { label: "Out",      bg: "#fef3c7", color: "#b45309" },
-  OVERDUE:  { label: "Overdue",  bg: "#fee2e2", color: "#dc2626" },
-  RETURNED: { label: "Returned", bg: "#d1fae5", color: "#10b981" },
+  OVERDUE:  { label: "Overdue",  bg: "#fee2e2", color: "var(--color-danger)" },
+  RETURNED: { label: "Returned", bg: "#d1fae5", color: "var(--color-success)" },
 };
 const TABS: { key: string; label: string; countKey: keyof Counts }[] = [
   { key: "outstanding", label: "Outstanding", countKey: "outstanding" },
@@ -95,9 +95,9 @@ export default function LoansPage() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Borrow / Return</h1>
+        <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Borrow / Return</h1>
         <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications", href: "/admin/notifications" }, { label: "Borrow & Return" }]} />
-        <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
       </div>
 
       {/* Tabs */}
@@ -110,12 +110,12 @@ export default function LoansPage() {
             <button key={t.key} onClick={() => setTab(t.key)}
               className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5"
               style={{
-                background: active ? "#726c5a" : "#fff",
-                color: active ? "#fff" : danger ? "#dc2626" : "#4c4847",
-                border: `1px solid ${active ? "#726c5a" : "#e6e5d8"}`,
+                background: active ? "var(--color-primary)" : "var(--color-surface)",
+                color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text)",
+                border: `1px solid ${active ? "var(--color-primary)" : "var(--color-border)"}`,
               }}>
               <span>{t.label}</span>
-              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "#f5f2ee", color: active ? "#fff" : danger ? "#dc2626" : "#6f5f48" }}>{n}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "var(--color-bg)", color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text-muted)" }}>{n}</span>
             </button>
           );
         })}
@@ -123,24 +123,24 @@ export default function LoansPage() {
           value={query} onChange={(e) => setQuery(e.target.value)}
           placeholder="Search customer or item…"
           className="ml-auto px-3 py-1.5 rounded-lg text-sm w-full sm:w-64"
-          style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto" style={card}>
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f5f2ee", color: "#6f5f48" }}>
+            <tr style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>
               {["Item", "Customer", "Borrowed", "Due", "Returned", "Status", ""].map((h, i) => (
-                <th key={i} className="text-left font-medium px-3 py-2.5 whitespace-nowrap" style={{ borderBottom: "1px solid #e6e5d8" }}>{h}</th>
+                <th key={i} className="text-left font-medium px-3 py-2.5 whitespace-nowrap" style={{ borderBottom: "1px solid var(--color-border)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#6f5f48" }}>Loading…</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "var(--color-text-muted)" }}>Loading…</td></tr>
             ) : loans.length === 0 ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#71654c" }}>No loans here</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "var(--color-text-subtle)" }}>No loans here</td></tr>
             ) : loans.map((l) => {
               const st = STATUS[l.status];
               const returned = l.status === "RETURNED";
@@ -153,10 +153,10 @@ export default function LoansPage() {
                       {l.product.imageUrl
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={l.product.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                        : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "#e6e5d8" }} />}
+                        : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "var(--color-border)" }} />}
                       <div className="min-w-0">
-                        <p className="font-medium truncate" style={{ color: "#4c4847", maxWidth: 220 }}>{l.product.name}</p>
-                        <p className="text-xs truncate" style={{ color: "#6f5f48", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
+                        <p className="font-medium truncate" style={{ color: "var(--color-text)", maxWidth: 220 }}>{l.product.name}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--color-text-muted)", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
                       </div>
                     </div>
                   </td>
@@ -164,22 +164,22 @@ export default function LoansPage() {
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {l.customerId ? (
                       <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
-                        className="font-medium hover:underline" style={{ color: "#726c5a" }}>{l.customerName}</a>
-                    ) : <span className="font-medium" style={{ color: "#4c4847" }}>{l.customerName}</span>}
-                    <p className="text-xs" style={{ color: "#6f5f48" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
+                        className="font-medium hover:underline" style={{ color: "var(--color-text-muted)" }}>{l.customerName}</a>
+                    ) : <span className="font-medium" style={{ color: "var(--color-text)" }}>{l.customerName}</span>}
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
                   </td>
                   {/* Borrowed */}
-                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "#4c4847" }}>{fmtDate(l.borrowedAt)}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{fmtDate(l.borrowedAt)}</td>
                   {/* Due */}
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {returned ? (
-                      <span style={{ color: "#6f5f48" }}>{fmtDate(l.dueDate)}</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>{fmtDate(l.dueDate)}</span>
                     ) : (
                       <div className="flex flex-col gap-0.5">
                         <input type="date" value={toDateInput(l.dueDate)} onChange={(e) => setDue(l, e.target.value)}
                           className="px-1.5 py-1 rounded-md text-xs"
-                          style={{ border: "1px solid #e6e5d8", color: l.status === "OVERDUE" ? "#dc2626" : "#4c4847", background: "#fff" }} />
-                        {l.status === "OVERDUE" && <span className="text-[11px] font-medium" style={{ color: "#dc2626" }}>{l.daysOverdue}d overdue</span>}
+                          style={{ border: "1px solid var(--color-border)", color: l.status === "OVERDUE" ? "var(--color-danger)" : "var(--color-text)", background: "var(--color-surface)" }} />
+                        {l.status === "OVERDUE" && <span className="text-[11px] font-medium" style={{ color: "var(--color-danger)" }}>{l.daysOverdue}d overdue</span>}
                       </div>
                     )}
                   </td>
@@ -187,10 +187,10 @@ export default function LoansPage() {
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => setReturned(l, l.returnedQty - 1)} disabled={busy[l.scanId] || l.returnedQty <= 0}
-                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>−</button>
-                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "#4c4847" }}>{l.returnedQty}<span style={{ color: "#71654c" }}> / {l.borrowedQty}</span></span>
+                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>−</button>
+                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "var(--color-text)" }}>{l.returnedQty}<span style={{ color: "var(--color-text-subtle)" }}> / {l.borrowedQty}</span></span>
                       <button onClick={() => setReturned(l, l.returnedQty + 1)} disabled={busy[l.scanId] || l.returnedQty >= l.borrowedQty}
-                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+</button>
+                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+</button>
                     </div>
                   </td>
                   {/* Status */}
@@ -202,9 +202,9 @@ export default function LoansPage() {
                     {l.remaining > 0 ? (
                       <button onClick={() => returnAll(l)} disabled={busy[l.scanId]}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
-                        style={{ background: "#726c5a", color: "#fff" }}>↩ Return all</button>
+                        style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>↩ Return all</button>
                     ) : (
-                      <span className="text-xs" style={{ color: "#10b981" }}>{l.returnedAt ? `✓ ${fmtDate(l.returnedAt)}` : "✓"}</span>
+                      <span className="text-xs" style={{ color: "var(--color-success)" }}>{l.returnedAt ? `✓ ${fmtDate(l.returnedAt)}` : "✓"}</span>
                     )}
                   </td>
                 </tr>

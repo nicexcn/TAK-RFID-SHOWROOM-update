@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 
-const inputStyle = { background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" };
+const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
 
 // RFID Tag input with scan-to-fill: pick a saved reader (or all readers via the relay),
 // press Scan, and the next tag read on that reader fills the field. Reuses the reader
@@ -64,8 +64,8 @@ export default function RfidTagField({
 
   return (
     <div>
-      <label className="block text-sm mb-1 font-medium" style={{ color: "#4c4847" }}>
-        RFID Tag {required && <span style={{ color: "#9f4a4a" }}>*</span>}
+      <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>
+        RFID Tag {required && <span style={{ color: "var(--color-danger-soft)" }}>*</span>}
       </label>
       <div className="flex gap-2">
         <input name="rfidTag" value={value} onChange={(e) => onChange(e.target.value)}
@@ -79,7 +79,7 @@ export default function RfidTagField({
         )}
         <button type="button" onClick={toggleScan} disabled={!scanning && !scanUrl}
           className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 whitespace-nowrap text-white disabled:opacity-50"
-          style={{ background: scanning ? "#9f4a4a" : "#4a6fa5" }}>
+          style={{ background: scanning ? "var(--color-danger-soft)" : "#4a6fa5" }}>
           {scanning ? (
             <>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
@@ -103,9 +103,9 @@ export default function RfidTagField({
       ) : scanMsg ? (
         <p className="text-xs mt-1" style={{ color: "#4a7c59" }}>{scanMsg}</p>
       ) : !scanUrl ? (
-        <p className="text-xs mt-1" style={{ color: "#71654c" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
       ) : (
-        <p className="text-xs mt-1" style={{ color: "#71654c" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
       )}
     </div>
   );

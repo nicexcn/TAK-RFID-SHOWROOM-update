@@ -9,17 +9,17 @@ export interface Crumb {
 // Replaces the static "Home / X / Y" <p> subtitles that used to be plain text.
 export default function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="text-xs mt-1 flex flex-wrap items-center" style={{ color: "#6f5f48" }}>
+    <nav aria-label="Breadcrumb" className="text-xs mt-1 flex flex-wrap items-center" style={{ color: "var(--color-text-muted)" }}>
       {items.map((c, i) => {
         const isLast = i === items.length - 1;
         return (
           <span key={i} className="inline-flex items-center">
             {c.href && !isLast ? (
-              <Link href={c.href} className="hover:underline" style={{ color: "#726c5a" }}>{c.label}</Link>
+              <Link href={c.href} className="hover:underline" style={{ color: "var(--color-text-muted)" }}>{c.label}</Link>
             ) : (
               <span aria-current={isLast ? "page" : undefined}>{c.label}</span>
             )}
-            {!isLast && <span className="mx-1.5" style={{ color: "#71654c" }}>/</span>}
+            {!isLast && <span className="mx-1.5" style={{ color: "var(--color-text-subtle)" }}>/</span>}
           </span>
         );
       })}

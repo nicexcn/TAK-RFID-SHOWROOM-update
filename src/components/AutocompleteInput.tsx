@@ -40,18 +40,18 @@ export default function AutocompleteInput({ value, onChange, placeholder = "Type
         onFocus={() => suggestions.length > 0 && setShowList(true)}
         placeholder={placeholder}
         className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-        style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}
+        style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
       />
       {showList && (
         <div className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden"
-          style={{ background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
           <div className="max-h-48 overflow-y-auto">
             {suggestions.map((s, i) => (
               <div key={i}
                 onClick={() => { onChange(s); setShowList(false); }}
                 className="px-4 py-2 text-sm cursor-pointer"
-                style={{ color: "#4c4847" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#f5f2ee")}
+                style={{ color: "var(--color-text)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--color-bg)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 {s}
               </div>

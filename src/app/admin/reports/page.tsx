@@ -108,33 +108,33 @@ export default function ReportsPage() {
   const maxType = Math.max(1, ...(data?.byType || []).map((b) => b.count));
 
   const card = (label: string, value: number, hint?: string) => (
-    <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-      <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>{label}</p>
-      <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>{value}</p>
-      {hint && <p className="text-[11px] mt-0.5" style={{ color: "#71654c" }}>{hint}</p>}
+    <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+      <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>{label}</p>
+      <p className="text-3xl font-semibold" style={{ color: "var(--color-text)" }}>{value}</p>
+      {hint && <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{hint}</p>}
     </div>
   );
 
   // Named section header for the three customer report groups (English + Thai subtitle to match the app).
   const sectionHeader = (en: string, th: string) => (
     <div className="pt-2">
-      <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>{en}</h2>
-      <p className="text-xs" style={{ color: "#6f5f48" }}>{th}</p>
+      <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>{en}</h2>
+      <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{th}</p>
     </div>
   );
 
   const bars = (title: string, rows: { name: string; count: number }[], max: number, color: string) => (
-    <div className="p-5 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-      <p className="text-sm font-semibold mb-3" style={{ color: "#4c4847" }}>{title}</p>
-      {rows.length === 0 ? <p className="text-sm" style={{ color: "#71654c" }}>No data</p> : (
+    <div className="p-5 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+      <p className="text-sm font-semibold mb-3" style={{ color: "var(--color-text)" }}>{title}</p>
+      {rows.length === 0 ? <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No data</p> : (
         <div className="space-y-1.5">
           {rows.slice(0, 8).map((b) => (
             <div key={b.name} className="flex items-center gap-2">
-              <p className="text-xs w-28 truncate" style={{ color: "#6f5f48" }}>{b.name}</p>
-              <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
+              <p className="text-xs w-28 truncate" style={{ color: "var(--color-text-muted)" }}>{b.name}</p>
+              <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-bg)" }}>
                 <div className="h-full rounded-full" style={{ background: color, width: `${(b.count / max) * 100}%` }} />
               </div>
-              <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{b.count}</p>
+              <p className="text-xs w-6 text-right" style={{ color: "var(--color-text-muted)" }}>{b.count}</p>
             </div>
           ))}
         </div>
@@ -146,19 +146,19 @@ export default function ReportsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Reports</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Reports</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Reports" }]} />
         </div>
         <div className="flex gap-2">
           <button onClick={exportCsv} disabled={!data}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
             Export CSV
           </button>
           <button onClick={exportErp} disabled={!data || exportingErp} title="Per-takeaway lines for ERP stock-cut"
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
-            style={{ background: "#726c5a" }}>
+            style={{ background: "var(--color-primary)" }}>
             {exportingErp ? (
               <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
             ) : (
@@ -175,28 +175,28 @@ export default function ReportsPage() {
           {PERIODS.map((p) => (
             <button key={p.key} onClick={() => setPeriod(p.key)}
               className="px-3.5 py-2 rounded-xl text-sm"
-              style={{ background: period === p.key ? "#726c5a" : "#fff", color: period === p.key ? "#fff" : "#6f5f48", border: "1px solid #e6e5d8" }}>
+              style={{ background: period === p.key ? "var(--color-primary)" : "var(--color-surface)", color: period === p.key ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
               {p.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 max-w-sm" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 max-w-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
           <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setQuery(q)}
             placeholder="Search customer code / Project / Sale"
-            className="outline-none text-sm w-full" style={{ background: "transparent", color: "#4c4847" }} />
-          {query && <button onClick={() => { setQ(""); setQuery(""); }} className="text-xs" style={{ color: "#6f5f48" }}>✕</button>}
+            className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
+          {query && <button onClick={() => { setQ(""); setQuery(""); }} className="text-xs" style={{ color: "var(--color-text-muted)" }}>✕</button>}
         </div>
-        <button onClick={() => setQuery(q)} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Search</button>
+        <button onClick={() => setQuery(q)} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>Search</button>
       </div>
 
       {loading ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#71654c" }}>Loading…</p>
+        <p className="text-sm py-16 text-center" style={{ color: "var(--color-text-subtle)" }}>Loading…</p>
       ) : !data ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#71654c" }}>Failed to load report</p>
+        <p className="text-sm py-16 text-center" style={{ color: "var(--color-text-subtle)" }}>Failed to load report</p>
       ) : (
         <div className="space-y-6">
-          <p className="text-xs" style={{ color: "#6f5f48" }}>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             {new Date(data.period.from).toLocaleDateString("en-GB")} – {new Date(data.period.to).toLocaleDateString("en-GB")}
             {query && <> · search &quot;{query}&quot;</>}
           </p>
@@ -218,13 +218,13 @@ export default function ReportsPage() {
             {bars("Visitor types", data.byType, maxType, "#4a7c59")}
           </div>
           <div className="grid grid-cols-1 gap-3">
-            <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-              <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>Satisfaction (avg / 5)</p>
+            <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+              <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Satisfaction (avg / 5)</p>
               <div className="flex gap-5">
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#71654c" }}>overall</p></div>
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#71654c" }}>service</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>overall</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>service</p></div>
               </div>
-              <p className="text-[11px] mt-0.5" style={{ color: "#71654c" }}>{data.satisfaction.responses} responses</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{data.satisfaction.responses} responses</p>
             </div>
           </div>
 
@@ -237,7 +237,7 @@ export default function ReportsPage() {
 
           {/* Brands of interest + categories */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {bars("Brands scanned", data.byBrand, maxBrand, "#726c5a")}
+            {bars("Brands scanned", data.byBrand, maxBrand, "var(--color-primary)")}
             {bars("Categories", data.byCategory, maxCat, "#9f886c")}
           </div>
 
@@ -266,18 +266,18 @@ export default function ReportsPage() {
 
 function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken") {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+    <div className="rounded-xl overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
       <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #f0eee6" }}>
-        <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>{title}</p>
-        <span className="text-xs" style={{ color: "#6f5f48" }}>{rows.length} items</span>
+        <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>{title}</p>
+        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{rows.length} items</span>
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm py-10 text-center" style={{ color: "#71654c" }}>No data in this period</p>
+        <p className="text-sm py-10 text-center" style={{ color: "var(--color-text-subtle)" }}>No data in this period</p>
       ) : (
         <div className="max-h-[60vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ color: "#6f5f48" }}>
+              <tr style={{ color: "var(--color-text-muted)" }}>
                 <th className="text-left font-normal px-5 py-2 text-xs">Product</th>
                 <th className="text-right font-normal px-3 py-2 text-xs whitespace-nowrap">{mode === "scan" ? "Scans" : "Taken"}</th>
                 {mode === "scan" && <th className="text-right font-normal px-5 py-2 text-xs whitespace-nowrap">Taken</th>}
@@ -285,13 +285,13 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.product.id} style={{ borderTop: "1px solid #f5f2ee" }}>
+                <tr key={r.product.id} style={{ borderTop: "1px solid var(--color-bg)" }}>
                   <td className="px-5 py-2.5">
-                    <p style={{ color: "#4c4847" }} className="truncate">{r.product.name}</p>
-                    <p className="text-[11px] truncate" style={{ color: "#6f5f48" }}>{[r.product.productCode, r.product.brand, r.product.category].filter(Boolean).join(" · ") || "—"}</p>
+                    <p style={{ color: "var(--color-text)" }} className="truncate">{r.product.name}</p>
+                    <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>{[r.product.productCode, r.product.brand, r.product.category].filter(Boolean).join(" · ") || "—"}</p>
                   </td>
-                  <td className="text-right px-3 py-2.5 tabular-nums" style={{ color: "#4c4847" }}>{mode === "scan" ? r.scanCount : r.takenQty}</td>
-                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "#71654c" }}>{r.takenQty}</td>}
+                  <td className="text-right px-3 py-2.5 tabular-nums" style={{ color: "var(--color-text)" }}>{mode === "scan" ? r.scanCount : r.takenQty}</td>
+                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "var(--color-text-subtle)" }}>{r.takenQty}</td>}
                 </tr>
               ))}
             </tbody>

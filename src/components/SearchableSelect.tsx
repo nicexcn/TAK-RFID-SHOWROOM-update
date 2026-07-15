@@ -37,7 +37,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
       <div
         onClick={() => setOpen(!open)}
         className="w-full px-4 py-3 rounded-xl text-sm cursor-pointer flex items-center justify-between"
-        style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: value ? "#4c4847" : "#6f5f48" }}>
+        style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: value ? "var(--color-text)" : "var(--color-text-muted)" }}>
         <span>{value || placeholder}</span>
         <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }}>
@@ -47,22 +47,22 @@ export default function SearchableSelect({ options, value, onChange, placeholder
 
       {open && (
         <div className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden"
-          style={{ background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
           {searchable && (
-            <div className="p-2 border-b" style={{ borderColor: "#e6e5d8" }}>
+            <div className="p-2 border-b" style={{ borderColor: "var(--color-border)" }}>
               <input
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
                 className="w-full px-3 py-2 rounded-lg outline-none text-sm"
-                style={{ background: "#f5f2ee", color: "#4c4847" }}
+                style={{ background: "var(--color-bg)", color: "var(--color-text)" }}
               />
             </div>
           )}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm" style={{ color: "#71654c" }}>No options found</p>
+              <p className="px-4 py-3 text-sm" style={{ color: "var(--color-text-subtle)" }}>No options found</p>
             ) : (
               filtered.map((option) => (
                 <div
@@ -70,11 +70,11 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                   onClick={() => { onChange(option.value); setOpen(false); setSearch(""); }}
                   className="px-4 py-2 text-sm cursor-pointer"
                   style={{
-                    background: value === option.value ? "#f5f2ee" : "transparent",
-                    color: "#4c4847",
+                    background: value === option.value ? "var(--color-bg)" : "transparent",
+                    color: "var(--color-text)",
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#f5f2ee")}
-                  onMouseLeave={e => (e.currentTarget.style.background = value === option.value ? "#f5f2ee" : "transparent")}>
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-bg)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = value === option.value ? "var(--color-bg)" : "transparent")}>
                   {option.value}
                 </div>
               ))

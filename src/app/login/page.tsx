@@ -27,34 +27,34 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex w-1/2 flex-col items-center justify-center" style={{ background: "#726c5a" }}>
+      <div className="hidden md:flex w-1/2 flex-col items-center justify-center" style={{ background: "var(--color-primary)" }}>
         <Image src="/w-logo.png" alt="Nimitr Lab" width={300} height={180} className="object-contain" />
       </div>
-      <div className="w-full md:w-1/2 flex items-center justify-center px-8" style={{ background: "#f5f2ee" }}>
+      <div className="w-full md:w-1/2 flex items-center justify-center px-8" style={{ background: "var(--color-bg)" }}>
         <div className="w-full max-w-sm">
           <div className="flex flex-col items-center mb-8">
-            <h1 className="text-4xl font-bold tracking-widest mb-4" style={{ color: "#726c5a" }}>LOG IN</h1>
-            <div className="w-full h-px" style={{ background: "#cdc3ad" }} />
+            <h1 className="text-4xl font-bold tracking-widest mb-4" style={{ color: "var(--color-text-muted)" }}>LOG IN</h1>
+            <div className="w-full h-px" style={{ background: "var(--color-sidebar)" }} />
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Username</label>
+              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Username</label>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()} placeholder="Enter your username"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
             </div>
             <div>
-              <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Password</label>
+              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Password</label>
               <div className="relative">
                 <input type={showPassword ? "text" : "password"} value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   placeholder="••••••••"
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm pr-12"
-                  style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
+                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#6f5f48" }}>
+                  className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-muted)" }}>
                   {showPassword ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -73,7 +73,7 @@ export default function LoginPage() {
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button onClick={handleLogin} disabled={loading}
               className="w-full py-3 rounded-xl text-sm font-medium transition-opacity"
-              style={{ background: "#726c5a", color: "#fff", opacity: loading ? 0.7 : 1 }}>
+              style={{ background: "var(--color-primary)", color: "var(--color-surface)", opacity: loading ? 0.7 : 1 }}>
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </div>

@@ -176,7 +176,7 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Product Management</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Product Management</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management" }]} />
         </div>
         <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export default function ProductsPage() {
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -195,7 +195,7 @@ export default function ProductsPage() {
           <Link
             href="/admin/products/new"
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "#726c5a", color: "#fff" }}>
+            style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
@@ -206,9 +206,9 @@ export default function ProductsPage() {
 
       {/* Search */}
       <div className="p-4 rounded-xl mb-4 flex items-center gap-3"
-        style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1"
-          style={{ background: "#f5f2ee", border: "1px solid #e6e5d8" }}>
+          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
@@ -217,10 +217,10 @@ export default function ProductsPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="outline-none text-sm w-full"
-            style={{ background: "transparent", color: "#4c4847" }}
+            style={{ background: "transparent", color: "var(--color-text)" }}
           />
         </div>
-        <p className="text-sm whitespace-nowrap" style={{ color: "#6f5f48" }}>Total: {total} products</p>
+        <p className="text-sm whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>Total: {total} products</p>
       </div>
 
       {/* Status filter: Active (default) / Archived (soft-deleted, kept for history) / All */}
@@ -229,9 +229,9 @@ export default function ProductsPage() {
           <button key={k} onClick={() => { setStatus(k); setPage(1); }}
             className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
             style={{
-              background: status === k ? "#726c5a" : "#fff",
-              color: status === k ? "#fff" : "#4c4847",
-              border: "1px solid " + (status === k ? "#726c5a" : "#e6e5d8"),
+              background: status === k ? "var(--color-primary)" : "var(--color-surface)",
+              color: status === k ? "var(--color-surface)" : "var(--color-text)",
+              border: "1px solid " + (status === k ? "var(--color-primary)" : "var(--color-border)"),
             }}>
             {label}
           </button>
@@ -239,32 +239,32 @@ export default function ProductsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl overflow-auto" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+      <div className="rounded-xl overflow-auto" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <table className="w-full text-sm min-w-max">
           <thead>
-            <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
+            <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
               {["Brand", "Material Type", "Category", "Product Code", "Product Name", "Actions"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#6f5f48" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#71654c" }}>Loading...</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>Loading...</td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#71654c" }}>No products found</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>No products found</td></tr>
             ) : (
               products.map((product) => (
-                <tr key={product.id} style={{ borderBottom: "1px solid #f5f2ee", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#4c4847" }}>{product.brand || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.materialType || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.category || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.productCode || "-"}</td>
-                  <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#4c4847" }}>
+                <tr key={product.id} style={{ borderBottom: "1px solid var(--color-bg)", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{product.brand || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.materialType || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.category || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.productCode || "-"}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "var(--color-text)" }}>
                     {product.name}
                     {!product.isActive && (
                       <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
-                        style={{ background: "#ece8df", color: "#6f5f48" }}>Archived</span>
+                        style={{ background: "#ece8df", color: "var(--color-text-muted)" }}>Archived</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -281,7 +281,7 @@ export default function ProductsPage() {
                         setOpenMenu(openMenu === product.id ? null : product.id);
                       }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg"
-                      style={{ background: openMenu === product.id ? "#f5f2ee" : "transparent" }}>
+                      style={{ background: openMenu === product.id ? "var(--color-bg)" : "transparent" }}>
                       <svg width="16" height="16" fill="#9f886c" viewBox="0 0 24 24">
                         <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                       </svg>
@@ -294,14 +294,14 @@ export default function ProductsPage() {
         </table>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid #e6e5d8" }}>
+          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--color-border)" }}>
             <button onClick={() => setPage(page - 1)} disabled={page === 1}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === 1 ? "#71654c" : "#726c5a" }}>Previous</button>
-            <p className="text-xs" style={{ color: "#6f5f48" }}>Page {page} of {totalPages}</p>
+              style={{ background: "var(--color-bg)", color: page === 1 ? "var(--color-text-subtle)" : "var(--color-primary)" }}>Previous</button>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Page {page} of {totalPages}</p>
             <button onClick={() => setPage(page + 1)} disabled={page === totalPages}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === totalPages ? "#71654c" : "#726c5a" }}>Next</button>
+              style={{ background: "var(--color-bg)", color: page === totalPages ? "var(--color-text-subtle)" : "var(--color-primary)" }}>Next</button>
           </div>
         )}
       </div>
@@ -309,7 +309,7 @@ export default function ProductsPage() {
       {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}
       {openMenu && menuProduct && (
         <div ref={menuRef} className="fixed z-50 w-40 rounded-xl overflow-hidden"
-          style={{ top: menuPosition.top, left: menuPosition.left, background: "#fff", border: "1px solid #e6e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          style={{ top: menuPosition.top, left: menuPosition.left, background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
           {menuProduct.isActive === false ? (
             <>
               <button onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
@@ -324,7 +324,7 @@ export default function ProductsPage() {
               </button>
               <button onClick={() => { handlePurge(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                style={{ color: "#9f4a4a" }}
+                style={{ color: "var(--color-danger-soft)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -340,8 +340,8 @@ export default function ProductsPage() {
             <>
               <Link href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                style={{ color: "#4c4847" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
+                style={{ color: "var(--color-text)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -352,8 +352,8 @@ export default function ProductsPage() {
               {menuArchives ? (
                 <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                  style={{ color: "#6f5f48" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
+                  style={{ color: "var(--color-text-muted)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
@@ -363,7 +363,7 @@ export default function ProductsPage() {
               ) : (
                 <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                  style={{ color: "#9f4a4a" }}
+                  style={{ color: "var(--color-danger-soft)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -385,17 +385,17 @@ export default function ProductsPage() {
         <>
           <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.3)" }} onClick={handleCloseImport} />
           <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl rounded-2xl p-6"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", maxHeight: "90vh", overflowY: "auto" }}>
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", maxHeight: "90vh", overflowY: "auto" }}>
 
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>Import Products</h2>
-                <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>Import product data (CSV) or bulk product images</p>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>Import Products</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Import product data (CSV) or bulk product images</p>
               </div>
               <button onClick={handleCloseImport}
                 className="w-8 h-8 flex items-center justify-center rounded-lg"
-                style={{ background: "#f5f2ee" }}>
+                style={{ background: "var(--color-bg)" }}>
                 <svg width="14" height="14" fill="none" stroke="#4c4847" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
@@ -403,13 +403,13 @@ export default function ProductsPage() {
             </div>
 
             {/* Mode toggle: product data (CSV) vs product images (bulk photo drop) */}
-            <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: "#f5f2ee" }}>
+            <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: "var(--color-bg)" }}>
               {([["data", "Product Data"], ["images", "Product Images"]] as const).map(([m, label]) => (
                 <button key={m} onClick={() => setImportMode(m)}
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                   style={{
-                    background: importMode === m ? "#fff" : "transparent",
-                    color: importMode === m ? "#726c5a" : "#6f5f48",
+                    background: importMode === m ? "var(--color-surface)" : "transparent",
+                    color: importMode === m ? "var(--color-primary)" : "var(--color-text-muted)",
                     boxShadow: importMode === m ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   }}>
                   {label}
@@ -423,14 +423,14 @@ export default function ProductsPage() {
               <>
                 {/* Download Template */}
                 <div className="flex items-center justify-between p-4 rounded-xl mb-4"
-                  style={{ background: "#f5f2ee" }}>
+                  style={{ background: "var(--color-bg)" }}>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "#4c4847" }}>ดาวน์โหลด Template</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>ใช้ template นี้เป็นแนวทางในการกรอกข้อมูล</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>ดาวน์โหลด Template</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>ใช้ template นี้เป็นแนวทางในการกรอกข้อมูล</p>
                   </div>
                   <button onClick={downloadTemplate}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium"
-                    style={{ background: "#726c5a", color: "#fff" }}>
+                    style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                     <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                       <polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -440,8 +440,8 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Column mapping guide */}
-                <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid #e6e5d8" }}>
-                  <p className="text-xs font-medium mb-2" style={{ color: "#4c4847" }}>Columns ที่รองรับ</p>
+                <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
+                  <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text)" }}>Columns ที่รองรับ</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {[
                       ["rfidTag *", "RFID Tag (จำเป็น)"],
@@ -456,12 +456,12 @@ export default function ProductsPage() {
                       ["location", "ตำแหน่งจัดเก็บ"],
                     ].map(([col, desc]) => (
                       <div key={col} className="flex items-center gap-2">
-                        <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}>{col}</code>
-                        <span className="text-xs" style={{ color: "#6f5f48" }}>{desc}</span>
+                        <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{col}</code>
+                        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{desc}</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs mt-2" style={{ color: "#71654c" }}>
+                  <p className="text-xs mt-2" style={{ color: "var(--color-text-subtle)" }}>
                     * ถ้า rfidTag มีอยู่แล้วในระบบ จะทำการ <strong>update</strong> ข้อมูล ถ้าไม่มีจะ <strong>สร้างใหม่</strong>
                   </p>
                 </div>
@@ -469,7 +469,7 @@ export default function ProductsPage() {
                 {/* File Upload */}
                 <div
                   className="border-2 border-dashed rounded-xl p-8 text-center mb-4 cursor-pointer transition-colors"
-                  style={{ borderColor: importFile ? "#726c5a" : "#cdc3ad", background: importFile ? "rgba(114,108,90,0.04)" : "transparent" }}
+                  style={{ borderColor: importFile ? "var(--color-primary)" : "var(--color-sidebar)", background: importFile ? "rgba(114,108,90,0.04)" : "transparent" }}
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
@@ -484,8 +484,8 @@ export default function ProductsPage() {
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
                       </svg>
-                      <p className="text-sm font-medium" style={{ color: "#4c4847" }}>{importFile.name}</p>
-                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>คลิกเพื่อเปลี่ยนไฟล์</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>{importFile.name}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>คลิกเพื่อเปลี่ยนไฟล์</p>
                     </div>
                   ) : (
                     <div>
@@ -493,8 +493,8 @@ export default function ProductsPage() {
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
-                      <p className="text-sm" style={{ color: "#6f5f48" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
-                      <p className="text-xs mt-1" style={{ color: "#71654c" }}>รองรับ .csv</p>
+                      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>รองรับ .csv</p>
                     </div>
                   )}
                 </div>
@@ -502,23 +502,23 @@ export default function ProductsPage() {
                 {/* Preview */}
                 {importPreview.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs font-medium mb-2" style={{ color: "#4c4847" }}>
+                    <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text)" }}>
                       Preview (5 rows แรก)
                     </p>
-                    <div className="overflow-auto rounded-xl" style={{ border: "1px solid #e6e5d8" }}>
+                    <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
                       <table className="w-full text-xs min-w-max">
                         <thead>
-                          <tr style={{ background: "#f5f2ee", borderBottom: "1px solid #e6e5d8" }}>
+                          <tr style={{ background: "var(--color-bg)", borderBottom: "1px solid var(--color-border)" }}>
                             {importHeaders.map((h) => (
-                              <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap" style={{ color: "#6f5f48" }}>{h}</th>
+                              <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {importPreview.map((row, i) => (
-                            <tr key={i} style={{ borderBottom: "1px solid #f5f2ee" }}>
+                            <tr key={i} style={{ borderBottom: "1px solid var(--color-bg)" }}>
                               {importHeaders.map((h) => (
-                                <td key={h} className="px-3 py-2 whitespace-nowrap" style={{ color: "#4c4847" }}>
+                                <td key={h} className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--color-text)" }}>
                                   {row[h] || "-"}
                                 </td>
                               ))}
@@ -531,7 +531,7 @@ export default function ProductsPage() {
                 )}
 
                 {importError && (
-                  <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
+                  <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
                     {importError}
                   </div>
                 )}
@@ -539,12 +539,12 @@ export default function ProductsPage() {
                 {/* Actions */}
                 <div className="flex gap-3">
                   <button onClick={handleCloseImport}
-                    className="flex-1 py-2.5 rounded-xl text-sm" style={{ background: "#f5f2ee", color: "#4c4847" }}>
+                    className="flex-1 py-2.5 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
                     Cancel
                   </button>
                   <button onClick={handleImport} disabled={!importFile || importing}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 disabled:opacity-50"
-                    style={{ background: "#726c5a" }}>
+                    style={{ background: "var(--color-primary)" }}>
                     {importing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                     {importing ? "Importing..." : "Import Products"}
                   </button>
@@ -562,34 +562,34 @@ export default function ProductsPage() {
                     }
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold mb-1" style={{ color: "#4c4847" }}>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--color-text)" }}>
                   {importResult.failed === 0 ? "Import สำเร็จ!" : "Import เสร็จสิ้น (มีบางรายการที่ผิดพลาด)"}
                 </h3>
                 <div className="flex justify-center gap-6 my-5">
                   <div className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: "#10b981" }}>{importResult.created}</p>
-                    <p className="text-xs" style={{ color: "#6f5f48" }}>สร้างใหม่</p>
+                    <p className="text-2xl font-bold" style={{ color: "var(--color-success)" }}>{importResult.created}</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>สร้างใหม่</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>{importResult.updated}</p>
-                    <p className="text-xs" style={{ color: "#6f5f48" }}>อัปเดต</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>อัปเดต</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "#ef4444" }}>{importResult.failed}</p>
-                    <p className="text-xs" style={{ color: "#6f5f48" }}>ผิดพลาด</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>ผิดพลาด</p>
                   </div>
                 </div>
                 {importResult.errors.length > 0 && (
                   <div className="text-left p-3 rounded-xl mb-4 max-h-32 overflow-y-auto"
                     style={{ background: "#fff0f0", border: "1px solid #f5c0c0" }}>
                     {importResult.errors.map((e, i) => (
-                      <p key={i} className="text-xs" style={{ color: "#9f4a4a" }}>{e}</p>
+                      <p key={i} className="text-xs" style={{ color: "var(--color-danger-soft)" }}>{e}</p>
                     ))}
                   </div>
                 )}
                 <button onClick={handleCloseImport}
                   className="px-8 py-2.5 rounded-xl text-sm font-medium text-white"
-                  style={{ background: "#726c5a" }}>
+                  style={{ background: "var(--color-primary)" }}>
                   Done
                 </button>
               </div>

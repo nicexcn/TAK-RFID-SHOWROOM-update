@@ -95,14 +95,14 @@ export default function CustomersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Customer Management</h1>
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Customer Management</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]} />
         </div>
         <div className="flex gap-2">
           {canExport && (
             <button onClick={handleExport} disabled={exporting}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
-              style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               {exporting ? (
                 <>
                   <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@ export default function CustomersPage() {
               )}
             </button>
           )}
-          <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>
+          <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
@@ -130,26 +130,26 @@ export default function CustomersPage() {
       </div>
 
       {/* Stats — total + occupation breakdown in one card (like the dashboard widget) */}
-      <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+      <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         {/* Total */}
         <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "#f0eee6" }}>
-          <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>Total Members</p>
-          <p className="text-4xl font-semibold" style={{ color: "#4c4847" }}>{customers.length}</p>
+          <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Total Members</p>
+          <p className="text-4xl font-semibold" style={{ color: "var(--color-text)" }}>{customers.length}</p>
         </div>
         {/* Type of Customers breakdown */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm mb-2" style={{ color: "#6f5f48" }}>Type of Customers</p>
+          <p className="text-sm mb-2" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
           {byTitle.length === 0 ? (
-            <p className="text-sm" style={{ color: "#71654c" }}>No customers yet</p>
+            <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers yet</p>
           ) : (
             <div className="space-y-1.5">
               {byTitle.map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-24 truncate" style={{ color: "#6f5f48" }}>{customerTypeLabel(d.title)}</p>
-                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
+                  <p className="text-xs w-24 truncate" style={{ color: "var(--color-text-muted)" }}>{customerTypeLabel(d.title)}</p>
+                  <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-bg)" }}>
                     <div className="h-full rounded-full" style={{ background: customerTypeColor(d.title), width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
                   </div>
-                  <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{d.count}</p>
+                  <p className="text-xs w-6 text-right" style={{ color: "var(--color-text-muted)" }}>{d.count}</p>
                 </div>
               ))}
             </div>
@@ -159,16 +159,16 @@ export default function CustomersPage() {
 
       {/* Filter */}
       <div className="flex gap-3 mb-4">
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl flex-1 max-w-sm" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl flex-1 max-w-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Global Search"
-            className="outline-none text-sm w-full" style={{ background: "transparent", color: "#4c4847" }} />
+            className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
         </div>
         <div className="relative">
           <select aria-label="Filter by type" value={filterTitle} onChange={(e) => setFilterTitle(e.target.value)}
             className="appearance-none outline-none text-sm pl-3 pr-8 py-2 rounded-xl cursor-pointer"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847", minWidth: "120px" }}>
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", minWidth: "120px" }}>
             <option value="all">All Types</option>
             {TITLE_OPTIONS.map((t) => <option key={t} value={t}>{customerTypeLabel(t)}</option>)}
           </select>
@@ -181,19 +181,19 @@ export default function CustomersPage() {
       {/* Start Scan Banner — แสดงเมื่อค้นหาและเจอลูกค้า 1 คน */}
       {hasSearch && customers.length === 1 && (
         <div className="rounded-xl p-4 mb-4 flex items-center justify-between"
-          style={{ background: "rgba(114,108,90,0.08)", border: "1.5px solid #726c5a" }}>
+          style={{ background: "rgba(114,108,90,0.08)", border: "1.5px solid var(--color-primary)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "#726c5a" }}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--color-primary)" }}>
               <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="14" y="14" width="7" height="7"/><path d="M3 17h4v4H3z"/>
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
                 พบลูกค้า: {customers[0].fullName}
               </p>
-              <p className="text-xs" style={{ color: "#6f5f48" }}>
+              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                 {customers[0].customerCode} · {customerTypeLabel(customers[0].title)} · {customers[0].company}
               </p>
             </div>
@@ -202,7 +202,7 @@ export default function CustomersPage() {
             onClick={() => handleStartScan(customers[0])}
             disabled={startingSession === customers[0].id}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-60"
-            style={{ background: "#726c5a" }}>
+            style={{ background: "var(--color-primary)" }}>
             {startingSession === customers[0].id ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
@@ -217,54 +217,54 @@ export default function CustomersPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl overflow-x-auto" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
+      <div className="rounded-xl overflow-x-auto" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <table className="w-full text-sm min-w-max">
           <thead>
-            <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
+            <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
               {["Code","Name","Type","Company","Phone","Email","Channels","Registered",""].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "#6f5f48" }}>{h || <span className="sr-only">Actions</span>}</th>
+                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "var(--color-text-muted)" }}>{h || <span className="sr-only">Actions</span>}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-16"><div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} /></td></tr>
+              <tr><td colSpan={9} className="text-center py-16"><div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} /></td></tr>
             ) : customers.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "#71654c" }}>No customers found</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (
-              <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? "1px solid #f5f2ee" : "none" }}
+              <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? "1px solid var(--color-bg)" : "none" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#faf9f7")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                <td className="px-4 py-3"><code className="text-xs" style={{ color: "#6f5f48" }}>{c.customerCode}</code></td>
-                <td className="px-4 py-3 font-medium" style={{ color: "#4c4847" }}>{c.fullName}</td>
+                <td className="px-4 py-3"><code className="text-xs" style={{ color: "var(--color-text-muted)" }}>{c.customerCode}</code></td>
+                <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text)" }}>{c.fullName}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium"
                     style={{ background: `${customerTypeColor(c.title)}20`, color: customerTypeColor(c.title) }}>
                     {customerTypeLabel(c.title)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-xs" style={{ color: "#4c4847" }}>{c.company}</td>
-                <td className="px-4 py-3 text-xs" style={{ color: "#726c5a" }}>{c.phone}</td>
-                <td className="px-4 py-3 text-xs" style={{ color: "#726c5a" }}>{c.email}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text)" }}>{c.company}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{c.phone}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{c.email}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {c.knowChannel.slice(0,2).map((ch) => (
-                      <span key={ch} className="px-1.5 py-0.5 rounded text-xs" style={{ background: "#f5f2ee", color: "#726c5a" }}>{ch}</span>
+                      <span key={ch} className="px-1.5 py-0.5 rounded text-xs" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{ch}</span>
                     ))}
-                    {c.knowChannel.length > 2 && <span className="text-xs" style={{ color: "#6f5f48" }}>+{c.knowChannel.length - 2}</span>}
+                    {c.knowChannel.length > 2 && <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>+{c.knowChannel.length - 2}</span>}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs" style={{ color: "#6f5f48" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Link href={`/admin/customers/${c.id}`}
-                      className="px-3 py-1 rounded-lg text-xs" style={{ background: "#f5f2ee", color: "#726c5a" }}>View</Link>
+                      className="px-3 py-1 rounded-lg text-xs" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>View</Link>
                     <button
                       onClick={() => handleStartScan(c)}
                       disabled={startingSession === c.id}
                       title="เริ่ม Surface Scan"
                       className="w-7 h-7 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-50"
-                      style={{ background: "#726c5a" }}>
+                      style={{ background: "var(--color-primary)" }}>
                       {startingSession === c.id ? (
                         <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
