@@ -222,7 +222,7 @@ export default function CustomersPage() {
           <thead>
             <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
               {["Code","Name","Type","Company","Phone","Email","Channels","Registered",""].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "#6f5f48" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "#6f5f48" }}>{h || <span className="sr-only">Actions</span>}</th>
               ))}
             </tr>
           </thead>

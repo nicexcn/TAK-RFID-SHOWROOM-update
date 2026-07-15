@@ -172,7 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="mt-4 space-y-1 flex-shrink-0">
-          <p className="px-3 text-xs" style={{ color: "#726c5a" }}>{username}</p>
+          <p className="px-3 text-xs" style={{ color: "#4c4847" }}>{username}</p>
           <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm" style={{ color: "#4c4847" }}>Logout</button>
         </div>
       </aside>
