@@ -20,6 +20,7 @@ const navItems = [
   { label: "Surface Scan",        href: "/admin/rfid" },
   { label: "Manual Scan",         href: "/admin/manual-scan" },
   { label: "Notifications",       href: "/admin/notifications" },
+  { label: "Borrow / Return",     href: "/admin/loans" },
   { label: "Settings",            href: "/admin/settings" },
 ];
 

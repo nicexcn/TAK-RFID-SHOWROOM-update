@@ -42,3 +42,13 @@ next-env.d.ts
 
 /src/generated/prisma
 relay/node_modules/
+
+# relay build artifacts + secrets (relay runs on the on-prem Windows box, not Vercel)
+relay/relay.config.json
+relay/relay.exe
+relay/logs/
+# local test / QA scripts
+test-manual-scan.mjs
+cleanup_qa.mjs
+scripts/.tag-backup.json
+*.bak

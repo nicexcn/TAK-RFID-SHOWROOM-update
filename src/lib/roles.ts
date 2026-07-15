@@ -11,13 +11,19 @@ export const ROLES = [
 ] as const;
 
 // Allowed /admin paths per role. "/admin" is the dashboard (exact match); others match by prefix.
-// /admin/loans (Borrow/Return) is not in the sidebar — it's reached via a link on the Notifications
-// page, so every role that can see Notifications must also be allowed to open it.
+// /admin/loans (Borrow/Return) is in the sidebar and also linked from the Notifications page,
+// so every role that can see Notifications must also be allowed to open it.
+// Per the customer's role matrix (post-demo doc, item 6):
+//  - Admin (Showroom Manager, "Administrator Limited") = Super Admin MINUS system Settings, user
+//    management, and customer-database export. So: no /admin/settings here (and /api/settings PUT,
+//    which self-guards on /admin/settings, then 403s for admin — read/GET stays open for scan flows).
+//  - Basic (Presenter) must NOT view analytics: no "/admin" dashboard — they land on /admin/customers.
+//  - Only Super Admin may export the customer database (enforced in the UI export gates, not by path).
 const ACCESS: Record<string, string[]> = {
   super_admin: ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans", "/admin/settings"],
-  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans", "/admin/settings"],
+  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans"],
   management:  ["/admin", "/admin/reports", "/admin/survey", "/admin/customers", "/admin/notifications", "/admin/loans"],
-  user:        ["/admin", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans"],
+  user:        ["/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans"],
   prep:        ["/admin/notifications", "/admin/loans"], // takeaway-prep staff: prepare queue + returns
 };
 

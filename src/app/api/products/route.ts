@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { syncCover } from "@/lib/productCover";
+import { requireAccess } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,6 +47,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   let rfidTag = ""; // hoisted so the catch can name the conflicting tag without re-reading the body
   try {
     const data = await req.json();

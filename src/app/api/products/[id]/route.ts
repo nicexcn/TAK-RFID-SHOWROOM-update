@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAccess } from "@/lib/permissions";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +16,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const data = await req.json();
@@ -34,6 +37,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     // ?purge=true — permanent removal even with scan history. Deletes the scans first
@@ -70,6 +75,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 // RFID tag from the tombstone (tag·deleted·<id>) if that tag is now free; otherwise it keeps
 // the tombstoned tag and reports tagRecovered:false so the UI can prompt for a new tag.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const body = await req.json().catch(() => ({})) as { restore?: boolean };

@@ -15,7 +15,7 @@ export async function GET() {
       data: {
         username: "admin",
         password: hashed,
-        role: "admin",
+        role: "super_admin",
         firstName: "Admin",
         lastName: "System",
         permissions: { dashboard: true, products: true, rfid: true },

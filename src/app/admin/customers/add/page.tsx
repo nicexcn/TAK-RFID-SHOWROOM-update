@@ -31,6 +31,7 @@ export default function AddCustomerPage() {
   const [project, setProject] = useState(""); // #4: project this customer is associated with
   const [source, setSource] = useState(""); // #2/#4: how the customer came in
   const [salesOptions, setSalesOptions] = useState<string[]>([]);
+  const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
 
   // Refs to move the user to the first missing required field on submit.
   const fullNameRef = useRef<HTMLInputElement>(null);
@@ -47,13 +48,25 @@ export default function AddCustomerPage() {
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  // #2: suggestions for the staff "Sales" field come from the managed list (Settings → Salesperson).
+  // #2: options for the staff "Sales" dropdown come from the managed list (Settings → Salesperson).
   useEffect(() => {
     fetch("/api/dropdown?type=sales")
       .then((r) => r.json())
       .then((opts: { value: string }[]) => setSalesOptions(Array.isArray(opts) ? opts.map((o) => o.value) : []))
       .catch(() => {});
   }, []);
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setMe(d.username); }).catch(() => {}); }, []);
+
+  // #2: for a WALK-IN customer, the "Sales Showroom person in charge" defaults to the logged-in
+  // staff (editable later). Only auto-fills when the field is still empty, so we never clobber
+  // a name the staff picked. `source` values come from CUSTOMER_SOURCES; treat any "walk"* as walk-in.
+  const isWalkIn = /walk/i.test(source);
+  useEffect(() => {
+    if (isWalkIn && me && !salesPerson) setSalesPerson(me);
+  }, [isWalkIn, me]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dropdown options = managed sales list + the current staff (so a walk-in default is always selectable).
+  const salesChoices = [...new Set([salesPerson, me, ...salesOptions].filter(Boolean))];
 
   async function handleSubmit() {
     setError("");
@@ -265,15 +278,14 @@ export default function AddCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Sales / เซลล์ผู้ดูแล</label>
-              <input list="sales-options" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)}
-                placeholder="เลือกหรือพิมพ์ชื่อเซลล์ (walk-in: ใส่ชื่อเซลล์โชว์รูม)"
+              <select value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-              <datalist id="sales-options">
-                {salesOptions.map((s) => <option key={s} value={s} />)}
-              </datalist>
+                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+                <option value="">— เลือกเซลล์ / select sales —</option>
+                {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
               <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>
-                จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
+                Walk-in จะตั้งชื่อเซลล์โชว์รูมผู้ดูแลให้อัตโนมัติ · จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
               </p>
             </div>
             <div>

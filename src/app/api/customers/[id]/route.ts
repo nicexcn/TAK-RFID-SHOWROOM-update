@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/permissions";
+
+// Who may modify a customer profile (customer spec item 6). Management + Admin get "Create/Edit
+// visitor records"; only Super Admin gets "Create/Edit/DELETE all records". The basic Presenter
+// (`user`) and prep can register/view but not edit, and never delete.
+const CAN_EDIT_CUSTOMER = ["super_admin", "admin", "management"];
+const CAN_DELETE_CUSTOMER = ["super_admin"];
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,6 +42,8 @@ const ALLOWED = [
 ];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireRole(req, CAN_EDIT_CUSTOMER);
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const body = await req.json();
@@ -51,7 +60,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireRole(req, CAN_DELETE_CUSTOMER);
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     // End any active sessions for this customer first, so deleting them never

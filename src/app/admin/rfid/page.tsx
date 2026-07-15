@@ -358,7 +358,9 @@ function RFIDPageInner() {
       });
     } else {
       fetch(url).then((r) => r.json()).then((data) => {
-        if (data?.id) setSession({ ...data, scans: data.scans?.map((s: ScanItem) => ({ ...s, prepareStatus: "NONE", deviceId: 1 })) || [] });
+        // Use the real persisted prepareStatus/takeawayQty (was forcing "NONE"/0 here,
+        // so a plain page reload silently reverted every prepared/takeaway item).
+        if (data?.id) applyLoadedSession(data);
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

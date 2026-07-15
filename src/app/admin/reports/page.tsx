@@ -34,6 +34,7 @@ export default function ReportsPage() {
   const [query, setQuery] = useState(""); // applied search term
   const [data, setData] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportingErp, setExportingErp] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,6 +76,8 @@ export default function ReportsPage() {
   // #11: ERP stock-cut export — one row per taken-home line (date + product code + qty + customer),
   // so ERP can cut stock. Fetches the per-takeaway detail (detail=takeaways) for the current period/search.
   async function exportErp() {
+    if (exportingErp) return;
+    setExportingErp(true);
     try {
       const params = new URLSearchParams({ period, detail: "takeaways" });
       if (query.trim()) params.set("q", query.trim());
@@ -96,6 +99,7 @@ export default function ReportsPage() {
       a.download = `erp_takeaways_${period}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
     } catch { alert("Export failed — please try again."); }
+    finally { setExportingErp(false); }
   }
 
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
@@ -108,6 +112,14 @@ export default function ReportsPage() {
       <p className="text-xs mb-1" style={{ color: "#9f886c" }}>{label}</p>
       <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>{value}</p>
       {hint && <p className="text-[11px] mt-0.5" style={{ color: "#cdc3ad" }}>{hint}</p>}
+    </div>
+  );
+
+  // Named section header for the three customer report groups (English + Thai subtitle to match the app).
+  const sectionHeader = (en: string, th: string) => (
+    <div className="pt-2">
+      <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>{en}</h2>
+      <p className="text-xs" style={{ color: "#9f886c" }}>{th}</p>
     </div>
   );
 
@@ -144,11 +156,15 @@ export default function ReportsPage() {
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
             Export CSV
           </button>
-          <button onClick={exportErp} disabled={!data} title="Per-takeaway lines for ERP stock-cut"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50"
+          <button onClick={exportErp} disabled={!data || exportingErp} title="Per-takeaway lines for ERP stock-cut"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
             style={{ background: "#726c5a" }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-            Export for ERP
+            {exportingErp ? (
+              <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
+            ) : (
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            )}
+            {exportingErp ? "Exporting…" : "Export for ERP"}
           </button>
         </div>
       </div>
@@ -185,30 +201,23 @@ export default function ReportsPage() {
             {query && <> · search &quot;{query}&quot;</>}
           </p>
 
-          {/* Summary */}
+          {/* ── A. Visitor & Customer Insights ─────────────────────────────── */}
+          {sectionHeader("Visitor & Customer Insights", "ข้อมูลผู้เข้าชมและลูกค้า")}
+
+          {/* Total visitors + first-time vs returning */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {card("Visits", data.summary.visits)}
+            {card("Total visitors", data.summary.visits, `${data.summary.customers} customers`)}
             {card("Customers", data.summary.customers)}
-            {card("Items scanned", data.summary.totalScans, `${data.summary.uniqueProducts} unique`)}
-            {card("Taken home", data.summary.totalTaken, "pcs")}
+            {card("First-time", data.summary.firstTime, "visitors this period")}
+            {card("Returning", data.summary.returning, "visited before")}
           </div>
 
-          {/* Interest breakdowns */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {bars("Brands scanned", data.byBrand, maxBrand, "#726c5a")}
-            {bars("Categories", data.byCategory, maxCat, "#9f886c")}
-          </div>
-
-          {/* #4 (Excel): customer source + visitor types */}
+          {/* By source (discovery channel) + by customer type + satisfaction */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {bars("Customer source", data.bySource, maxSource, "#4a6fa5")}
             {bars("Visitor types", data.byType, maxType, "#4a7c59")}
           </div>
-
-          {/* #4 (Excel): first-time vs returning + satisfaction summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {card("First-time", data.summary.firstTime, "visitors this period")}
-            {card("Returning", data.summary.returning, "visited before")}
+          <div className="grid grid-cols-1 gap-3">
             <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
               <p className="text-xs mb-1" style={{ color: "#9f886c" }}>Satisfaction (avg / 5)</p>
               <div className="flex gap-5">
@@ -219,10 +228,35 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Two lists: all scanned + taken home */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {productTable("All scanned products", data.scannedProducts, "scan")}
-            {productTable("Taken-home products", data.takenHomeProducts, "taken")}
+          {/* ── B. Customer Interest & Product Insights ────────────────────── */}
+          {sectionHeader("Customer Interest & Product Insights", "ความสนใจของลูกค้าและข้อมูลสินค้า")}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {card("Items scanned", data.summary.totalScans, `${data.summary.uniqueProducts} unique`)}
+          </div>
+
+          {/* Brands of interest + categories */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {bars("Brands scanned", data.byBrand, maxBrand, "#726c5a")}
+            {bars("Categories", data.byCategory, maxCat, "#9f886c")}
+          </div>
+
+          {/* Most-scanned products */}
+          <div className="grid grid-cols-1 gap-4">
+            {productTable("Most-scanned products", data.scannedProducts, "scan")}
+          </div>
+
+          {/* ── C. Sample & Display Management ─────────────────────────────── */}
+          {sectionHeader("Sample & Display Management", "การจัดการตัวอย่างและสินค้าจัดแสดง")}
+
+          {/* Samples given = total takeaway pieces taken home by customers */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {card("Samples given", data.summary.totalTaken, "pieces taken home")}
+          </div>
+
+          {/* Takeaway breakdown by product */}
+          <div className="grid grid-cols-1 gap-4">
+            {productTable("Samples taken home", data.takenHomeProducts, "taken")}
           </div>
         </div>
       )}

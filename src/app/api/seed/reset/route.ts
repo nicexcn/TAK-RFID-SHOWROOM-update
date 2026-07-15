@@ -7,7 +7,7 @@ export async function GET() {
     await prisma.user.deleteMany({ where: { username: "admin" } });
     const hashed = await hashPassword("admin1234");
     await prisma.user.create({
-      data: { username: "admin", firstName: "Admin", lastName: "User", password: hashed, role: "admin" },
+      data: { username: "admin", firstName: "Admin", lastName: "User", password: hashed, role: "super_admin" },
     });
     return NextResponse.json({ message: "Admin reset successfully" });
   } catch (error) {

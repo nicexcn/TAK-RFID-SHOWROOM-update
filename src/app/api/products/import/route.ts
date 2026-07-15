@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAccess } from "@/lib/permissions";
 
 export async function POST(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { products } = await req.json();
     if (!Array.isArray(products) || products.length === 0) return NextResponse.json({ error: "No products data" }, { status: 400 });

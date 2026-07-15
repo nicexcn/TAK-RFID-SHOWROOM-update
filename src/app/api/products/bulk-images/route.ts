@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncCover } from "@/lib/productCover";
+import { requireAccess } from "@/lib/permissions";
 
 // Bulk-attach already-uploaded image URLs to products (the "bulk photo drop"
 // import). The client uploads each file directly to Supabase (signed URL), matches
@@ -8,6 +9,8 @@ import { syncCover } from "@/lib/productCover";
 // AFTER the product's existing images, so a re-run never clobbers prior images;
 // for a product with no images, the first url becomes the cover via syncCover.
 export async function POST(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { groups } = await req.json();
     if (!Array.isArray(groups) || groups.length === 0) {

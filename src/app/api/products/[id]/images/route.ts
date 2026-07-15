@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncCover } from "@/lib/productCover";
+import { requireAccess } from "@/lib/permissions";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,6 +18,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const { url, order } = await req.json();
@@ -34,6 +37,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 // PUT — reorder the gallery. Body: { order: string[] } (image ids, new order).
 // Writes each image's `order` to its index, then re-syncs the cover (image #0).
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const { order } = await req.json();
@@ -60,6 +65,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/products");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const { imageId } = await req.json();

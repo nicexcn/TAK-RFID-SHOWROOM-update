@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Self-contained server bundle (.next/standalone) so the app can run on a bare host
+  // with just Node + the built output — no `npm install` on the target. Harmless on Vercel.
+  output: "standalone",
   images: {
     // Allow next/image to render Supabase Storage public URLs (used when
     // SUPABASE_URL/SUPABASE_SERVICE_KEY are set; harmless otherwise).

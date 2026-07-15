@@ -32,10 +32,38 @@
  *   Session bound to that readerId. Unset = pure forwarder (backward compatible).
  */
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 const { WebSocketServer } = require("ws");
+
+// Optional JSON config so a Windows service (Shawl/WinSW) can launch `relay.exe relay.config.json`
+// instead of exporting env vars. Keys map to the same env vars read below; a value only fills an
+// env var that isn't already set, so env still wins and this stays backward compatible.
+// Schema: { "port": 8081, "ingestKey": "<pusher secret>", "appBaseUrl": "https://…vercel.app",
+//           "scanIngestKey": "<= app's SCAN_INGEST_KEY>" }
+(function loadConfigFile() {
+  const tries = [];
+  if (process.argv[2]) tries.push(path.resolve(process.argv[2]));
+  tries.push(path.resolve(process.cwd(), "relay.config.json"));
+  try { tries.push(path.resolve(path.dirname(process.execPath), "relay.config.json")); } catch { /* ignore */ }
+  const map = { port: "PORT", ingestKey: "INGEST_KEY", subscriberKey: "SUBSCRIBER_KEY", appBaseUrl: "APP_BASE_URL", scanIngestKey: "SCAN_INGEST_KEY" };
+  for (const p of tries) {
+    let c;
+    try { c = JSON.parse(fs.readFileSync(p, "utf8")); } catch { continue; }
+    for (const [k, envName] of Object.entries(map)) {
+      if (c[k] != null && process.env[envName] == null) process.env[envName] = String(c[k]);
+    }
+    console.log(`config loaded from ${p}`);
+    break;
+  }
+})();
 
 const PORT = process.env.PORT || 8081;
 const INGEST_KEY = process.env.INGEST_KEY || ""; // required for pushers; "" disables the gate (dev only)
+// SUBSCRIBER_KEY: when set, SUBSCRIBERS must also present ?key=<SUBSCRIBER_KEY> (else the connection
+// is closed). Leave "" on a trusted LAN (open subscribers, TV-display parity); set it when the relay
+// is exposed to the internet so the live scan feed isn't readable by anonymous clients.
+const SUBSCRIBER_KEY = process.env.SUBSCRIBER_KEY || "";
 const HEARTBEAT_MS = 30000;
 
 // ── Server-side persistence (optional) ──────────────────────────────────────
@@ -191,6 +219,8 @@ wss.on("connection", (ws, req) => {
     });
     ws.on("close", () => console.log(`pusher left${pusherDevice ? ` (device=${pusherDevice})` : ""}`));
   } else {
+    // When exposed publicly, subscribers must present the key too (else anyone could read the feed).
+    if (SUBSCRIBER_KEY && key !== SUBSCRIBER_KEY) { ws.close(1008, "unauthorized"); return; }
     // Optional device filter: ?device=<id> → only that reader's scans (default = all).
     ws.deviceFilter = (url.searchParams.get("device") || "").trim();
     subscribers.add(ws);
@@ -219,7 +249,8 @@ wss.on("close", () => clearInterval(dedupReset));
 
 server.listen(PORT, () =>
   console.log(
-    `TAK RFID relay listening on :${PORT} (auth ${INGEST_KEY ? "ON" : "OFF — dev"}, ` +
+    `TAK RFID relay listening on :${PORT} (pusher-auth ${INGEST_KEY ? "ON" : "OFF — dev"}, ` +
+    `subscriber-auth ${SUBSCRIBER_KEY ? "ON" : "OPEN"}, ` +
     `persist ${INGEST_ENABLED ? "ON → " + APP_BASE_URL : "OFF"})`
   )
 );

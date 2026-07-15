@@ -21,8 +21,15 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [filterTitle, setFilterTitle] = useState("all");
   const [startingSession, setStartingSession] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [role, setRole] = useState("");
+  // Item 6: ONLY Super Admin may export the customer database. Admin (Showroom Manager),
+  // management (Sales Director) and the basic Presenter all have "cannot export the full
+  // customer database" / "cannot export data" in the role matrix.
+  const canExport = role === "super_admin";
 
   useEffect(() => { fetchCustomers(); }, [search, filterTitle]);
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }); }, []);
 
   async function fetchCustomers() {
     setLoading(true);
@@ -36,6 +43,9 @@ export default function CustomersPage() {
   }
 
   async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
     const res = await fetch("/api/customers");
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) { alert("ไม่มีข้อมูล"); return; }
@@ -47,6 +57,12 @@ export default function CustomersPage() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `customers_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    } catch {
+      alert("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleStartScan(customer: Customer) {
@@ -83,13 +99,27 @@ export default function CustomersPage() {
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]} />
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export CSV
-          </button>
+          {canExport && (
+            <button onClick={handleExport} disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
+              style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
+              {exporting ? (
+                <>
+                  <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round"/>
+                  </svg>
+                  Exporting…
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Export CSV
+                </>
+              )}
+            </button>
+          )}
           <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

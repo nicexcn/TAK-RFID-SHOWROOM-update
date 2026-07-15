@@ -111,6 +111,11 @@ export default function AdminDashboard() {
 
   // Export + date range (the range drives BOTH the stats view and the exports)
   const [showExport, setShowExport] = useState(false);
+  const [exportingCustomers, setExportingCustomers] = useState(false);
+  // Item 6: only Super Admin may export the customer database (Admin + Management can export the
+  // aggregate department summary, but not the raw customer records).
+  const [role, setRole] = useState("");
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }).catch(() => {}); }, []);
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">(() => readSavedRange()?.rangeMode ?? "preset");
   const [customFrom, setCustomFrom] = useState(() => readSavedRange()?.customFrom ?? "");
   const [customTo, setCustomTo] = useState(() => readSavedRange()?.customTo ?? "");
@@ -164,23 +169,32 @@ export default function AdminDashboard() {
 
   // Raw = the customer records registered within the selected range.
   async function handleExportCustomers() {
-    const { from, to } = currentRange();
-    const res = await fetch(`/api/customers?from=${from}&to=${to}`);
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) { alert("No customers in this range"); return; }
-    const rows = [
-      ["Code", "Full Name", "Title", "Company", "Phone", "Email", "Channels", "Registered"],
-      ...data.map((c: { customerCode: string; fullName: string; title: string; company: string; phone: string; email: string; knowChannel: string[]; createdAt: string }) => [
-        c.customerCode, c.fullName, c.title, c.company, c.phone, c.email,
-        c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH"),
-      ]),
-    ];
-    const csv = toCsv(rows);
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `customers_${from}_${to}.csv`; a.click();
-    setShowExport(false);
+    if (exportingCustomers) return;
+    setExportingCustomers(true);
+    try {
+      const { from, to } = currentRange();
+      const res = await fetch(`/api/customers?from=${from}&to=${to}`);
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) { alert("No customers in this range"); return; }
+      const rows = [
+        ["Code", "Full Name", "Title", "Company", "Phone", "Email", "Channels", "Registered"],
+        ...data.map((c: { customerCode: string; fullName: string; title: string; company: string; phone: string; email: string; knowChannel: string[]; createdAt: string }) => [
+          c.customerCode, c.fullName, c.title, c.company, c.phone, c.email,
+          c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH"),
+        ]),
+      ];
+      const csv = toCsv(rows);
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `customers_${from}_${to}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      setShowExport(false);
+    } catch {
+      alert("Export failed. Please try again.");
+    } finally {
+      setExportingCustomers(false);
+    }
   }
 
   // Filters
@@ -540,12 +554,14 @@ export default function AdminDashboard() {
                   📊 Dashboard Summary
                   <span className="block text-[11px] font-normal opacity-80">Aggregated stats for the selected range</span>
                 </button>
-                <button onClick={handleExportCustomers}
-                  className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4"
-                  style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>
-                  👤 Customers (raw)
-                  <span className="block text-[11px] font-normal" style={{ color: "#9f886c" }}>Customers registered in this range</span>
-                </button>
+                {role === "super_admin" && (
+                  <button onClick={handleExportCustomers} disabled={exportingCustomers}
+                    className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4 disabled:cursor-wait"
+                    style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8", opacity: exportingCustomers ? 0.6 : 1 }}>
+                    {exportingCustomers ? "⏳ Exporting…" : "👤 Customers (raw)"}
+                    <span className="block text-[11px] font-normal" style={{ color: "#9f886c" }}>Customers registered in this range</span>
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { invalidateIdleCache } from "@/lib/sessionConfig";
 import { normalizeReaders } from "@/lib/readers";
 import { normalizeDisplays } from "@/lib/displays";
+import { requireAccess } from "@/lib/permissions";
 
 export async function GET() {
   try {
@@ -24,6 +25,8 @@ const ALLOWED = [
 ];
 
 export async function PUT(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/settings");
+  if ("response" in guard) return guard.response;
   try {
     const body = await req.json();
     // Whitelist — never spread the raw body into prisma (and unknown keys throw).
