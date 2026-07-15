@@ -492,7 +492,7 @@ export default function DisplayPage() {
             // so a TV can be set up by opening plain /display and choosing here.
             <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
               <p className="text-white/60 text-[11px] mb-1">This screen</p>
-              <select value={displayId} onChange={(e) => pickDisplay(e.target.value)}
+              <select aria-label="Display screen" value={displayId} onChange={(e) => pickDisplay(e.target.value)}
                 className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }}>
                 <option value="">Default screen</option>
                 {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -502,7 +502,7 @@ export default function DisplayPage() {
           {savedReaders.length > 0 && (
             <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
               <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
-              <select value="" onChange={(e) => applySavedReader(e.target.value)}
+              <select aria-label="Saved reader" value="" onChange={(e) => applySavedReader(e.target.value)}
                 className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "#fff" }}>
                 <option value="">Select reader…</option>
                 {savedReaders.map((r) => {

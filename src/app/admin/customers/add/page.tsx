@@ -268,7 +268,7 @@ export default function AddCustomerPage() {
           <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
           <div className="mb-4" ref={sourceRef}>
             <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Source / แหล่งที่มา <span style={{ color: "#dc2626" }}>*</span></label>
-            <select value={source} onChange={(e) => setSource(e.target.value)}
+            <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"
               className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
               <option value="">— เลือก / select —</option>
               {CUSTOMER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -278,7 +278,7 @@ export default function AddCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Sales / เซลล์ผู้ดูแล</label>
-              <select value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)}
+              <select value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                 <option value="">— เลือกเซลล์ / select sales —</option>

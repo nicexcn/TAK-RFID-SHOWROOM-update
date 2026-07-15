@@ -250,9 +250,9 @@ export default function ProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#8f8168" }}>Loading...</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#71654c" }}>Loading...</td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#8f8168" }}>No products found</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#71654c" }}>No products found</td></tr>
             ) : (
               products.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid #f5f2ee", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
@@ -297,11 +297,11 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid #e6e5d8" }}>
             <button onClick={() => setPage(page - 1)} disabled={page === 1}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === 1 ? "#8f8168" : "#726c5a" }}>Previous</button>
+              style={{ background: "#f5f2ee", color: page === 1 ? "#71654c" : "#726c5a" }}>Previous</button>
             <p className="text-xs" style={{ color: "#6f5f48" }}>Page {page} of {totalPages}</p>
             <button onClick={() => setPage(page + 1)} disabled={page === totalPages}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === totalPages ? "#8f8168" : "#726c5a" }}>Next</button>
+              style={{ background: "#f5f2ee", color: page === totalPages ? "#71654c" : "#726c5a" }}>Next</button>
           </div>
         )}
       </div>
@@ -461,7 +461,7 @@ export default function ProductsPage() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs mt-2" style={{ color: "#8f8168" }}>
+                  <p className="text-xs mt-2" style={{ color: "#71654c" }}>
                     * ถ้า rfidTag มีอยู่แล้วในระบบ จะทำการ <strong>update</strong> ข้อมูล ถ้าไม่มีจะ <strong>สร้างใหม่</strong>
                   </p>
                 </div>
@@ -494,7 +494,7 @@ export default function ProductsPage() {
                         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
                       <p className="text-sm" style={{ color: "#6f5f48" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
-                      <p className="text-xs mt-1" style={{ color: "#8f8168" }}>รองรับ .csv</p>
+                      <p className="text-xs mt-1" style={{ color: "#71654c" }}>รองรับ .csv</p>
                     </div>
                   )}
                 </div>

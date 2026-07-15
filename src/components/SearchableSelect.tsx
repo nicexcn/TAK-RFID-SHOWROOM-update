@@ -62,7 +62,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
           )}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm" style={{ color: "#8f8168" }}>No options found</p>
+              <p className="px-4 py-3 text-sm" style={{ color: "#71654c" }}>No options found</p>
             ) : (
               filtered.map((option) => (
                 <div

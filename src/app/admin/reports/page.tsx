@@ -111,7 +111,7 @@ export default function ReportsPage() {
     <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
       <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>{label}</p>
       <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>{value}</p>
-      {hint && <p className="text-[11px] mt-0.5" style={{ color: "#8f8168" }}>{hint}</p>}
+      {hint && <p className="text-[11px] mt-0.5" style={{ color: "#71654c" }}>{hint}</p>}
     </div>
   );
 
@@ -126,7 +126,7 @@ export default function ReportsPage() {
   const bars = (title: string, rows: { name: string; count: number }[], max: number, color: string) => (
     <div className="p-5 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
       <p className="text-sm font-semibold mb-3" style={{ color: "#4c4847" }}>{title}</p>
-      {rows.length === 0 ? <p className="text-sm" style={{ color: "#8f8168" }}>No data</p> : (
+      {rows.length === 0 ? <p className="text-sm" style={{ color: "#71654c" }}>No data</p> : (
         <div className="space-y-1.5">
           {rows.slice(0, 8).map((b) => (
             <div key={b.name} className="flex items-center gap-2">
@@ -191,9 +191,9 @@ export default function ReportsPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#8f8168" }}>Loading…</p>
+        <p className="text-sm py-16 text-center" style={{ color: "#71654c" }}>Loading…</p>
       ) : !data ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#8f8168" }}>Failed to load report</p>
+        <p className="text-sm py-16 text-center" style={{ color: "#71654c" }}>Failed to load report</p>
       ) : (
         <div className="space-y-6">
           <p className="text-xs" style={{ color: "#6f5f48" }}>
@@ -221,10 +221,10 @@ export default function ReportsPage() {
             <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
               <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>Satisfaction (avg / 5)</p>
               <div className="flex gap-5">
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#8f8168" }}>overall</p></div>
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#8f8168" }}>service</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#71654c" }}>overall</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#71654c" }}>service</p></div>
               </div>
-              <p className="text-[11px] mt-0.5" style={{ color: "#8f8168" }}>{data.satisfaction.responses} responses</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "#71654c" }}>{data.satisfaction.responses} responses</p>
             </div>
           </div>
 
@@ -272,7 +272,7 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
         <span className="text-xs" style={{ color: "#6f5f48" }}>{rows.length} items</span>
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm py-10 text-center" style={{ color: "#8f8168" }}>No data in this period</p>
+        <p className="text-sm py-10 text-center" style={{ color: "#71654c" }}>No data in this period</p>
       ) : (
         <div className="max-h-[60vh] overflow-y-auto">
           <table className="w-full text-sm">
@@ -291,7 +291,7 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
                     <p className="text-[11px] truncate" style={{ color: "#6f5f48" }}>{[r.product.productCode, r.product.brand, r.product.category].filter(Boolean).join(" · ") || "—"}</p>
                   </td>
                   <td className="text-right px-3 py-2.5 tabular-nums" style={{ color: "#4c4847" }}>{mode === "scan" ? r.scanCount : r.takenQty}</td>
-                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "#8f8168" }}>{r.takenQty}</td>}
+                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "#71654c" }}>{r.takenQty}</td>}
                 </tr>
               ))}
             </tbody>

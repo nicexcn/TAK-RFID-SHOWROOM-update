@@ -481,7 +481,7 @@ export default function SettingsPage() {
                     className="outline-none text-sm w-full"
                     style={{ background: "transparent", color: "#4c4847" }} />
                   {userSearch && (
-                    <button onClick={() => setUserSearch("")} style={{ color: "#8f8168" }}>✕</button>
+                    <button onClick={() => setUserSearch("")} style={{ color: "#71654c" }}>✕</button>
                   )}
                 </div>
 
@@ -519,7 +519,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
-                        <select value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                        <select aria-label="Role" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                           {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                         </select>
@@ -548,7 +548,7 @@ export default function SettingsPage() {
                     <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
                   </div>
                 ) : filteredUsers.length === 0 ? (
-                  <p className="text-center text-sm py-8" style={{ color: "#8f8168" }}>
+                  <p className="text-center text-sm py-8" style={{ color: "#71654c" }}>
                     {userSearch ? "ไม่พบ user" : "ยังไม่มี user"}
                   </p>
                 ) : (
@@ -620,7 +620,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="col-span-2">
                                 <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Role</label>
-                                <select value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                                <select aria-label="Role" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                                   {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                                 </select>
@@ -683,7 +683,7 @@ export default function SettingsPage() {
                   {dropdownMessage && <p className="text-sm mb-2" style={{ color: "#4a9f4a" }}>{dropdownMessage}</p>}
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {options.length === 0 ? (
-                      <p className="text-sm text-center py-6" style={{ color: "#8f8168" }}>No options yet</p>
+                      <p className="text-sm text-center py-6" style={{ color: "#71654c" }}>No options yet</p>
                     ) : options.map((opt) => (
                       <div key={opt.id} className="flex items-center justify-between px-4 py-2 rounded-xl" style={{ background: "#f5f2ee" }}>
                         <span className="text-sm" style={{ color: "#4c4847" }}>{opt.value}</span>
@@ -718,13 +718,13 @@ export default function SettingsPage() {
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Slide Duration (sec)</label>
                     <input type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#8f8168" }}>ต่อ 1 รูป</p>
+                    <p className="text-xs mt-1" style={{ color: "#71654c" }}>ต่อ 1 รูป</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Session Reset (min)</label>
                     <input type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#8f8168" }}>Auto-clear หลังไม่มีการใช้งาน</p>
+                    <p className="text-xs mt-1" style={{ color: "#71654c" }}>Auto-clear หลังไม่มีการใช้งาน</p>
                   </div>
                 </div>
                 <div className="mt-4 max-w-md">
@@ -732,7 +732,7 @@ export default function SettingsPage() {
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#8f8168" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
+                  <p className="text-xs mt-1" style={{ color: "#71654c" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
                 </div>
 
                 {/* Central reader registry — one source of truth, shown as a dropdown on Scan & Display */}
@@ -741,12 +741,12 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Readers</label>
                     <button onClick={addReader} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add reader</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#8f8168" }}>
+                  <p className="text-xs mb-3" style={{ color: "#71654c" }}>
                     Named readers shown as a dropdown on Scan &amp; Display, so staff pick a name instead of typing an address.
                     Set <b>Device tag</b> for a relay reader (connects via the relay URL above), or a full <b>URL / IP</b> for a direct LAN reader.
                   </p>
                   {readers.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#8f8168" }}>No readers yet — add one to get started.</p>
+                    <p className="text-xs py-1" style={{ color: "#71654c" }}>No readers yet — add one to get started.</p>
                   ) : (
                     <div className="space-y-2">
                       {readers.map((r) => (
@@ -771,12 +771,12 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Displays (TV screens)</label>
                     <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add display</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#8f8168" }}>
+                  <p className="text-xs mb-3" style={{ color: "#71654c" }}>
                     Each screen is a zone. Bind it to a <b>reader</b> (its live table presence) and a <b>rotation</b>, then open that TV at its <b>URL</b> below.
                     Staff pick a screen by name when they press <b>Send to Display</b>. No displays = one shared default screen.
                   </p>
                   {displays.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#8f8168" }}>No displays yet — add one per TV to route lists to the right screen.</p>
+                    <p className="text-xs py-1" style={{ color: "#71654c" }}>No displays yet — add one per TV to route lists to the right screen.</p>
                   ) : (
                     <div className="space-y-2">
                       {displays.map((d) => (
@@ -807,7 +807,7 @@ export default function SettingsPage() {
                               <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
                             </div>
                           ) : (
-                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#8f8168" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
+                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#71654c" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
                           )}
                         </div>
                       ))}
@@ -818,7 +818,7 @@ export default function SettingsPage() {
                 {/* Idle video — loops full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
-                  <p className="text-xs mb-1" style={{ color: "#8f8168" }}>
+                  <p className="text-xs mb-1" style={{ color: "#71654c" }}>
                     Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
                   </p>
                   <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>
@@ -864,7 +864,7 @@ export default function SettingsPage() {
                 {/* Screen rotation — for portrait-mounted TVs etc. */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Screen rotation</label>
-                  <p className="text-xs mb-2" style={{ color: "#8f8168" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
+                  <p className="text-xs mb-2" style={{ color: "#71654c" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
                   <div className="flex gap-2 flex-wrap">
                     {[0, 90, 180, 270].map((deg) => (
                       <button key={deg} onClick={() => setDisplayRotation(deg)}
@@ -910,7 +910,7 @@ export default function SettingsPage() {
                   </div>
                 ) : filteredMedia.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-sm" style={{ color: "#8f8168" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
+                    <p className="text-sm" style={{ color: "#71654c" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto">

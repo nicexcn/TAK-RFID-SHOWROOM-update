@@ -287,7 +287,7 @@ export default function ManualScanPage() {
               {contacts.length > 0 && (
                 <div className="mt-3">
                   <label className="block text-[11px] mb-1" style={{ color: "#6f5f48" }}>ผู้ติดต่อ / Contact</label>
-                  <select value={contactName} onChange={(e) => setContactName(e.target.value)}
+                  <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                     <option value="">{customer.fullName} (หลัก)</option>
                     {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -323,9 +323,9 @@ export default function ManualScanPage() {
               <p className="text-[11px] mb-2" style={{ color: "#9a6a2f" }}>ถึงขีดจำกัดการหยิบแล้ว (สูงสุด {takeawayLimit} ชิ้น)</p>
             )}
             {catalogLoading ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>กำลังโหลดสินค้า…</p>
+              <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>กำลังโหลดสินค้า…</p>
             ) : shown.length === 0 ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>ไม่พบสินค้า</p>
+              <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>ไม่พบสินค้า</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
                 {shown.map((p) => {
@@ -363,7 +363,7 @@ export default function ManualScanPage() {
 
             <div className="flex-1 space-y-2 min-h-[200px] max-h-[52vh] overflow-y-auto">
               {session.scans.length === 0 ? (
-                <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
+                <p className="text-sm py-8 text-center" style={{ color: "#71654c" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
               ) : (
                 session.scans.map((s) => (
                   <div key={s.product.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>

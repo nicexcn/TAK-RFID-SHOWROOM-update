@@ -48,7 +48,7 @@ export default function SurveyResultsPage() {
       {data.total === 0 ? (
         <div className="p-8 rounded-xl text-center" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
           <p className="text-sm mb-2" style={{ color: "#6f5f48" }}>No responses yet.</p>
-          <p className="text-xs" style={{ color: "#8f8168" }}>Share the survey link: <span style={{ fontFamily: "monospace" }}>{surveyUrl}</span></p>
+          <p className="text-xs" style={{ color: "#71654c" }}>Share the survey link: <span style={{ fontFamily: "monospace" }}>{surveyUrl}</span></p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -104,13 +104,13 @@ function ChoiceView({ r, total }: { r: ChoiceResult; total: number }) {
           <span className="text-xs w-8 text-right" style={{ color: "#6f5f48" }}>{x.count}</span>
         </div>
       ))}
-      <p className="text-[11px] pt-1" style={{ color: "#8f8168" }}>{r.type === "checkbox" ? "multiple choice" : "single choice"} · {total} responses</p>
+      <p className="text-[11px] pt-1" style={{ color: "#71654c" }}>{r.type === "checkbox" ? "multiple choice" : "single choice"} · {total} responses</p>
     </div>
   );
 }
 
 function TextView({ r }: { r: TextResult }) {
-  if (r.comments.length === 0) return <p className="text-sm" style={{ color: "#8f8168" }}>No comments</p>;
+  if (r.comments.length === 0) return <p className="text-sm" style={{ color: "#71654c" }}>No comments</p>;
   return (
     <div className="space-y-2 max-h-64 overflow-y-auto">
       {r.comments.map((c, i) => (

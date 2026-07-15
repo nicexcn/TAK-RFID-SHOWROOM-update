@@ -49,7 +49,7 @@ const DEVICES = [1, 2, 3, 4] as const;
 type DeviceId = typeof DEVICES[number];
 
 const STATUS_STYLE = {
-  NONE:      { label: "",             bg: "transparent", color: "#8f8168" },
+  NONE:      { label: "",             bg: "transparent", color: "#71654c" },
   PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe",    color: "#3b82f6" },
   COMPLETE:  { label: "พร้อมแล้ว",   bg: "#d1fae5",    color: "#10b981" },
 };
@@ -768,7 +768,7 @@ function RFIDPageInner() {
                 <p className="text-xs" style={{ color: "#6f5f48" }}>🏢 {customerInfo.company}</p>
                 <p className="text-xs font-mono" style={{ color: "#726c5a" }}>🏷️ {customerInfo.customerCode} · 📞 {customerInfo.phone}</p>
                 {contacts.length > 0 && (
-                  <select value={contactName} onChange={(e) => setContactName(e.target.value)}
+                  <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
                     className="w-full mt-2 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                     <option value="">{customerInfo.fullName} (หลัก)</option>
                     {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -843,7 +843,7 @@ function RFIDPageInner() {
               </div>
               {!ws.isConnected ? (
                 <>
-                  <select value="" onChange={(e) => { if (e.target.value) setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value })); }}
+                  <select aria-label="Reader address" value="" onChange={(e) => { if (e.target.value) setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value })); }}
                     className="px-2 py-1.5 rounded-lg outline-none text-xs"
                     style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                     <option value="">Select reader…</option>
@@ -888,7 +888,7 @@ function RFIDPageInner() {
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                     {readerIdFromUrl(deviceIps[wsDeviceId]) || "LAN (direct)"}
                   </span>
-                  <span className="text-[11px]" style={{ color: "#8f8168" }}>{deviceIps[wsDeviceId]}</span>
+                  <span className="text-[11px]" style={{ color: "#71654c" }}>{deviceIps[wsDeviceId]}</span>
                   <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
@@ -915,7 +915,7 @@ function RFIDPageInner() {
                   {simulating ? "กำลังจำลอง..." : `จำลองการสแกน (Fix Reader burst 3000)`}
                 </button>
               </div>
-              <span className="text-xs ml-auto" style={{ color: "#8f8168" }}>
+              <span className="text-xs ml-auto" style={{ color: "#71654c" }}>
                 สินค้าในระบบ: {productMap.size} รายการ
               </span>
             </div>
@@ -938,13 +938,13 @@ function RFIDPageInner() {
               </div>
               <div className="max-h-52 overflow-y-auto">
                 {deviceLogs.length === 0 ? (
-                  <p className="text-center py-8 text-sm" style={{ color: "#8f8168" }}>ยังไม่มี log</p>
+                  <p className="text-center py-8 text-sm" style={{ color: "#71654c" }}>ยังไม่มี log</p>
                 ) : deviceLogs.map((log, i) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-4 py-2.5"
                       style={{ borderBottom: i < deviceLogs.length - 1 ? "1px solid #f5f2ee" : "none" }}>
                       <span className="text-xs flex-shrink-0" style={{ color: "#6f5f48" }}>{log.time}</span>
-                      <span className="text-xs font-mono flex-shrink-0" style={{ color: "#8f8168" }}>{log.tag}</span>
+                      <span className="text-xs font-mono flex-shrink-0" style={{ color: "#71654c" }}>{log.tag}</span>
                       <span className={`text-xs flex-1 ${log.ok ? "" : "text-red-500"}`}
                         style={{ color: log.ok ? "#4c4847" : "#dc2626" }}>
                         {log.ok ? log.productName : "❌ ไม่พบสินค้า"}
@@ -976,7 +976,7 @@ function RFIDPageInner() {
                     <Link href={`/admin/products/new?rfid=${encodeURIComponent(epc)}`} target="_blank" rel="noopener noreferrer"
                       className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: "#726c5a", color: "#fff" }}>Register</Link>
                     <button onClick={() => setUnknownTags((t) => t.filter((x) => x !== epc))} title="Dismiss"
-                      className="text-xs" style={{ color: "#8f8168" }}>✕</button>
+                      className="text-xs" style={{ color: "#71654c" }}>✕</button>
                   </div>
                 ))}
               </div>
@@ -1006,7 +1006,7 @@ function RFIDPageInner() {
 
             {visibleScans.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-sm" style={{ color: "#8f8168" }}>No items scanned yet</p>
+                <p className="text-sm" style={{ color: "#71654c" }}>No items scanned yet</p>
               </div>
             ) : (
               <div className="overflow-auto">
@@ -1050,7 +1050,7 @@ function RFIDPageInner() {
                               <span className="flex items-center gap-1 text-xs font-mono" style={{ color: "#726c5a" }}>
                                 📍 {scan.product.location}
                               </span>
-                            ) : <span className="text-xs" style={{ color: "#8f8168" }}>-</span>}
+                            ) : <span className="text-xs" style={{ color: "#71654c" }}>-</span>}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#6f5f48" }}>
                             {scan.product.materialType || "-"}
@@ -1064,7 +1064,7 @@ function RFIDPageInner() {
                                 style={{ background: sCfg.bg, color: sCfg.color }}>
                                 {sCfg.label}
                               </span>
-                            ) : <span className="text-xs" style={{ color: "#8f8168" }}>-</span>}
+                            ) : <span className="text-xs" style={{ color: "#71654c" }}>-</span>}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">

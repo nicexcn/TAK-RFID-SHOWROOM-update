@@ -75,7 +75,7 @@ export default function ProductImagePicker({
       {/* Image grid */}
       {urls.length === 0 ? (
         <div className="mt-3 rounded-xl text-center py-10" style={{ border: "1px dashed #e6e5d8" }}>
-          <p className="text-sm" style={{ color: "#8f8168" }}>No images yet</p>
+          <p className="text-sm" style={{ color: "#71654c" }}>No images yet</p>
         </div>
       ) : (
         <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-3">

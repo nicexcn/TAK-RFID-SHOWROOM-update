@@ -110,7 +110,7 @@ export default function EditProductPage() {
 
   if (fetching) return (
     <div className="flex items-center justify-center h-64">
-      <p style={{ color: "#8f8168" }}>Loading...</p>
+      <p style={{ color: "#71654c" }}>Loading...</p>
     </div>
   );
 

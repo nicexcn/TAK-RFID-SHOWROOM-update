@@ -65,7 +65,7 @@ export default function StickerPrintPage() {
           <button onClick={() => window.close()} style={{ ...archer, padding: "10px 18px", borderRadius: 12, background: "#f5f2ee", color: "#4c4847", border: "none", fontSize: 14, cursor: "pointer" }}>Close</button>
           <button onClick={() => window.print()} style={{ ...archer, flex: 1, padding: "10px 18px", borderRadius: 12, background: "#726c5a", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>🖨 Print</button>
         </div>
-        <p style={{ ...archer, fontSize: 12, color: "#8f8168", marginTop: 12 }}>
+        <p style={{ ...archer, fontSize: 12, color: "#71654c", marginTop: 12 }}>
           Tip: in the print dialog set paper size to <strong>8×5 cm</strong> (or your label size) and margins to <strong>None</strong>.
         </p>
       </div>

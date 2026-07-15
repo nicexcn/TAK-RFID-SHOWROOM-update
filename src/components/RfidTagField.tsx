@@ -72,7 +72,7 @@ export default function RfidTagField({
           placeholder="Scan, or type the RFID tag (e.g. WY7204X)"
           className="flex-1 px-4 py-3 rounded-xl outline-none text-sm min-w-0" style={inputStyle} />
         {scanReaders.length > 0 && (
-          <select value={scanReaderId} onChange={(e) => setScanReaderId(e.target.value)} title="Reader to scan with"
+          <select aria-label="Reader" value={scanReaderId} onChange={(e) => setScanReaderId(e.target.value)} title="Reader to scan with"
             className="px-3 py-3 rounded-xl outline-none text-sm" style={inputStyle}>
             {scanReaders.map((r) => <option key={r.id} value={r.id}>{r.name || r.device || r.url}</option>)}
           </select>
@@ -103,9 +103,9 @@ export default function RfidTagField({
       ) : scanMsg ? (
         <p className="text-xs mt-1" style={{ color: "#4a7c59" }}>{scanMsg}</p>
       ) : !scanUrl ? (
-        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
+        <p className="text-xs mt-1" style={{ color: "#71654c" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
       ) : (
-        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
+        <p className="text-xs mt-1" style={{ color: "#71654c" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
       )}
     </div>
   );

@@ -19,7 +19,7 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
             ) : (
               <span aria-current={isLast ? "page" : undefined}>{c.label}</span>
             )}
-            {!isLast && <span className="mx-1.5" style={{ color: "#8f8168" }}>/</span>}
+            {!isLast && <span className="mx-1.5" style={{ color: "#71654c" }}>/</span>}
           </span>
         );
       })}

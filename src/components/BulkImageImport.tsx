@@ -256,7 +256,7 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
           Add <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}>-2</code>,
           <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}> -3</code> for extra images.
         </p>
-        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>
+        <p className="text-xs mt-1" style={{ color: "#71654c" }}>
           e.g. <code>PC-001.jpg</code> (cover), <code>PC-001-2.jpg</code>, <code>PC-001-3.jpg</code> · added after any existing images
         </p>
       </div>
@@ -275,7 +275,7 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <p className="text-sm" style={{ color: "#6f5f48" }}>Drag a folder of photos here, or click to select files</p>
-        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>
+        <p className="text-xs mt-1" style={{ color: "#71654c" }}>
           {loadingProducts ? "Loading products…" : `${products.length} products available to match`}
         </p>
       </div>

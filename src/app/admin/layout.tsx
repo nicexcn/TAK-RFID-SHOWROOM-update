@@ -178,7 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center px-4 sm:px-6 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #cdc3ad", background: "#e6e5d8" }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu" className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg">
             <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />
             <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />
             <span className="block w-5 h-0.5 rounded" style={{ background: "#726c5a" }} />

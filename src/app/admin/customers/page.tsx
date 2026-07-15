@@ -140,7 +140,7 @@ export default function CustomersPage() {
         <div className="flex-1 min-w-0">
           <p className="text-sm mb-2" style={{ color: "#6f5f48" }}>Type of Customers</p>
           {byTitle.length === 0 ? (
-            <p className="text-sm" style={{ color: "#8f8168" }}>No customers yet</p>
+            <p className="text-sm" style={{ color: "#71654c" }}>No customers yet</p>
           ) : (
             <div className="space-y-1.5">
               {byTitle.map((d) => (
@@ -166,7 +166,7 @@ export default function CustomersPage() {
             className="outline-none text-sm w-full" style={{ background: "transparent", color: "#4c4847" }} />
         </div>
         <div className="relative">
-          <select value={filterTitle} onChange={(e) => setFilterTitle(e.target.value)}
+          <select aria-label="Filter by type" value={filterTitle} onChange={(e) => setFilterTitle(e.target.value)}
             className="appearance-none outline-none text-sm pl-3 pr-8 py-2 rounded-xl cursor-pointer"
             style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847", minWidth: "120px" }}>
             <option value="all">All Types</option>
@@ -230,7 +230,7 @@ export default function CustomersPage() {
             {loading ? (
               <tr><td colSpan={9} className="text-center py-16"><div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} /></td></tr>
             ) : customers.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "#8f8168" }}>No customers found</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "#71654c" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (
               <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? "1px solid #f5f2ee" : "none" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#faf9f7")}

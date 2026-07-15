@@ -150,7 +150,7 @@ export default function NotificationsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <p className="text-sm" style={{ color: "#8f8168" }}>ไม่มีการแจ้งเตือน</p>
+          <p className="text-sm" style={{ color: "#71654c" }}>ไม่มีการแจ้งเตือน</p>
         </div>
       ) : (
         <div className="space-y-3">

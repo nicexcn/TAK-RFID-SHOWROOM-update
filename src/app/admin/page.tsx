@@ -54,7 +54,7 @@ function EmptyState({ label }: { label: string }) {
           <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
         </svg>
       </div>
-      <p className="text-xs text-center" style={{ color: "#8f8168" }}>{label}</p>
+      <p className="text-xs text-center" style={{ color: "#71654c" }}>{label}</p>
     </div>
   );
 }
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
         {loadingStats ? <Spinner /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
-            <p className="text-xs" style={{ color: "#8f8168" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
+            <p className="text-xs" style={{ color: "#71654c" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
           </>
         )}
       </div>
@@ -371,7 +371,7 @@ export default function AdminDashboard() {
         {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
-            <p className="text-xs mb-3" style={{ color: "#8f8168" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
+            <p className="text-xs mb-3" style={{ color: "#71654c" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
             <div className="space-y-1">
               {stats!.customersByTitle.slice(0, 4).map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
@@ -603,7 +603,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Stats Cards (draggable) ── */}
-      <p className="text-xs mb-2" style={{ color: "#8f8168" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
+      <p className="text-xs mb-2" style={{ color: "#71654c" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {cardOrder.filter(isWidgetVisible).map((id) => (
           <DraggableCard key={id} id={id} dragOver={dragOver}

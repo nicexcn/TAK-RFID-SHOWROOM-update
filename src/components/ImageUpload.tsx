@@ -56,7 +56,7 @@ export default function ImageUpload({ value, onChange }: Props) {
           <p className="text-sm" style={{ color: "#6f5f48" }}>
             {uploading ? "Uploading..." : "Click to upload image"}
           </p>
-          <p className="text-xs mt-1" style={{ color: "#8f8168" }}>PNG, JPG, WEBP</p>
+          <p className="text-xs mt-1" style={{ color: "#71654c" }}>PNG, JPG, WEBP</p>
           <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
         </label>
       )}

@@ -140,7 +140,7 @@ export default function LoansPage() {
             {loading ? (
               <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#6f5f48" }}>Loading…</td></tr>
             ) : loans.length === 0 ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#8f8168" }}>No loans here</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#71654c" }}>No loans here</td></tr>
             ) : loans.map((l) => {
               const st = STATUS[l.status];
               const returned = l.status === "RETURNED";
@@ -188,7 +188,7 @@ export default function LoansPage() {
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => setReturned(l, l.returnedQty - 1)} disabled={busy[l.scanId] || l.returnedQty <= 0}
                         className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>−</button>
-                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "#4c4847" }}>{l.returnedQty}<span style={{ color: "#8f8168" }}> / {l.borrowedQty}</span></span>
+                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "#4c4847" }}>{l.returnedQty}<span style={{ color: "#71654c" }}> / {l.borrowedQty}</span></span>
                       <button onClick={() => setReturned(l, l.returnedQty + 1)} disabled={busy[l.scanId] || l.returnedQty >= l.borrowedQty}
                         className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+</button>
                     </div>

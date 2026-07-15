@@ -206,7 +206,7 @@ export default function CustomerDetailPage() {
               {/* Occupation / customer type */}
               <label className="block">
                 <span className="text-xs" style={{ color: "#6f5f48" }}>Occupation</span>
-                <select value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                <select aria-label="Occupation" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                   {CUSTOMER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -218,7 +218,7 @@ export default function CustomerDetailPage() {
               {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
               <label className="block">
                 <span className="text-xs" style={{ color: "#6f5f48" }}>Sales (เซลล์ผู้ดูแล)</span>
-                <select value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
+                <select aria-label="Sales" value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                   <option value="">— none —</option>
                   {[...new Set([form.salesPerson, ...salesOptions].filter(Boolean))].map((s) => (
@@ -251,7 +251,7 @@ export default function CustomerDetailPage() {
           </div>
           <div className="space-y-2 mb-3">
             {contacts.length === 0 ? (
-              <p className="text-sm" style={{ color: "#8f8168" }}>No extra contacts yet</p>
+              <p className="text-sm" style={{ color: "#71654c" }}>No extra contacts yet</p>
             ) : contacts.map((c) => (
               <div key={c.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
                 <div className="min-w-0 flex-1">
@@ -279,7 +279,7 @@ export default function CustomerDetailPage() {
             <span className="text-xs" style={{ color: "#6f5f48" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
           </div>
           {uniqueProducts.size === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: "#8f8168" }}>No scan history yet</p>
+            <p className="text-sm py-6 text-center" style={{ color: "#71654c" }}>No scan history yet</p>
           ) : (
             <div className="space-y-2">
               {[...uniqueProducts.values()].map((scan) => {
