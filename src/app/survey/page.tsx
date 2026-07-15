@@ -50,7 +50,7 @@ export default function SurveyPage() {
       <div style={{ background: "#fff", borderRadius: 20, padding: "40px 28px", textAlign: "center", maxWidth: 420 }}>
         <Image src="/b-logo.png" alt="nimitrlab" width={150} height={52} className="object-contain mx-auto mb-5" />
         <p style={{ fontSize: 22, fontWeight: 600, color: "#4c4847", marginBottom: 8 }}>ขอบคุณค่ะ 🙏</p>
-        <p style={{ fontSize: 14, color: "#9f886c" }}>ขอบคุณสำหรับความคิดเห็นของคุณ — Thank you for your feedback!</p>
+        <p style={{ fontSize: 14, color: "#6f5f48" }}>ขอบคุณสำหรับความคิดเห็นของคุณ — Thank you for your feedback!</p>
         <button onClick={() => { setDone(false); setAnswers({}); setError(""); }}
           style={{ marginTop: 22, padding: "10px 22px", borderRadius: 12, background: "#726c5a", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           ส่งอีกครั้ง / Submit another
@@ -82,7 +82,7 @@ export default function SurveyPage() {
                     {Array.from({ length: item.scale }, (_, n) => n + 1).map((n) => (
                       <button key={n} onClick={() => setScale(item.key, n)}
                         style={{ flex: 1, aspectRatio: "1", borderRadius: 12, fontSize: 18, fontWeight: 600, cursor: "pointer",
-                          background: val === n ? "#726c5a" : "#f5f2ee", color: val === n ? "#fff" : "#9f886c", border: "1px solid #e6e5d8" }}>
+                          background: val === n ? "#726c5a" : "#f5f2ee", color: val === n ? "#fff" : "#6f5f48", border: "1px solid #e6e5d8" }}>
                         {n}
                       </button>
                     ))}
@@ -96,7 +96,7 @@ export default function SurveyPage() {
                       return (
                         <button key={opt} onClick={() => item.type === "radio" ? setRadio(item.key, opt) : toggle(item.key, opt)}
                           style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, textAlign: "left", cursor: "pointer",
-                            border: `2px solid ${active ? "#726c5a" : "#e6e5d8"}`, background: active ? "rgba(114,108,90,0.07)" : "#fff", color: active ? "#4c4847" : "#9f886c" }}>
+                            border: `2px solid ${active ? "#726c5a" : "#e6e5d8"}`, background: active ? "rgba(114,108,90,0.07)" : "#fff", color: active ? "#4c4847" : "#6f5f48" }}>
                           <span style={{ width: 18, height: 18, flexShrink: 0, borderRadius: item.type === "radio" ? 9 : 5, border: `2px solid ${active ? "#726c5a" : "#cdc3ad"}`, background: active && item.type === "checkbox" ? "#726c5a" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {active && item.type === "radio" && <span style={{ width: 8, height: 8, borderRadius: 5, background: "#726c5a" }} />}
                             {active && item.type === "checkbox" && <span style={{ color: "#fff", fontSize: 11, lineHeight: 1 }}>✓</span>}

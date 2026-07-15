@@ -3,7 +3,7 @@
 // `label`/`labelTh` are display-only, `prefix` drives the customerCode (e.g. "Ar00001").
 export const CUSTOMER_TYPES = [
   { value: "Architect",  prefix: "Ar", label: "Architect",         labelTh: "สถาปนิก",                color: "#726c5a" },
-  { value: "Interior",   prefix: "ID", label: "Interior Designer", labelTh: "มัณฑนากร",               color: "#9f886c" },
+  { value: "Interior",   prefix: "ID", label: "Interior Designer", labelTh: "มัณฑนากร",               color: "#6f5f48" },
   { value: "Turnkey",    prefix: "TK", label: "Turnkey",           labelTh: "รับเหมาแบบครบวงจร",       color: "#4a6fa5" },
   { value: "Contractor", prefix: "Ct", label: "Contractor",        labelTh: "ผู้รับเหมา",              color: "#4c4847" },
   { value: "Homeowner",  prefix: "Ho", label: "Home Owner",        labelTh: "เจ้าของบ้านหรือโครงการ", color: "#4a7c59" },

@@ -236,7 +236,7 @@ export default function ManualScanPage() {
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Manual Scan</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Manual Scan" }]} />
-          <p className="text-sm mt-1" style={{ color: "#9f886c" }}>เลือกสินค้าด้วยตนเอง (ไม่ต้องใช้ RFID) — สำหรับหลังบ้าน / ของชำร่วย</p>
+          <p className="text-sm mt-1" style={{ color: "#6f5f48" }}>เลือกสินค้าด้วยตนเอง (ไม่ต้องใช้ RFID) — สำหรับหลังบ้าน / ของชำร่วย</p>
         </div>
       </div>
 
@@ -257,7 +257,7 @@ export default function ManualScanPage() {
             {SEARCH_TYPES.map((t) => (
               <button key={t.key} onClick={() => setSearchType(t.key)}
                 className="px-3 py-1.5 rounded-lg text-sm"
-                style={{ background: searchType === t.key ? "#726c5a" : "#f5f2ee", color: searchType === t.key ? "#fff" : "#9f886c" }}>
+                style={{ background: searchType === t.key ? "#726c5a" : "#f5f2ee", color: searchType === t.key ? "#fff" : "#6f5f48" }}>
                 {t.label}
               </button>
             ))}
@@ -277,7 +277,7 @@ export default function ManualScanPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "#4c4847" }}>{customer.customerCode} · {customer.fullName}</p>
-                  <p className="text-xs truncate" style={{ color: "#9f886c" }}>{[customer.company, customer.phone].filter(Boolean).join(" · ")}</p>
+                  <p className="text-xs truncate" style={{ color: "#6f5f48" }}>{[customer.company, customer.phone].filter(Boolean).join(" · ")}</p>
                 </div>
                 <button onClick={() => startSession(customer.customerCode, customer.id, contactName)} disabled={starting}
                   className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 flex-shrink-0" style={{ background: "#4a7c59" }}>
@@ -286,7 +286,7 @@ export default function ManualScanPage() {
               </div>
               {contacts.length > 0 && (
                 <div className="mt-3">
-                  <label className="block text-[11px] mb-1" style={{ color: "#9f886c" }}>ผู้ติดต่อ / Contact</label>
+                  <label className="block text-[11px] mb-1" style={{ color: "#6f5f48" }}>ผู้ติดต่อ / Contact</label>
                   <select value={contactName} onChange={(e) => setContactName(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                     <option value="">{customer.fullName} (หลัก)</option>
@@ -298,7 +298,7 @@ export default function ManualScanPage() {
           )}
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f0eee6" }}>
             <button onClick={() => startSession("WALK-IN", null)} disabled={starting}
-              className="text-sm underline disabled:opacity-50" style={{ color: "#9f886c" }}>
+              className="text-sm underline disabled:opacity-50" style={{ color: "#6f5f48" }}>
               หรือเริ่มแบบไม่ระบุลูกค้า (Walk-in)
             </button>
           </div>
@@ -323,9 +323,9 @@ export default function ManualScanPage() {
               <p className="text-[11px] mb-2" style={{ color: "#9a6a2f" }}>ถึงขีดจำกัดการหยิบแล้ว (สูงสุด {takeawayLimit} ชิ้น)</p>
             )}
             {catalogLoading ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#cdc3ad" }}>กำลังโหลดสินค้า…</p>
+              <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>กำลังโหลดสินค้า…</p>
             ) : shown.length === 0 ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#cdc3ad" }}>ไม่พบสินค้า</p>
+              <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>ไม่พบสินค้า</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
                 {shown.map((p) => {
@@ -341,7 +341,7 @@ export default function ManualScanPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm truncate" style={{ color: "#4c4847" }}>{p.name}</p>
-                        <p className="text-xs truncate" style={{ color: "#9f886c" }}>{[p.productCode, p.brand].filter(Boolean).join(" · ") || "—"}</p>
+                        <p className="text-xs truncate" style={{ color: "#6f5f48" }}>{[p.productCode, p.brand].filter(Boolean).join(" · ") || "—"}</p>
                       </div>
                       <span className="text-lg flex-shrink-0" style={{ color: added ? "#4a7c59" : "#726c5a" }}>{added ? "✓" : "+"}</span>
                     </button>
@@ -355,21 +355,21 @@ export default function ManualScanPage() {
           <div className="lg:col-span-2 rounded-xl p-5 flex flex-col" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>รายการที่เลือก</h2>
-              <span className="text-xs" style={{ color: "#9f886c" }}>{session.customerCode}</span>
+              <span className="text-xs" style={{ color: "#6f5f48" }}>{session.customerCode}</span>
             </div>
-            <p className="text-xs mb-4" style={{ color: "#9f886c" }}>
+            <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>
               {session.scans.length} รายการ · หยิบไป {totalTaken}{takeawayEnabled ? ` / ${takeawayLimit}` : ""} ชิ้น
             </p>
 
             <div className="flex-1 space-y-2 min-h-[200px] max-h-[52vh] overflow-y-auto">
               {session.scans.length === 0 ? (
-                <p className="text-sm py-8 text-center" style={{ color: "#cdc3ad" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
+                <p className="text-sm py-8 text-center" style={{ color: "#8f8168" }}>ยังไม่มีสินค้า — เลือกจากด้านซ้าย</p>
               ) : (
                 session.scans.map((s) => (
                   <div key={s.product.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate" style={{ color: "#4c4847" }}>{s.product.name}</p>
-                      <p className="text-[11px] truncate" style={{ color: "#9f886c" }}>{s.product.productCode || s.product.brand || "—"}</p>
+                      <p className="text-[11px] truncate" style={{ color: "#6f5f48" }}>{s.product.productCode || s.product.brand || "—"}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button onClick={() => changeQty(s, -1)} aria-label="ลดจำนวน" className="w-7 h-7 rounded-lg text-sm" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#726c5a" }}>−</button>

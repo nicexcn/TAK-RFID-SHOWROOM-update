@@ -103,9 +103,9 @@ export default function RfidTagField({
       ) : scanMsg ? (
         <p className="text-xs mt-1" style={{ color: "#4a7c59" }}>{scanMsg}</p>
       ) : !scanUrl ? (
-        <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
+        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>To scan, set the Cloud Relay URL in Settings (or run a local relay). You can also just type the tag.</p>
       ) : (
-        <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
+        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>Hold a tag near the reader and press Scan, or type it manually.</p>
       )}
     </div>
   );

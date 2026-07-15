@@ -360,7 +360,7 @@ export default function SettingsPage() {
             <div>
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Widget Visibility</h2>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>เลือก widget ที่จะแสดงบน Dashboard</p>
+                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือก widget ที่จะแสดงบน Dashboard</p>
                 <div className="space-y-2">
                   {WIDGETS.map((w) => {
                     const isOn = dashboardSettings.visibleWidgets[w.key as keyof typeof dashboardSettings.visibleWidgets];
@@ -380,14 +380,14 @@ export default function SettingsPage() {
 
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Default Filter</h2>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>ตั้งค่า filter เริ่มต้นของ stats cards</p>
+                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>ตั้งค่า filter เริ่มต้นของ stats cards</p>
                 <div className="flex gap-2 flex-wrap">
                   {(["daily","weekly","monthly","annually"] as const).map((f) => (
                     <button key={f} onClick={() => setDashboardSettings((p) => ({ ...p, defaultFilter: f }))}
                       className="px-4 py-2 rounded-xl text-sm font-medium"
                       style={{
                         background: dashboardSettings.defaultFilter === f ? "#726c5a" : "#f5f2ee",
-                        color: dashboardSettings.defaultFilter === f ? "#fff" : "#9f886c",
+                        color: dashboardSettings.defaultFilter === f ? "#fff" : "#6f5f48",
                         border: "1px solid " + (dashboardSettings.defaultFilter === f ? "#726c5a" : "#e6e5d8"),
                       }}>
                       {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -398,7 +398,7 @@ export default function SettingsPage() {
 
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Graph Color Theme</h2>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
+                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
                 <div className="flex gap-3 flex-wrap mb-4">
                   {GRAPH_COLORS.map((color, i) => (
                     <button key={i} onClick={() => setDashboardSettings((p) => ({ ...p, graphColor: i }))}
@@ -419,7 +419,7 @@ export default function SettingsPage() {
                   ))}
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: "#f5f2ee" }}>
-                  <p className="text-xs mb-2" style={{ color: "#9f886c" }}>Preview</p>
+                  <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preview</p>
                   <div className="flex items-end gap-1 h-12">
                     {[60,85,45,70,90,55,75].map((h, i) => (
                       <div key={i} className="flex-1 rounded-sm transition-all duration-300"
@@ -458,7 +458,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>User Management</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>จัดการ account ผู้ใช้งานในระบบ</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>จัดการ account ผู้ใช้งานในระบบ</p>
                   </div>
                   <button onClick={() => { setShowCreate(true); setEditingUser(null); setCreateError(""); setCreateSuccess(""); }}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
@@ -481,7 +481,7 @@ export default function SettingsPage() {
                     className="outline-none text-sm w-full"
                     style={{ background: "transparent", color: "#4c4847" }} />
                   {userSearch && (
-                    <button onClick={() => setUserSearch("")} style={{ color: "#cdc3ad" }}>✕</button>
+                    <button onClick={() => setUserSearch("")} style={{ color: "#8f8168" }}>✕</button>
                   )}
                 </div>
 
@@ -490,7 +490,7 @@ export default function SettingsPage() {
                   <div className="rounded-xl p-5 mb-4" style={{ background: "#f5f2ee", border: "1.5px solid #726c5a" }}>
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>สร้าง User ใหม่</p>
-                      <button onClick={() => setShowCreate(false)} style={{ color: "#9f886c" }}>✕</button>
+                      <button onClick={() => setShowCreate(false)} style={{ color: "#6f5f48" }}>✕</button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
@@ -548,7 +548,7 @@ export default function SettingsPage() {
                     <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
                   </div>
                 ) : filteredUsers.length === 0 ? (
-                  <p className="text-center text-sm py-8" style={{ color: "#cdc3ad" }}>
+                  <p className="text-center text-sm py-8" style={{ color: "#8f8168" }}>
                     {userSearch ? "ไม่พบ user" : "ยังไม่มี user"}
                   </p>
                 ) : (
@@ -566,14 +566,14 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-semibold truncate" style={{ color: "#4c4847" }}>{u.username}</p>
                               <span className="text-xs px-2 py-0.5 rounded-full"
-                                style={{ background: u.role === "admin" ? "rgba(114,108,90,0.15)" : "#e6e5d8", color: u.role === "admin" ? "#726c5a" : "#9f886c" }}>
+                                style={{ background: u.role === "admin" ? "rgba(114,108,90,0.15)" : "#e6e5d8", color: u.role === "admin" ? "#726c5a" : "#6f5f48" }}>
                                 {u.role}
                               </span>
                               {u.id === currentUser.id && (
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#dbeafe", color: "#3b82f6" }}>คุณ</span>
                               )}
                             </div>
-                            <p className="text-xs truncate" style={{ color: "#9f886c" }}>
+                            <p className="text-xs truncate" style={{ color: "#6f5f48" }}>
                               {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"} · สร้าง {new Date(u.createdAt).toLocaleDateString("th-TH")}
                             </p>
                           </div>
@@ -595,7 +595,7 @@ export default function SettingsPage() {
                         {/* Inline edit form */}
                         {editingUser?.id === u.id && (
                           <div className="rounded-xl p-4 mt-1" style={{ background: "#faf9f7", border: "1px solid #e6e5d8" }}>
-                            <p className="text-xs font-semibold mb-3" style={{ color: "#9f886c" }}>แก้ไขข้อมูล</p>
+                            <p className="text-xs font-semibold mb-3" style={{ color: "#6f5f48" }}>แก้ไขข้อมูล</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs mb-1" style={{ color: "#726c5a" }}>Username</label>
@@ -683,7 +683,7 @@ export default function SettingsPage() {
                   {dropdownMessage && <p className="text-sm mb-2" style={{ color: "#4a9f4a" }}>{dropdownMessage}</p>}
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {options.length === 0 ? (
-                      <p className="text-sm text-center py-6" style={{ color: "#cdc3ad" }}>No options yet</p>
+                      <p className="text-sm text-center py-6" style={{ color: "#8f8168" }}>No options yet</p>
                     ) : options.map((opt) => (
                       <div key={opt.id} className="flex items-center justify-between px-4 py-2 rounded-xl" style={{ background: "#f5f2ee" }}>
                         <span className="text-sm" style={{ color: "#4c4847" }}>{opt.value}</span>
@@ -705,7 +705,7 @@ export default function SettingsPage() {
                 <div className="flex items-start justify-between gap-2 mb-4">
                   <div>
                     <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Display Settings</h2>
-                    <p className="text-xs" style={{ color: "#9f886c" }}>ตั้งค่าการแสดงผลบน TV display</p>
+                    <p className="text-xs" style={{ color: "#6f5f48" }}>ตั้งค่าการแสดงผลบน TV display</p>
                   </div>
                   <a href="/display" target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
@@ -718,13 +718,13 @@ export default function SettingsPage() {
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Slide Duration (sec)</label>
                     <input type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>ต่อ 1 รูป</p>
+                    <p className="text-xs mt-1" style={{ color: "#8f8168" }}>ต่อ 1 รูป</p>
                   </div>
                   <div>
                     <label className="block text-sm mb-1" style={{ color: "#4c4847" }}>Session Reset (min)</label>
                     <input type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>Auto-clear หลังไม่มีการใช้งาน</p>
+                    <p className="text-xs mt-1" style={{ color: "#8f8168" }}>Auto-clear หลังไม่มีการใช้งาน</p>
                   </div>
                 </div>
                 <div className="mt-4 max-w-md">
@@ -732,7 +732,7 @@ export default function SettingsPage() {
                   <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                  <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
+                  <p className="text-xs mt-1" style={{ color: "#8f8168" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
                 </div>
 
                 {/* Central reader registry — one source of truth, shown as a dropdown on Scan & Display */}
@@ -741,12 +741,12 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Readers</label>
                     <button onClick={addReader} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add reader</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>
+                  <p className="text-xs mb-3" style={{ color: "#8f8168" }}>
                     Named readers shown as a dropdown on Scan &amp; Display, so staff pick a name instead of typing an address.
                     Set <b>Device tag</b> for a relay reader (connects via the relay URL above), or a full <b>URL / IP</b> for a direct LAN reader.
                   </p>
                   {readers.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#cdc3ad" }}>No readers yet — add one to get started.</p>
+                    <p className="text-xs py-1" style={{ color: "#8f8168" }}>No readers yet — add one to get started.</p>
                   ) : (
                     <div className="space-y-2">
                       {readers.map((r) => (
@@ -771,12 +771,12 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium" style={{ color: "#4c4847" }}>Displays (TV screens)</label>
                     <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+ Add display</button>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>
+                  <p className="text-xs mb-3" style={{ color: "#8f8168" }}>
                     Each screen is a zone. Bind it to a <b>reader</b> (its live table presence) and a <b>rotation</b>, then open that TV at its <b>URL</b> below.
                     Staff pick a screen by name when they press <b>Send to Display</b>. No displays = one shared default screen.
                   </p>
                   {displays.length === 0 ? (
-                    <p className="text-xs py-1" style={{ color: "#cdc3ad" }}>No displays yet — add one per TV to route lists to the right screen.</p>
+                    <p className="text-xs py-1" style={{ color: "#8f8168" }}>No displays yet — add one per TV to route lists to the right screen.</p>
                   ) : (
                     <div className="space-y-2">
                       {displays.map((d) => (
@@ -802,12 +802,12 @@ export default function SettingsPage() {
                             // Only expose the URL once the row has a name — an unnamed row is dropped on
                             // save, and its id is baked into this URL + any session pinned to it.
                             <div className="flex items-center gap-2 mt-1.5 pl-1">
-                              <span className="text-xs" style={{ color: "#9f886c" }}>URL:</span>
+                              <span className="text-xs" style={{ color: "#6f5f48" }}>URL:</span>
                               <code className="text-xs" style={{ color: "#726c5a", background: "#f5f2ee", padding: "1px 6px", borderRadius: 4 }}>{displayUrl(d.id)}</code>
                               <a href={displayUrl(d.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium" style={{ color: "#4a6fa5" }}>Open ↗</a>
                             </div>
                           ) : (
-                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#cdc3ad" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
+                            <p className="text-xs mt-1.5 pl-1" style={{ color: "#8f8168" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
                           )}
                         </div>
                       ))}
@@ -818,10 +818,10 @@ export default function SettingsPage() {
                 {/* Idle video — loops full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Idle video (/display)</label>
-                  <p className="text-xs mb-1" style={{ color: "#cdc3ad" }}>
+                  <p className="text-xs mb-1" style={{ color: "#8f8168" }}>
                     Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
                   </p>
-                  <p className="text-xs mb-2" style={{ color: "#9f886c" }}>
+                  <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>
                     Upload limits: <b>MP4 or WEBM</b> only · max <b>{MAX_UPLOAD_MB} MB</b> · plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps the file small.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -841,7 +841,7 @@ export default function SettingsPage() {
                   {videoErr && <p className="text-xs mt-1" style={{ color: "#9f4a4a" }}>{videoErr}</p>}
                   {idleVideoUrl && (
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <span className="text-xs" style={{ color: "#9f886c" }}>On screen:</span>
+                      <span className="text-xs" style={{ color: "#6f5f48" }}>On screen:</span>
                       {([["contain", "Fit (whole video)"], ["cover", "Fill (crop to screen)"]] as const).map(([v, label]) => (
                         <button key={v} onClick={() => setIdleVideoFit(v)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium"
@@ -864,7 +864,7 @@ export default function SettingsPage() {
                 {/* Screen rotation — for portrait-mounted TVs etc. */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <label className="block text-sm font-medium mb-1" style={{ color: "#4c4847" }}>Screen rotation</label>
-                  <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
+                  <p className="text-xs mb-2" style={{ color: "#8f8168" }}>Rotates the whole /display screen. Per-TV override: add <code style={{ background: "#f5f2ee", padding: "0 4px", borderRadius: 4 }}>?rotate=90</code> to that screen&apos;s URL.</p>
                   <div className="flex gap-2 flex-wrap">
                     {[0, 90, 180, 270].map((deg) => (
                       <button key={deg} onClick={() => setDisplayRotation(deg)}
@@ -891,7 +891,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Media Files</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
@@ -910,11 +910,11 @@ export default function SettingsPage() {
                   </div>
                 ) : filteredMedia.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-sm" style={{ color: "#cdc3ad" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
+                    <p className="text-sm" style={{ color: "#8f8168" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <div className="grid grid-cols-12 px-3 pb-1 text-xs font-medium" style={{ color: "#9f886c" }}>
+                    <div className="grid grid-cols-12 px-3 pb-1 text-xs font-medium" style={{ color: "#6f5f48" }}>
                       <div className="col-span-1">Image</div>
                       <div className="col-span-5">Product</div>
                       <div className="col-span-3">Code</div>
@@ -929,8 +929,8 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="col-span-5 text-sm truncate pr-2" style={{ color: "#4c4847" }}>{file.product?.name ?? "–"}</div>
-                        <div className="col-span-3 text-xs" style={{ color: "#9f886c" }}>{file.product?.productCode ?? "–"}</div>
-                        <div className="col-span-2 text-center text-xs" style={{ color: "#9f886c" }}>#{file.order + 1}</div>
+                        <div className="col-span-3 text-xs" style={{ color: "#6f5f48" }}>{file.product?.productCode ?? "–"}</div>
+                        <div className="col-span-2 text-center text-xs" style={{ color: "#6f5f48" }}>#{file.order + 1}</div>
                         <div className="col-span-1 flex gap-1 justify-end">
                           <a href={file.url} download className="w-6 h-6 flex items-center justify-center rounded-lg" style={{ background: "#e6e5d8" }}>
                             <svg width="11" height="11" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
@@ -960,11 +960,11 @@ export default function SettingsPage() {
             <div>
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>Takeaway Limit</h2>
-                <p className="text-xs mb-6" style={{ color: "#9f886c" }}>กำหนดจำนวนสินค้าตัวอย่างสูงสุดที่ลูกค้าสามารถนำออกได้ต่อครั้ง</p>
+                <p className="text-xs mb-6" style={{ color: "#6f5f48" }}>กำหนดจำนวนสินค้าตัวอย่างสูงสุดที่ลูกค้าสามารถนำออกได้ต่อครั้ง</p>
                 <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "#f5f2ee" }}>
                   <div>
                     <p className="font-medium text-sm" style={{ color: "#4c4847" }}>เปิดใช้งาน Takeaway Limit</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>จำกัดจำนวนสินค้าที่ลูกค้านำออกได้</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>จำกัดจำนวนสินค้าที่ลูกค้านำออกได้</p>
                   </div>
                   <div onClick={() => setTakeawayEnabled((p) => !p)}
                     className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
@@ -980,14 +980,14 @@ export default function SettingsPage() {
                       style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>−</button>
                     <div className="text-center">
                       <p className="text-5xl font-bold" style={{ color: "#4c4847" }}>{takeawayLimit}</p>
-                      <p className="text-xs mt-1" style={{ color: "#9f886c" }}>ชิ้น / ครั้ง</p>
+                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>ชิ้น / ครั้ง</p>
                     </div>
                     <button onClick={() => setTakeawayLimit((v) => Math.min(20, v + 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
                       style={{ background: "#726c5a" }}>+</button>
                   </div>
                   <div>
-                    <p className="text-xs mb-2" style={{ color: "#9f886c" }}>Preset</p>
+                    <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preset</p>
                     <div className="flex gap-2 flex-wrap">
                       {[1,2,3,5,10].map((preset) => (
                         <button key={preset} onClick={() => setTakeawayLimit(preset)}
@@ -1007,21 +1007,21 @@ export default function SettingsPage() {
                 {/* Borrow / Return period — drives the default due date + "overdue" flag */}
                 <div className="mt-6 pt-5" style={{ borderTop: "1px solid #e6e5d8" }}>
                   <p className="text-sm font-medium mb-1" style={{ color: "#4c4847" }}>ระยะเวลายืม / Borrow period</p>
-                  <p className="text-xs mb-4" style={{ color: "#9f886c" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
+                  <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
                   <div className="flex items-center gap-6 mb-4">
                     <button onClick={() => setBorrowDays((v) => Math.max(1, v - 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
                       style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>−</button>
                     <div className="text-center">
                       <p className="text-5xl font-bold" style={{ color: "#4c4847" }}>{borrowDays}</p>
-                      <p className="text-xs mt-1" style={{ color: "#9f886c" }}>days</p>
+                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>days</p>
                     </div>
                     <button onClick={() => setBorrowDays((v) => Math.min(365, v + 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
                       style={{ background: "#726c5a" }}>+</button>
                   </div>
                   <div>
-                    <p className="text-xs mb-2" style={{ color: "#9f886c" }}>Preset</p>
+                    <p className="text-xs mb-2" style={{ color: "#6f5f48" }}>Preset</p>
                     <div className="flex gap-2 flex-wrap">
                       {[7, 14, 30, 60, 90].map((preset) => (
                         <button key={preset} onClick={() => setBorrowDays(preset)}

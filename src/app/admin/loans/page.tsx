@@ -97,7 +97,7 @@ export default function LoansPage() {
       <div className="mb-5">
         <h1 className="text-2xl font-semibold" style={{ color: "#4c4847" }}>Borrow / Return</h1>
         <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications", href: "/admin/notifications" }, { label: "Borrow & Return" }]} />
-        <p className="text-xs mt-1" style={{ color: "#9f886c" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
+        <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
       </div>
 
       {/* Tabs */}
@@ -115,7 +115,7 @@ export default function LoansPage() {
                 border: `1px solid ${active ? "#726c5a" : "#e6e5d8"}`,
               }}>
               <span>{t.label}</span>
-              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "#f5f2ee", color: active ? "#fff" : danger ? "#dc2626" : "#9f886c" }}>{n}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "#f5f2ee", color: active ? "#fff" : danger ? "#dc2626" : "#6f5f48" }}>{n}</span>
             </button>
           );
         })}
@@ -130,7 +130,7 @@ export default function LoansPage() {
       <div className="overflow-x-auto" style={card}>
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f5f2ee", color: "#9f886c" }}>
+            <tr style={{ background: "#f5f2ee", color: "#6f5f48" }}>
               {["Item", "Customer", "Borrowed", "Due", "Returned", "Status", ""].map((h, i) => (
                 <th key={i} className="text-left font-medium px-3 py-2.5 whitespace-nowrap" style={{ borderBottom: "1px solid #e6e5d8" }}>{h}</th>
               ))}
@@ -138,9 +138,9 @@ export default function LoansPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#9f886c" }}>Loading…</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#6f5f48" }}>Loading…</td></tr>
             ) : loans.length === 0 ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#cdc3ad" }}>No loans here</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "#8f8168" }}>No loans here</td></tr>
             ) : loans.map((l) => {
               const st = STATUS[l.status];
               const returned = l.status === "RETURNED";
@@ -156,7 +156,7 @@ export default function LoansPage() {
                         : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "#e6e5d8" }} />}
                       <div className="min-w-0">
                         <p className="font-medium truncate" style={{ color: "#4c4847", maxWidth: 220 }}>{l.product.name}</p>
-                        <p className="text-xs truncate" style={{ color: "#9f886c", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
+                        <p className="text-xs truncate" style={{ color: "#6f5f48", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
                       </div>
                     </div>
                   </td>
@@ -166,14 +166,14 @@ export default function LoansPage() {
                       <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
                         className="font-medium hover:underline" style={{ color: "#726c5a" }}>{l.customerName}</a>
                     ) : <span className="font-medium" style={{ color: "#4c4847" }}>{l.customerName}</span>}
-                    <p className="text-xs" style={{ color: "#9f886c" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
+                    <p className="text-xs" style={{ color: "#6f5f48" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
                   </td>
                   {/* Borrowed */}
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "#4c4847" }}>{fmtDate(l.borrowedAt)}</td>
                   {/* Due */}
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {returned ? (
-                      <span style={{ color: "#9f886c" }}>{fmtDate(l.dueDate)}</span>
+                      <span style={{ color: "#6f5f48" }}>{fmtDate(l.dueDate)}</span>
                     ) : (
                       <div className="flex flex-col gap-0.5">
                         <input type="date" value={toDateInput(l.dueDate)} onChange={(e) => setDue(l, e.target.value)}
@@ -188,7 +188,7 @@ export default function LoansPage() {
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => setReturned(l, l.returnedQty - 1)} disabled={busy[l.scanId] || l.returnedQty <= 0}
                         className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>−</button>
-                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "#4c4847" }}>{l.returnedQty}<span style={{ color: "#cdc3ad" }}> / {l.borrowedQty}</span></span>
+                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "#4c4847" }}>{l.returnedQty}<span style={{ color: "#8f8168" }}> / {l.borrowedQty}</span></span>
                       <button onClick={() => setReturned(l, l.returnedQty + 1)} disabled={busy[l.scanId] || l.returnedQty >= l.borrowedQty}
                         className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "#f5f2ee", color: "#726c5a", border: "1px solid #e6e5d8" }}>+</button>
                     </div>

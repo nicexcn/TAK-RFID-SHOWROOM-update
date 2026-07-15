@@ -49,7 +49,7 @@ const DEVICES = [1, 2, 3, 4] as const;
 type DeviceId = typeof DEVICES[number];
 
 const STATUS_STYLE = {
-  NONE:      { label: "",             bg: "transparent", color: "#cdc3ad" },
+  NONE:      { label: "",             bg: "transparent", color: "#8f8168" },
   PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe",    color: "#3b82f6" },
   COMPLETE:  { label: "พร้อมแล้ว",   bg: "#d1fae5",    color: "#10b981" },
 };
@@ -719,7 +719,7 @@ function RFIDPageInner() {
             {displayedId === session.id && (
               <button onClick={handleStopDisplay}
                 className="px-4 py-2 rounded-xl text-sm"
-                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#9f886c" }}>
+                style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#6f5f48" }}>
                 Stop Display
               </button>
             )}
@@ -737,12 +737,12 @@ function RFIDPageInner() {
         <div className="max-w-md mx-auto mt-12">
           <div className="rounded-2xl p-8" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             <h2 className="text-lg font-semibold mb-1 text-center" style={{ color: "#4c4847" }}>Start New Session</h2>
-            <p className="text-sm mb-6 text-center" style={{ color: "#9f886c" }}>ค้นหาลูกค้าหรือกรอก ID เพื่อเริ่ม session</p>
+            <p className="text-sm mb-6 text-center" style={{ color: "#6f5f48" }}>ค้นหาลูกค้าหรือกรอก ID เพื่อเริ่ม session</p>
             <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: "#f5f2ee" }}>
               {(["code","name","phone"] as const).map((t) => (
                 <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
                   className="flex-1 py-2 text-xs font-medium transition-colors"
-                  style={{ background: searchType === t ? "#726c5a" : "transparent", color: searchType === t ? "#fff" : "#9f886c" }}>
+                  style={{ background: searchType === t ? "#726c5a" : "transparent", color: searchType === t ? "#fff" : "#6f5f48" }}>
                   {t === "code" ? "ID" : t === "name" ? "ชื่อ" : "เบอร์"}
                 </button>
               ))}
@@ -765,7 +765,7 @@ function RFIDPageInner() {
                   <p className="font-semibold text-sm" style={{ color: "#4c4847" }}>{customerInfo.fullName}</p>
                   <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#e6e5d8", color: "#726c5a" }}>{customerInfo.title}</span>
                 </div>
-                <p className="text-xs" style={{ color: "#9f886c" }}>🏢 {customerInfo.company}</p>
+                <p className="text-xs" style={{ color: "#6f5f48" }}>🏢 {customerInfo.company}</p>
                 <p className="text-xs font-mono" style={{ color: "#726c5a" }}>🏷️ {customerInfo.customerCode} · 📞 {customerInfo.phone}</p>
                 {contacts.length > 0 && (
                   <select value={contactName} onChange={(e) => setContactName(e.target.value)}
@@ -786,7 +786,7 @@ function RFIDPageInner() {
             {loading ? (
               <div className="flex items-center justify-center py-3">
                 <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} />
-                <span className="ml-2 text-sm" style={{ color: "#9f886c" }}>กำลังเริ่ม session...</span>
+                <span className="ml-2 text-sm" style={{ color: "#6f5f48" }}>กำลังเริ่ม session...</span>
               </div>
             ) : (
               <button onClick={handleStartSession} disabled={loading}
@@ -803,14 +803,14 @@ function RFIDPageInner() {
           <div className="flex items-center gap-4 p-4 rounded-xl"
             style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
             <div className="flex-1">
-              <p className="text-xs" style={{ color: "#9f886c" }}>Customer</p>
+              <p className="text-xs" style={{ color: "#6f5f48" }}>Customer</p>
               <p className="text-base font-semibold" style={{ color: "#4c4847" }}>
                 {customerInfo?.fullName ? `${customerInfo.fullName} (${session.customerCode})` : session.customerCode}
               </p>
               {session.contactName && <p className="text-xs" style={{ color: "#726c5a" }}>ผู้ติดต่อ: {session.contactName}</p>}
             </div>
             <div className="text-right">
-              <p className="text-xs" style={{ color: "#9f886c" }}>Total Scans</p>
+              <p className="text-xs" style={{ color: "#6f5f48" }}>Total Scans</p>
               <p className="text-base font-semibold" style={{ color: "#726c5a" }}>{session.scans.length}</p>
             </div>
           </div>
@@ -821,14 +821,14 @@ function RFIDPageInner() {
               <p className="text-sm font-medium" style={{ color: "#4c4847" }}>RFID Connection</p>
               <div className="flex items-center gap-2">
                 {ws.isConnected && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
-                <span className="text-xs" style={{ color: ws.isConnected ? "#10b981" : "#9f886c" }}>
+                <span className="text-xs" style={{ color: ws.isConnected ? "#10b981" : "#6f5f48" }}>
                   {ws.isConnected ? "เชื่อมต่อแล้ว" : ws.error || "ยังไม่ได้เชื่อมต่อ"}
                 </span>
               </div>
             </div>
             <div className="p-4 flex items-center gap-3 flex-wrap">
               {/* Reader occupancy — which physical readers are currently serving a customer */}
-              <div className="w-full text-xs flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "#9f886c" }}>
+              <div className="w-full text-xs flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "#6f5f48" }}>
                 <span className="font-medium" style={{ color: "#4c4847" }}>Readers in use:</span>
                 {Object.keys(busyReaders).length === 0 ? (
                   <span style={{ color: "#10b981" }}>none — all free</span>
@@ -865,7 +865,7 @@ function RFIDPageInner() {
                       </optgroup>
                     )}
                   </select>
-                  <div className="flex items-center gap-1.5 text-xs" style={{ color: "#9f886c" }}>
+                  <div className="flex items-center gap-1.5 text-xs" style={{ color: "#6f5f48" }}>
                     <span>Reader</span>
                     <input
                       value={deviceIps[wsDeviceId]}
@@ -882,13 +882,13 @@ function RFIDPageInner() {
                 </>
               ) : (
                 <>
-                  <span className="text-xs" style={{ color: "#9f886c" }}>Connected to</span>
+                  <span className="text-xs" style={{ color: "#6f5f48" }}>Connected to</span>
                   <span className="px-2.5 py-1 rounded-lg text-sm font-semibold inline-flex items-center gap-1.5"
                     style={{ background: "#e8f5e9", color: "#2e7d32" }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                     {readerIdFromUrl(deviceIps[wsDeviceId]) || "LAN (direct)"}
                   </span>
-                  <span className="text-[11px]" style={{ color: "#cdc3ad" }}>{deviceIps[wsDeviceId]}</span>
+                  <span className="text-[11px]" style={{ color: "#8f8168" }}>{deviceIps[wsDeviceId]}</span>
                   <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "#fff0f0", color: "#9f4a4a", border: "1px solid #f5c0c0" }}>
@@ -915,7 +915,7 @@ function RFIDPageInner() {
                   {simulating ? "กำลังจำลอง..." : `จำลองการสแกน (Fix Reader burst 3000)`}
                 </button>
               </div>
-              <span className="text-xs ml-auto" style={{ color: "#cdc3ad" }}>
+              <span className="text-xs ml-auto" style={{ color: "#8f8168" }}>
                 สินค้าในระบบ: {productMap.size} รายการ
               </span>
             </div>
@@ -934,17 +934,17 @@ function RFIDPageInner() {
               <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
                 <p className="text-sm font-medium" style={{ color: "#4c4847" }}>Device Log</p>
                 <button onClick={() => setDeviceLogs([])} className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "#f5f2ee", color: "#9f886c" }}>ล้าง</button>
+                  style={{ background: "#f5f2ee", color: "#6f5f48" }}>ล้าง</button>
               </div>
               <div className="max-h-52 overflow-y-auto">
                 {deviceLogs.length === 0 ? (
-                  <p className="text-center py-8 text-sm" style={{ color: "#cdc3ad" }}>ยังไม่มี log</p>
+                  <p className="text-center py-8 text-sm" style={{ color: "#8f8168" }}>ยังไม่มี log</p>
                 ) : deviceLogs.map((log, i) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-4 py-2.5"
                       style={{ borderBottom: i < deviceLogs.length - 1 ? "1px solid #f5f2ee" : "none" }}>
-                      <span className="text-xs flex-shrink-0" style={{ color: "#9f886c" }}>{log.time}</span>
-                      <span className="text-xs font-mono flex-shrink-0" style={{ color: "#cdc3ad" }}>{log.tag}</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: "#6f5f48" }}>{log.time}</span>
+                      <span className="text-xs font-mono flex-shrink-0" style={{ color: "#8f8168" }}>{log.tag}</span>
                       <span className={`text-xs flex-1 ${log.ok ? "" : "text-red-500"}`}
                         style={{ color: log.ok ? "#4c4847" : "#dc2626" }}>
                         {log.ok ? log.productName : "❌ ไม่พบสินค้า"}
@@ -967,16 +967,16 @@ function RFIDPageInner() {
                   ⚠️ {unknownTags.length} unrecognized tag{unknownTags.length > 1 ? "s" : ""} — not registered
                 </p>
                 <button onClick={() => setUnknownTags([])} className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "#fff", color: "#9f886c", border: "1px solid #f0c98a" }}>Dismiss all</button>
+                  style={{ background: "#fff", color: "#6f5f48", border: "1px solid #f0c98a" }}>Dismiss all</button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {unknownTags.map((epc) => (
                   <div key={epc} className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: "#fff", border: "1px solid #f0c98a" }}>
-                    <code className="text-xs" style={{ color: "#9f886c" }}>{epc}</code>
+                    <code className="text-xs" style={{ color: "#6f5f48" }}>{epc}</code>
                     <Link href={`/admin/products/new?rfid=${encodeURIComponent(epc)}`} target="_blank" rel="noopener noreferrer"
                       className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: "#726c5a", color: "#fff" }}>Register</Link>
                     <button onClick={() => setUnknownTags((t) => t.filter((x) => x !== epc))} title="Dismiss"
-                      className="text-xs" style={{ color: "#cdc3ad" }}>✕</button>
+                      className="text-xs" style={{ color: "#8f8168" }}>✕</button>
                   </div>
                 ))}
               </div>
@@ -988,7 +988,7 @@ function RFIDPageInner() {
             {/* Tabs */}
             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
               <p className="text-sm font-medium" style={{ color: "#4c4847" }}>
-                รายการสแกน <span style={{ color: "#9f886c" }}>({session.scans.length})</span>
+                รายการสแกน <span style={{ color: "#6f5f48" }}>({session.scans.length})</span>
               </p>
               {visibleScans.some((s) => s.prepareStatus === "NONE" && s.product.returnable !== false) && (
                 <button onClick={() => {
@@ -1006,7 +1006,7 @@ function RFIDPageInner() {
 
             {visibleScans.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-sm" style={{ color: "#cdc3ad" }}>No items scanned yet</p>
+                <p className="text-sm" style={{ color: "#8f8168" }}>No items scanned yet</p>
               </div>
             ) : (
               <div className="overflow-auto">
@@ -1015,7 +1015,7 @@ function RFIDPageInner() {
                     <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
                       {["Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs"
-                          style={{ color: "#9f886c" }}>{h}</th>
+                          style={{ color: "#6f5f48" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1039,7 +1039,7 @@ function RFIDPageInner() {
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#9f886c" }}>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#6f5f48" }}>
                             {scan.product.productCode || "-"}
                           </td>
                           <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#4c4847" }}>
@@ -1050,12 +1050,12 @@ function RFIDPageInner() {
                               <span className="flex items-center gap-1 text-xs font-mono" style={{ color: "#726c5a" }}>
                                 📍 {scan.product.location}
                               </span>
-                            ) : <span className="text-xs" style={{ color: "#cdc3ad" }}>-</span>}
+                            ) : <span className="text-xs" style={{ color: "#8f8168" }}>-</span>}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#9f886c" }}>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#6f5f48" }}>
                             {scan.product.materialType || "-"}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#9f886c" }}>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#6f5f48" }}>
                             {scan.product.category || "-"}
                           </td>
                           <td className="px-4 py-3">
@@ -1064,7 +1064,7 @@ function RFIDPageInner() {
                                 style={{ background: sCfg.bg, color: sCfg.color }}>
                                 {sCfg.label}
                               </span>
-                            ) : <span className="text-xs" style={{ color: "#cdc3ad" }}>-</span>}
+                            ) : <span className="text-xs" style={{ color: "#8f8168" }}>-</span>}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
@@ -1088,7 +1088,7 @@ function RFIDPageInner() {
                               </button>
                             )}
                             {scan.prepareStatus === "NONE" && scan.product.returnable === false && (
-                              <span className="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap" style={{ background: "#f0eee6", color: "#9f886c" }}>
+                              <span className="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap" style={{ background: "#f0eee6", color: "#6f5f48" }}>
                                 ให้ไปเลย
                               </span>
                             )}

@@ -50,7 +50,7 @@ export default function StickerPrintPage() {
       {/* Toolbar (hidden when printing) */}
       <div className="no-print" style={{ width: "100%", maxWidth: 560, padding: "20px 16px" }}>
         <h1 style={{ ...archer, fontWeight: 600, fontSize: 20, color: "#4c4847", marginBottom: 4 }}>Print sample sticker</h1>
-        <p style={{ ...archer, fontSize: 13, color: "#9f886c", marginBottom: 16 }}>
+        <p style={{ ...archer, fontSize: 13, color: "#6f5f48", marginBottom: 16 }}>
           Size 8 × 5 cm{d.code ? ` · ${d.code}` : ""}. Check the details, then Print. (For a die-cut print house, add 0.5 cm bleed.)
         </p>
         <label style={{ ...archer, display: "block", fontSize: 13, color: "#4c4847", marginBottom: 6 }}>ผู้เบิก / Requester</label>
@@ -65,7 +65,7 @@ export default function StickerPrintPage() {
           <button onClick={() => window.close()} style={{ ...archer, padding: "10px 18px", borderRadius: 12, background: "#f5f2ee", color: "#4c4847", border: "none", fontSize: 14, cursor: "pointer" }}>Close</button>
           <button onClick={() => window.print()} style={{ ...archer, flex: 1, padding: "10px 18px", borderRadius: 12, background: "#726c5a", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>🖨 Print</button>
         </div>
-        <p style={{ ...archer, fontSize: 12, color: "#cdc3ad", marginTop: 12 }}>
+        <p style={{ ...archer, fontSize: 12, color: "#8f8168", marginTop: 12 }}>
           Tip: in the print dialog set paper size to <strong>8×5 cm</strong> (or your label size) and margins to <strong>None</strong>.
         </p>
       </div>

@@ -133,23 +133,23 @@ export default function CustomersPage() {
       <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
         {/* Total */}
         <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "#f0eee6" }}>
-          <p className="text-xs mb-1" style={{ color: "#9f886c" }}>Total Members</p>
+          <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>Total Members</p>
           <p className="text-4xl font-semibold" style={{ color: "#4c4847" }}>{customers.length}</p>
         </div>
         {/* Type of Customers breakdown */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm mb-2" style={{ color: "#9f886c" }}>Type of Customers</p>
+          <p className="text-sm mb-2" style={{ color: "#6f5f48" }}>Type of Customers</p>
           {byTitle.length === 0 ? (
-            <p className="text-sm" style={{ color: "#cdc3ad" }}>No customers yet</p>
+            <p className="text-sm" style={{ color: "#8f8168" }}>No customers yet</p>
           ) : (
             <div className="space-y-1.5">
               {byTitle.map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-24 truncate" style={{ color: "#9f886c" }}>{customerTypeLabel(d.title)}</p>
+                  <p className="text-xs w-24 truncate" style={{ color: "#6f5f48" }}>{customerTypeLabel(d.title)}</p>
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
                     <div className="h-full rounded-full" style={{ background: customerTypeColor(d.title), width: `${customers.length > 0 ? (d.count / customers.length) * 100 : 0}%` }} />
                   </div>
-                  <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{d.count}</p>
+                  <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{d.count}</p>
                 </div>
               ))}
             </div>
@@ -193,7 +193,7 @@ export default function CustomersPage() {
               <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>
                 พบลูกค้า: {customers[0].fullName}
               </p>
-              <p className="text-xs" style={{ color: "#9f886c" }}>
+              <p className="text-xs" style={{ color: "#6f5f48" }}>
                 {customers[0].customerCode} · {customerTypeLabel(customers[0].title)} · {customers[0].company}
               </p>
             </div>
@@ -222,7 +222,7 @@ export default function CustomersPage() {
           <thead>
             <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
               {["Code","Name","Type","Company","Phone","Email","Channels","Registered",""].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "#9f886c" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wide" style={{ color: "#6f5f48" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -230,12 +230,12 @@ export default function CustomersPage() {
             {loading ? (
               <tr><td colSpan={9} className="text-center py-16"><div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: "#726c5a", borderTopColor: "transparent" }} /></td></tr>
             ) : customers.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "#cdc3ad" }}>No customers found</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "#8f8168" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (
               <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? "1px solid #f5f2ee" : "none" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#faf9f7")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                <td className="px-4 py-3"><code className="text-xs" style={{ color: "#9f886c" }}>{c.customerCode}</code></td>
+                <td className="px-4 py-3"><code className="text-xs" style={{ color: "#6f5f48" }}>{c.customerCode}</code></td>
                 <td className="px-4 py-3 font-medium" style={{ color: "#4c4847" }}>{c.fullName}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -251,10 +251,10 @@ export default function CustomersPage() {
                     {c.knowChannel.slice(0,2).map((ch) => (
                       <span key={ch} className="px-1.5 py-0.5 rounded text-xs" style={{ background: "#f5f2ee", color: "#726c5a" }}>{ch}</span>
                     ))}
-                    {c.knowChannel.length > 2 && <span className="text-xs" style={{ color: "#9f886c" }}>+{c.knowChannel.length - 2}</span>}
+                    {c.knowChannel.length > 2 && <span className="text-xs" style={{ color: "#6f5f48" }}>+{c.knowChannel.length - 2}</span>}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs" style={{ color: "#9f886c" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "#6f5f48" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Link href={`/admin/customers/${c.id}`}

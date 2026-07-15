@@ -37,7 +37,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
       <div
         onClick={() => setOpen(!open)}
         className="w-full px-4 py-3 rounded-xl text-sm cursor-pointer flex items-center justify-between"
-        style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: value ? "#4c4847" : "#9f886c" }}>
+        style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: value ? "#4c4847" : "#6f5f48" }}>
         <span>{value || placeholder}</span>
         <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }}>
@@ -62,7 +62,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
           )}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm" style={{ color: "#cdc3ad" }}>No options found</p>
+              <p className="px-4 py-3 text-sm" style={{ color: "#8f8168" }}>No options found</p>
             ) : (
               filtered.map((option) => (
                 <div

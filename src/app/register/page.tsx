@@ -130,7 +130,7 @@ export default function RegisterPage() {
 
             <Link href="/login"
               className="block text-center w-full py-3 rounded-xl text-sm"
-              style={{ background: "transparent", color: "#9f886c" }}>
+              style={{ background: "transparent", color: "#6f5f48" }}>
               ← Back to Login
             </Link>
           </div>

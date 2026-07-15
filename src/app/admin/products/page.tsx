@@ -220,7 +220,7 @@ export default function ProductsPage() {
             style={{ background: "transparent", color: "#4c4847" }}
           />
         </div>
-        <p className="text-sm whitespace-nowrap" style={{ color: "#9f886c" }}>Total: {total} products</p>
+        <p className="text-sm whitespace-nowrap" style={{ color: "#6f5f48" }}>Total: {total} products</p>
       </div>
 
       {/* Status filter: Active (default) / Archived (soft-deleted, kept for history) / All */}
@@ -244,27 +244,27 @@ export default function ProductsPage() {
           <thead>
             <tr style={{ borderBottom: "1px solid #e6e5d8", background: "#f5f2ee" }}>
               {["Brand", "Material Type", "Category", "Product Code", "Product Name", "Actions"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#9f886c" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#6f5f48" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#cdc3ad" }}>Loading...</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#8f8168" }}>Loading...</td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#cdc3ad" }}>No products found</td></tr>
+              <tr><td colSpan={6} className="text-center py-10" style={{ color: "#8f8168" }}>No products found</td></tr>
             ) : (
               products.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid #f5f2ee", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#4c4847" }}>{product.brand || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.materialType || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.category || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#9f886c" }}>{product.productCode || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.materialType || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.category || "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6f5f48" }}>{product.productCode || "-"}</td>
                   <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#4c4847" }}>
                     {product.name}
                     {!product.isActive && (
                       <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
-                        style={{ background: "#ece8df", color: "#9f886c" }}>Archived</span>
+                        style={{ background: "#ece8df", color: "#6f5f48" }}>Archived</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -297,11 +297,11 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid #e6e5d8" }}>
             <button onClick={() => setPage(page - 1)} disabled={page === 1}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === 1 ? "#cdc3ad" : "#726c5a" }}>Previous</button>
-            <p className="text-xs" style={{ color: "#9f886c" }}>Page {page} of {totalPages}</p>
+              style={{ background: "#f5f2ee", color: page === 1 ? "#8f8168" : "#726c5a" }}>Previous</button>
+            <p className="text-xs" style={{ color: "#6f5f48" }}>Page {page} of {totalPages}</p>
             <button onClick={() => setPage(page + 1)} disabled={page === totalPages}
               className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "#f5f2ee", color: page === totalPages ? "#cdc3ad" : "#726c5a" }}>Next</button>
+              style={{ background: "#f5f2ee", color: page === totalPages ? "#8f8168" : "#726c5a" }}>Next</button>
           </div>
         )}
       </div>
@@ -352,7 +352,7 @@ export default function ProductsPage() {
               {menuArchives ? (
                 <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                  style={{ color: "#9f886c" }}
+                  style={{ color: "#6f5f48" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f2ee")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -391,7 +391,7 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>Import Products</h2>
-                <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>Import product data (CSV) or bulk product images</p>
+                <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>Import product data (CSV) or bulk product images</p>
               </div>
               <button onClick={handleCloseImport}
                 className="w-8 h-8 flex items-center justify-center rounded-lg"
@@ -409,7 +409,7 @@ export default function ProductsPage() {
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                   style={{
                     background: importMode === m ? "#fff" : "transparent",
-                    color: importMode === m ? "#726c5a" : "#9f886c",
+                    color: importMode === m ? "#726c5a" : "#6f5f48",
                     boxShadow: importMode === m ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   }}>
                   {label}
@@ -426,7 +426,7 @@ export default function ProductsPage() {
                   style={{ background: "#f5f2ee" }}>
                   <div>
                     <p className="text-sm font-medium" style={{ color: "#4c4847" }}>ดาวน์โหลด Template</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#9f886c" }}>ใช้ template นี้เป็นแนวทางในการกรอกข้อมูล</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#6f5f48" }}>ใช้ template นี้เป็นแนวทางในการกรอกข้อมูล</p>
                   </div>
                   <button onClick={downloadTemplate}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium"
@@ -457,11 +457,11 @@ export default function ProductsPage() {
                     ].map(([col, desc]) => (
                       <div key={col} className="flex items-center gap-2">
                         <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}>{col}</code>
-                        <span className="text-xs" style={{ color: "#9f886c" }}>{desc}</span>
+                        <span className="text-xs" style={{ color: "#6f5f48" }}>{desc}</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs mt-2" style={{ color: "#cdc3ad" }}>
+                  <p className="text-xs mt-2" style={{ color: "#8f8168" }}>
                     * ถ้า rfidTag มีอยู่แล้วในระบบ จะทำการ <strong>update</strong> ข้อมูล ถ้าไม่มีจะ <strong>สร้างใหม่</strong>
                   </p>
                 </div>
@@ -485,7 +485,7 @@ export default function ProductsPage() {
                         <polyline points="14 2 14 8 20 8"/>
                       </svg>
                       <p className="text-sm font-medium" style={{ color: "#4c4847" }}>{importFile.name}</p>
-                      <p className="text-xs mt-1" style={{ color: "#9f886c" }}>คลิกเพื่อเปลี่ยนไฟล์</p>
+                      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>คลิกเพื่อเปลี่ยนไฟล์</p>
                     </div>
                   ) : (
                     <div>
@@ -493,8 +493,8 @@ export default function ProductsPage() {
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
-                      <p className="text-sm" style={{ color: "#9f886c" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
-                      <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>รองรับ .csv</p>
+                      <p className="text-sm" style={{ color: "#6f5f48" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
+                      <p className="text-xs mt-1" style={{ color: "#8f8168" }}>รองรับ .csv</p>
                     </div>
                   )}
                 </div>
@@ -510,7 +510,7 @@ export default function ProductsPage() {
                         <thead>
                           <tr style={{ background: "#f5f2ee", borderBottom: "1px solid #e6e5d8" }}>
                             {importHeaders.map((h) => (
-                              <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap" style={{ color: "#9f886c" }}>{h}</th>
+                              <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap" style={{ color: "#6f5f48" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -568,15 +568,15 @@ export default function ProductsPage() {
                 <div className="flex justify-center gap-6 my-5">
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "#10b981" }}>{importResult.created}</p>
-                    <p className="text-xs" style={{ color: "#9f886c" }}>สร้างใหม่</p>
+                    <p className="text-xs" style={{ color: "#6f5f48" }}>สร้างใหม่</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>{importResult.updated}</p>
-                    <p className="text-xs" style={{ color: "#9f886c" }}>อัปเดต</p>
+                    <p className="text-xs" style={{ color: "#6f5f48" }}>อัปเดต</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "#ef4444" }}>{importResult.failed}</p>
-                    <p className="text-xs" style={{ color: "#9f886c" }}>ผิดพลาด</p>
+                    <p className="text-xs" style={{ color: "#6f5f48" }}>ผิดพลาด</p>
                   </div>
                 </div>
                 {importResult.errors.length > 0 && (

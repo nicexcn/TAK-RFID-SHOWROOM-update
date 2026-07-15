@@ -150,7 +150,7 @@ export default function NotificationsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-          <p className="text-sm" style={{ color: "#cdc3ad" }}>ไม่มีการแจ้งเตือน</p>
+          <p className="text-sm" style={{ color: "#8f8168" }}>ไม่มีการแจ้งเตือน</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -191,14 +191,14 @@ export default function NotificationsPage() {
                         </div>
                         <p className="text-sm font-medium mb-1" style={{ color: "#4c4847" }}>
                           {n.product.name}
-                          {n.product.productCode && <span style={{ color: "#9f886c" }}> · {n.product.productCode}</span>}
+                          {n.product.productCode && <span style={{ color: "#6f5f48" }}> · {n.product.productCode}</span>}
                         </p>
                         {(n.product.brand || n.product.colour || n.product.size) && (
-                          <p className="text-xs mb-1" style={{ color: "#9f886c" }}>
+                          <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>
                             {[n.product.brand, n.product.colour, n.product.size].filter(Boolean).join(" · ")}
                           </p>
                         )}
-                        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "#9f886c" }}>
+                        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "#6f5f48" }}>
                           {n.product.location && <span>📍 {n.product.location}</span>}
                           {n.customer && (
                             <a href={`/admin/customers/${n.customer.id}`} target="_blank" rel="noopener noreferrer"

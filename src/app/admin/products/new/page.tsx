@@ -210,7 +210,7 @@ export default function NewProductPage() {
               <input type="checkbox" name="returnable" checked={form.returnable} onChange={handleChange} className="w-4 h-4 mt-0.5" />
               <span className="text-sm" style={{ color: "#4c4847" }}>
                 <strong>ต้องคืน</strong> (Must be returned) — มีแจ้งเตือนเตรียมของ + ติดตามการคืน<br />
-                <span style={{ color: "#9f886c" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
+                <span style={{ color: "#6f5f48" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
               </span>
             </label>
           </div>

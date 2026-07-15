@@ -41,7 +41,7 @@ interface Customer {
 
 const card = { background: "#fff", border: "1px solid #e6e5d8", borderRadius: 16 };
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  NONE: { label: "—", bg: "#f5f2ee", color: "#9f886c" },
+  NONE: { label: "—", bg: "#f5f2ee", color: "#6f5f48" },
   PREPARING: { label: "Preparing", bg: "#dbeafe", color: "#3b82f6" },
   COMPLETE: { label: "Complete", bg: "#d1fae5", color: "#10b981" },
 };
@@ -126,7 +126,7 @@ export default function CustomerDetailPage() {
     } catch { setContacts(prev); }
   }
 
-  if (loading) return <p style={{ color: "#9f886c" }}>Loading…</p>;
+  if (loading) return <p style={{ color: "#6f5f48" }}>Loading…</p>;
   if (error || !customer) return (
     <div>
       <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm mb-4" style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8" }}>← Back</button>
@@ -198,14 +198,14 @@ export default function CustomerDetailPage() {
                 ["Project", "project"],
               ] as [string, keyof EditForm][]).map(([label, key]) => (
                 <label key={key} className="block">
-                  <span className="text-xs" style={{ color: "#9f886c" }}>{label}</span>
+                  <span className="text-xs" style={{ color: "#6f5f48" }}>{label}</span>
                   <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                     className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }} />
                 </label>
               ))}
               {/* Occupation / customer type */}
               <label className="block">
-                <span className="text-xs" style={{ color: "#9f886c" }}>Occupation</span>
+                <span className="text-xs" style={{ color: "#6f5f48" }}>Occupation</span>
                 <select value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                   {CUSTOMER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -217,7 +217,7 @@ export default function CustomerDetailPage() {
               )}
               {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
               <label className="block">
-                <span className="text-xs" style={{ color: "#9f886c" }}>Sales (เซลล์ผู้ดูแล)</span>
+                <span className="text-xs" style={{ color: "#6f5f48" }}>Sales (เซลล์ผู้ดูแล)</span>
                 <select value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f5f2ee", border: "1px solid #e6e5d8", color: "#4c4847" }}>
                   <option value="">— none —</option>
@@ -235,7 +235,7 @@ export default function CustomerDetailPage() {
             <div className="space-y-2">
               {visibleFields.map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-3 text-sm">
-                  <span style={{ color: "#9f886c" }}>{label}</span>
+                  <span style={{ color: "#6f5f48" }}>{label}</span>
                   <span className="text-right font-medium" style={{ color: "#4c4847" }}>{value}</span>
                 </div>
               ))}
@@ -247,16 +247,16 @@ export default function CustomerDetailPage() {
         <div className="p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Contacts</h2>
-            <span className="text-xs" style={{ color: "#9f886c" }}>{contacts.length}</span>
+            <span className="text-xs" style={{ color: "#6f5f48" }}>{contacts.length}</span>
           </div>
           <div className="space-y-2 mb-3">
             {contacts.length === 0 ? (
-              <p className="text-sm" style={{ color: "#cdc3ad" }}>No extra contacts yet</p>
+              <p className="text-sm" style={{ color: "#8f8168" }}>No extra contacts yet</p>
             ) : contacts.map((c) => (
               <div key={c.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f5f2ee" }}>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm truncate" style={{ color: "#4c4847" }}>{c.name}</p>
-                  {c.phone && <p className="text-[11px]" style={{ color: "#9f886c" }}>{c.phone}</p>}
+                  {c.phone && <p className="text-[11px]" style={{ color: "#6f5f48" }}>{c.phone}</p>}
                 </div>
                 <button onClick={() => removeContact(c.id)} aria-label="Remove contact" className="text-base px-2 leading-none" style={{ color: "#9f4a4a" }}>×</button>
               </div>
@@ -276,10 +276,10 @@ export default function CustomerDetailPage() {
         <div className="lg:col-span-2 p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold" style={{ color: "#4c4847" }}>Scan history</h2>
-            <span className="text-xs" style={{ color: "#9f886c" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
+            <span className="text-xs" style={{ color: "#6f5f48" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
           </div>
           {uniqueProducts.size === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: "#cdc3ad" }}>No scan history yet</p>
+            <p className="text-sm py-6 text-center" style={{ color: "#8f8168" }}>No scan history yet</p>
           ) : (
             <div className="space-y-2">
               {[...uniqueProducts.values()].map((scan) => {
@@ -292,7 +292,7 @@ export default function CustomerDetailPage() {
                     ) : <div className="w-12 h-12 rounded-lg" style={{ background: "#e6e5d8" }} />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "#4c4847" }}>{scan.product.name}</p>
-                      <p className="text-xs truncate" style={{ color: "#9f886c" }}>
+                      <p className="text-xs truncate" style={{ color: "#6f5f48" }}>
                         {[scan.product.brand, scan.product.location, new Date(scan.scannedAt).toLocaleString("en-GB")].filter(Boolean).join(" · ")}
                       </p>
                     </div>

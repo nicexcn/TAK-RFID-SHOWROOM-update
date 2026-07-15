@@ -66,7 +66,7 @@ export default function ProductImagePicker({
         {uploading ? "Uploading..." : "Upload Images"}
         <input type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" disabled={uploading} />
       </label>
-      <p className="text-xs mt-1" style={{ color: "#9f886c" }}>
+      <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>
         Pick several at once — drag to reorder; the first image is the cover and they play as a slideshow on the TV.
       </p>
 
@@ -75,7 +75,7 @@ export default function ProductImagePicker({
       {/* Image grid */}
       {urls.length === 0 ? (
         <div className="mt-3 rounded-xl text-center py-10" style={{ border: "1px dashed #e6e5d8" }}>
-          <p className="text-sm" style={{ color: "#cdc3ad" }}>No images yet</p>
+          <p className="text-sm" style={{ color: "#8f8168" }}>No images yet</p>
         </div>
       ) : (
         <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-3">

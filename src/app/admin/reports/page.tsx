@@ -109,9 +109,9 @@ export default function ReportsPage() {
 
   const card = (label: string, value: number, hint?: string) => (
     <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-      <p className="text-xs mb-1" style={{ color: "#9f886c" }}>{label}</p>
+      <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>{label}</p>
       <p className="text-3xl font-semibold" style={{ color: "#4c4847" }}>{value}</p>
-      {hint && <p className="text-[11px] mt-0.5" style={{ color: "#cdc3ad" }}>{hint}</p>}
+      {hint && <p className="text-[11px] mt-0.5" style={{ color: "#8f8168" }}>{hint}</p>}
     </div>
   );
 
@@ -119,22 +119,22 @@ export default function ReportsPage() {
   const sectionHeader = (en: string, th: string) => (
     <div className="pt-2">
       <h2 className="text-lg font-semibold" style={{ color: "#4c4847" }}>{en}</h2>
-      <p className="text-xs" style={{ color: "#9f886c" }}>{th}</p>
+      <p className="text-xs" style={{ color: "#6f5f48" }}>{th}</p>
     </div>
   );
 
   const bars = (title: string, rows: { name: string; count: number }[], max: number, color: string) => (
     <div className="p-5 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
       <p className="text-sm font-semibold mb-3" style={{ color: "#4c4847" }}>{title}</p>
-      {rows.length === 0 ? <p className="text-sm" style={{ color: "#cdc3ad" }}>No data</p> : (
+      {rows.length === 0 ? <p className="text-sm" style={{ color: "#8f8168" }}>No data</p> : (
         <div className="space-y-1.5">
           {rows.slice(0, 8).map((b) => (
             <div key={b.name} className="flex items-center gap-2">
-              <p className="text-xs w-28 truncate" style={{ color: "#9f886c" }}>{b.name}</p>
+              <p className="text-xs w-28 truncate" style={{ color: "#6f5f48" }}>{b.name}</p>
               <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
                 <div className="h-full rounded-full" style={{ background: color, width: `${(b.count / max) * 100}%` }} />
               </div>
-              <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{b.count}</p>
+              <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{b.count}</p>
             </div>
           ))}
         </div>
@@ -175,7 +175,7 @@ export default function ReportsPage() {
           {PERIODS.map((p) => (
             <button key={p.key} onClick={() => setPeriod(p.key)}
               className="px-3.5 py-2 rounded-xl text-sm"
-              style={{ background: period === p.key ? "#726c5a" : "#fff", color: period === p.key ? "#fff" : "#9f886c", border: "1px solid #e6e5d8" }}>
+              style={{ background: period === p.key ? "#726c5a" : "#fff", color: period === p.key ? "#fff" : "#6f5f48", border: "1px solid #e6e5d8" }}>
               {p.label}
             </button>
           ))}
@@ -185,18 +185,18 @@ export default function ReportsPage() {
           <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setQuery(q)}
             placeholder="Search customer code / Project / Sale"
             className="outline-none text-sm w-full" style={{ background: "transparent", color: "#4c4847" }} />
-          {query && <button onClick={() => { setQ(""); setQuery(""); }} className="text-xs" style={{ color: "#9f886c" }}>✕</button>}
+          {query && <button onClick={() => { setQ(""); setQuery(""); }} className="text-xs" style={{ color: "#6f5f48" }}>✕</button>}
         </div>
         <button onClick={() => setQuery(q)} className="px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "#726c5a" }}>Search</button>
       </div>
 
       {loading ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#cdc3ad" }}>Loading…</p>
+        <p className="text-sm py-16 text-center" style={{ color: "#8f8168" }}>Loading…</p>
       ) : !data ? (
-        <p className="text-sm py-16 text-center" style={{ color: "#cdc3ad" }}>Failed to load report</p>
+        <p className="text-sm py-16 text-center" style={{ color: "#8f8168" }}>Failed to load report</p>
       ) : (
         <div className="space-y-6">
-          <p className="text-xs" style={{ color: "#9f886c" }}>
+          <p className="text-xs" style={{ color: "#6f5f48" }}>
             {new Date(data.period.from).toLocaleDateString("en-GB")} – {new Date(data.period.to).toLocaleDateString("en-GB")}
             {query && <> · search &quot;{query}&quot;</>}
           </p>
@@ -219,12 +219,12 @@ export default function ReportsPage() {
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div className="p-4 rounded-xl" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
-              <p className="text-xs mb-1" style={{ color: "#9f886c" }}>Satisfaction (avg / 5)</p>
+              <p className="text-xs mb-1" style={{ color: "#6f5f48" }}>Satisfaction (avg / 5)</p>
               <div className="flex gap-5">
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#cdc3ad" }}>overall</p></div>
-                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#cdc3ad" }}>service</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "#8f8168" }}>overall</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "#726c5a" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "#8f8168" }}>service</p></div>
               </div>
-              <p className="text-[11px] mt-0.5" style={{ color: "#cdc3ad" }}>{data.satisfaction.responses} responses</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "#8f8168" }}>{data.satisfaction.responses} responses</p>
             </div>
           </div>
 
@@ -269,15 +269,15 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
     <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
       <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #f0eee6" }}>
         <p className="text-sm font-semibold" style={{ color: "#4c4847" }}>{title}</p>
-        <span className="text-xs" style={{ color: "#9f886c" }}>{rows.length} items</span>
+        <span className="text-xs" style={{ color: "#6f5f48" }}>{rows.length} items</span>
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm py-10 text-center" style={{ color: "#cdc3ad" }}>No data in this period</p>
+        <p className="text-sm py-10 text-center" style={{ color: "#8f8168" }}>No data in this period</p>
       ) : (
         <div className="max-h-[60vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ color: "#9f886c" }}>
+              <tr style={{ color: "#6f5f48" }}>
                 <th className="text-left font-normal px-5 py-2 text-xs">Product</th>
                 <th className="text-right font-normal px-3 py-2 text-xs whitespace-nowrap">{mode === "scan" ? "Scans" : "Taken"}</th>
                 {mode === "scan" && <th className="text-right font-normal px-5 py-2 text-xs whitespace-nowrap">Taken</th>}
@@ -288,10 +288,10 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
                 <tr key={r.product.id} style={{ borderTop: "1px solid #f5f2ee" }}>
                   <td className="px-5 py-2.5">
                     <p style={{ color: "#4c4847" }} className="truncate">{r.product.name}</p>
-                    <p className="text-[11px] truncate" style={{ color: "#9f886c" }}>{[r.product.productCode, r.product.brand, r.product.category].filter(Boolean).join(" · ") || "—"}</p>
+                    <p className="text-[11px] truncate" style={{ color: "#6f5f48" }}>{[r.product.productCode, r.product.brand, r.product.category].filter(Boolean).join(" · ") || "—"}</p>
                   </td>
                   <td className="text-right px-3 py-2.5 tabular-nums" style={{ color: "#4c4847" }}>{mode === "scan" ? r.scanCount : r.takenQty}</td>
-                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "#cdc3ad" }}>{r.takenQty}</td>}
+                  {mode === "scan" && <td className="text-right px-5 py-2.5 tabular-nums" style={{ color: r.takenQty > 0 ? "#4a7c59" : "#8f8168" }}>{r.takenQty}</td>}
                 </tr>
               ))}
             </tbody>

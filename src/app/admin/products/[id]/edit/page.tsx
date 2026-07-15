@@ -110,7 +110,7 @@ export default function EditProductPage() {
 
   if (fetching) return (
     <div className="flex items-center justify-center h-64">
-      <p style={{ color: "#cdc3ad" }}>Loading...</p>
+      <p style={{ color: "#8f8168" }}>Loading...</p>
     </div>
   );
 
@@ -208,7 +208,7 @@ export default function EditProductPage() {
               <input type="checkbox" checked={form.returnable} onChange={(e) => setForm((p) => ({ ...p, returnable: e.target.checked }))} className="w-4 h-4 mt-0.5" />
               <span className="text-sm" style={{ color: "#4c4847" }}>
                 <strong>ต้องคืน</strong> (Must be returned) — มีแจ้งเตือนเตรียมของ + ติดตามการคืน<br />
-                <span style={{ color: "#9f886c" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
+                <span style={{ color: "#6f5f48" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
               </span>
             </label>
           </div>

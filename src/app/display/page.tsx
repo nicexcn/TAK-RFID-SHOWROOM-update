@@ -403,7 +403,7 @@ export default function DisplayPage() {
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#f5f2ee" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
           <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
-          <p style={{ color: "#9f886c", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
+          <p style={{ color: "#6f5f48", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
         </div>
       )}
 
@@ -414,7 +414,7 @@ export default function DisplayPage() {
           <img src={surveyQr} alt="Survey QR" width={104} height={104} />
           <div>
             <p style={{ color: "#4c4847", fontSize: 17, fontWeight: 600 }}>สแกนเพื่อให้คะแนน</p>
-            <p style={{ color: "#9f886c", fontSize: 13 }}>Rate your visit</p>
+            <p style={{ color: "#6f5f48", fontSize: 13 }}>Rate your visit</p>
           </div>
         </div>
       )}
@@ -479,7 +479,7 @@ export default function DisplayPage() {
       {/* status + config */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "#10b981" : "#9f4a4a" }} />
-        <span className="text-xs" style={{ color: currentImage ? "#fff" : "#9f886c" }}>
+        <span className="text-xs" style={{ color: currentImage ? "#fff" : "#6f5f48" }}>
           {displayName ? `${displayName} · ` : ""}{mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
         </span>
         <button onClick={() => setShowConfig((s) => !s)} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "#fff" }}>⚙</button>

@@ -219,19 +219,19 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
         <div className="flex justify-center gap-6 my-5">
           <div className="text-center">
             <p className="text-2xl font-bold" style={{ color: "#10b981" }}>{result.added}</p>
-            <p className="text-xs" style={{ color: "#9f886c" }}>images added</p>
+            <p className="text-xs" style={{ color: "#6f5f48" }}>images added</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>{result.products}</p>
-            <p className="text-xs" style={{ color: "#9f886c" }}>products</p>
+            <p className="text-xs" style={{ color: "#6f5f48" }}>products</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold" style={{ color: "#9f886c" }}>{result.unmatched}</p>
-            <p className="text-xs" style={{ color: "#9f886c" }}>unmatched</p>
+            <p className="text-2xl font-bold" style={{ color: "#6f5f48" }}>{result.unmatched}</p>
+            <p className="text-xs" style={{ color: "#6f5f48" }}>unmatched</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold" style={{ color: "#ef4444" }}>{result.failed}</p>
-            <p className="text-xs" style={{ color: "#9f886c" }}>failed</p>
+            <p className="text-xs" style={{ color: "#6f5f48" }}>failed</p>
           </div>
         </div>
         {result.errors.length > 0 && (
@@ -251,12 +251,12 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
     <div>
       <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid #e6e5d8" }}>
         <p className="text-xs font-medium mb-1" style={{ color: "#4c4847" }}>How to name your files</p>
-        <p className="text-xs" style={{ color: "#9f886c" }}>
+        <p className="text-xs" style={{ color: "#6f5f48" }}>
           Name each photo after the product&apos;s <strong>Product Code</strong> or <strong>RFID tag</strong>.
           Add <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}>-2</code>,
           <code className="px-1 rounded" style={{ background: "#f5f2ee", color: "#726c5a" }}> -3</code> for extra images.
         </p>
-        <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>
+        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>
           e.g. <code>PC-001.jpg</code> (cover), <code>PC-001-2.jpg</code>, <code>PC-001-3.jpg</code> · added after any existing images
         </p>
       </div>
@@ -274,8 +274,8 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
         <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="#cdc3ad" strokeWidth="2" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <p className="text-sm" style={{ color: "#9f886c" }}>Drag a folder of photos here, or click to select files</p>
-        <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>
+        <p className="text-sm" style={{ color: "#6f5f48" }}>Drag a folder of photos here, or click to select files</p>
+        <p className="text-xs mt-1" style={{ color: "#8f8168" }}>
           {loadingProducts ? "Loading products…" : `${products.length} products available to match`}
         </p>
       </div>
@@ -295,16 +295,16 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
             <table className="w-full text-xs min-w-max">
               <thead>
                 <tr style={{ background: "#f5f2ee", borderBottom: "1px solid #e6e5d8" }}>
-                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#9f886c" }}>Product</th>
-                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#9f886c" }}>Code / RFID</th>
-                  <th className="px-3 py-2 text-center font-medium" style={{ color: "#9f886c" }}>Images</th>
+                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#6f5f48" }}>Product</th>
+                  <th className="px-3 py-2 text-left font-medium" style={{ color: "#6f5f48" }}>Code / RFID</th>
+                  <th className="px-3 py-2 text-center font-medium" style={{ color: "#6f5f48" }}>Images</th>
                 </tr>
               </thead>
               <tbody>
                 {groups.map((g) => (
                   <tr key={g.product.id} style={{ borderBottom: "1px solid #f5f2ee" }}>
                     <td className="px-3 py-2 whitespace-nowrap" style={{ color: "#4c4847" }}>{g.product.name}</td>
-                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "#9f886c" }}>{g.product.productCode || g.product.rfidTag}</td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "#6f5f48" }}>{g.product.productCode || g.product.rfidTag}</td>
                     <td className="px-3 py-2 text-center" style={{ color: "#4c4847" }}>{g.files.length}</td>
                   </tr>
                 ))}
@@ -325,7 +325,7 @@ export default function BulkImageImport({ onDone }: { onDone?: () => void }) {
       {/* Progress */}
       {uploading && (
         <div className="mb-4">
-          <div className="flex justify-between text-xs mb-1" style={{ color: "#9f886c" }}>
+          <div className="flex justify-between text-xs mb-1" style={{ color: "#6f5f48" }}>
             <span>Uploading…</span><span>{progress.done} / {progress.total}</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: "#f5f2ee" }}>

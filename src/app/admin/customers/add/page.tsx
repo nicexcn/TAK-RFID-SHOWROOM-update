@@ -142,7 +142,7 @@ export default function AddCustomerPage() {
                     style={{
                       borderColor: title === t.value ? "#726c5a" : "#e6e5d8",
                       background: title === t.value ? "rgba(114,108,90,0.07)" : "transparent",
-                      color: title === t.value ? "#4c4847" : "#9f886c",
+                      color: title === t.value ? "#4c4847" : "#6f5f48",
                     }}>
                     <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                       style={{ borderColor: title === t.value ? "#726c5a" : "#cdc3ad" }}>
@@ -207,7 +207,7 @@ export default function AddCustomerPage() {
           <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>
             How do you know us? / คุณรู้จักเราจากที่ไหน
           </h2>
-          <p className="text-xs mb-4" style={{ color: "#9f886c" }}>เลือกได้มากกว่า 1 ช่องทาง</p>
+          <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>เลือกได้มากกว่า 1 ช่องทาง</p>
           <div className="grid grid-cols-2 gap-2">
             {KNOW_CHANNELS.map((ch) => {
               const active = channels.includes(ch);
@@ -217,7 +217,7 @@ export default function AddCustomerPage() {
                   style={{
                     borderColor: active ? "#726c5a" : "#e6e5d8",
                     background: active ? "rgba(114,108,90,0.07)" : "transparent",
-                    color: active ? "#4c4847" : "#9f886c",
+                    color: active ? "#4c4847" : "#6f5f48",
                   }}>
                   <div className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all"
                     style={{ borderColor: active ? "#726c5a" : "#cdc3ad", background: active ? "#726c5a" : "transparent" }}>
@@ -265,7 +265,7 @@ export default function AddCustomerPage() {
           <h2 className="text-base font-semibold mb-1" style={{ color: "#4c4847" }}>
             For staff use / สำหรับเจ้าหน้าที่
           </h2>
-          <p className="text-xs mb-4" style={{ color: "#9f886c" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
+          <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
           <div className="mb-4" ref={sourceRef}>
             <label className="block text-sm mb-1.5" style={{ color: "#4c4847" }}>Source / แหล่งที่มา <span style={{ color: "#dc2626" }}>*</span></label>
             <select value={source} onChange={(e) => setSource(e.target.value)}
@@ -273,7 +273,7 @@ export default function AddCustomerPage() {
               <option value="">— เลือก / select —</option>
               {CUSTOMER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>Sales invite = เซลล์ TWC เชิญ · Walk-in = เดินเข้ามาเอง (Sales = ทีมโชว์รูม)</p>
+            <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>Sales invite = เซลล์ TWC เชิญ · Walk-in = เดินเข้ามาเอง (Sales = ทีมโชว์รูม)</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -284,7 +284,7 @@ export default function AddCustomerPage() {
                 <option value="">— เลือกเซลล์ / select sales —</option>
                 {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
-              <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>
+              <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>
                 Walk-in จะตั้งชื่อเซลล์โชว์รูมผู้ดูแลให้อัตโนมัติ · จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
               </p>
             </div>
@@ -294,7 +294,7 @@ export default function AddCustomerPage() {
                 placeholder="เช่น Samsung Office"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-              <p className="text-[11px] mt-1.5" style={{ color: "#9f886c" }}>Used in Reports search &amp; printed on the sticker</p>
+              <p className="text-[11px] mt-1.5" style={{ color: "#6f5f48" }}>Used in Reports search &amp; printed on the sticker</p>
             </div>
           </div>
         </section>

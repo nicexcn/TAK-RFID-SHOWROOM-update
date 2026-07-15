@@ -38,7 +38,7 @@ function FilterButtons({ value, onChange }: { value: FilterPeriod | null; onChan
       {(["daily", "weekly", "monthly", "annually"] as FilterPeriod[]).map((o) => (
         <button key={o} onClick={() => onChange(o)}
           className="px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all"
-          style={{ background: value === o ? "#726c5a" : "#f5f2ee", color: value === o ? "#fff" : "#9f886c", border: "1px solid " + (value === o ? "#726c5a" : "#e6e5d8") }}>
+          style={{ background: value === o ? "#726c5a" : "#f5f2ee", color: value === o ? "#fff" : "#6f5f48", border: "1px solid " + (value === o ? "#726c5a" : "#e6e5d8") }}>
           {o.charAt(0).toUpperCase() + o.slice(1)}
         </button>
       ))}
@@ -54,7 +54,7 @@ function EmptyState({ label }: { label: string }) {
           <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
         </svg>
       </div>
-      <p className="text-xs text-center" style={{ color: "#cdc3ad" }}>{label}</p>
+      <p className="text-xs text-center" style={{ color: "#8f8168" }}>{label}</p>
     </div>
   );
 }
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
     if (id === "walkins") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#9f886c" }}>Walk-ins</p>
+          <p className="text-sm" style={{ color: "#6f5f48" }}>Walk-ins</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
         {loadingStats ? <Spinner /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
-            <p className="text-xs" style={{ color: "#cdc3ad" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
+            <p className="text-xs" style={{ color: "#8f8168" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
           </>
         )}
       </div>
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
     if (id === "customerTypes") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#9f886c" }}>Type of Customers</p>
+          <p className="text-sm" style={{ color: "#6f5f48" }}>Type of Customers</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
@@ -371,15 +371,15 @@ export default function AdminDashboard() {
         {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "#4c4847" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
-            <p className="text-xs mb-3" style={{ color: "#cdc3ad" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
+            <p className="text-xs mb-3" style={{ color: "#8f8168" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
             <div className="space-y-1">
               {stats!.customersByTitle.slice(0, 4).map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
-                  <p className="text-xs w-24 truncate" style={{ color: "#9f886c" }}>{customerTypeLabel(d.title)}</p>
+                  <p className="text-xs w-24 truncate" style={{ color: "#6f5f48" }}>{customerTypeLabel(d.title)}</p>
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: "#f5f2ee" }}>
                     <div className="h-full rounded-full" style={{ background: color.primary, width: `${stats!.totalCustomers > 0 ? (d.count / stats!.totalCustomers) * 100 : 0}%` }} />
                   </div>
-                  <p className="text-xs w-6 text-right" style={{ color: "#9f886c" }}>{d.count}</p>
+                  <p className="text-xs w-6 text-right" style={{ color: "#6f5f48" }}>{d.count}</p>
                 </div>
               ))}
             </div>
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
     if (id === "newVsTotal") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "#9f886c" }}>New vs Returning</p>
+          <p className="text-sm" style={{ color: "#6f5f48" }}>New vs Returning</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5f2ee" }}>
               <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
@@ -419,7 +419,7 @@ export default function AdminDashboard() {
               {pieData.map((d) => (
                 <div key={d.name} className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                  <span className="text-xs" style={{ color: "#9f886c" }}>{d.name} ({d.value})</span>
+                  <span className="text-xs" style={{ color: "#6f5f48" }}>{d.name} ({d.value})</span>
                 </div>
               ))}
             </div>
@@ -445,7 +445,7 @@ export default function AdminDashboard() {
           </div>
           <button onClick={() => copyChartData("sessions", compData.map((d) => `${d.month}: ${d.count}`).join("\n"))}
             className="px-2 py-1 rounded-lg text-xs"
-            style={{ background: "#f5f2ee", color: copiedChart === "sessions" ? "#10b981" : "#9f886c" }}>
+            style={{ background: "#f5f2ee", color: copiedChart === "sessions" ? "#10b981" : "#6f5f48" }}>
             {copiedChart === "sessions" ? "✓ Copied" : "Copy"}
           </button>
         </div>
@@ -480,7 +480,7 @@ export default function AdminDashboard() {
           </div>
           <button onClick={() => copyChartData("category", (rightChartData[rightFilter] ?? []).map((d) => `${d.name}: ${d.value}`).join("\n"))}
             className="px-2 py-1 rounded-lg text-xs"
-            style={{ background: "#f5f2ee", color: copiedChart === "category" ? "#10b981" : "#9f886c" }}>
+            style={{ background: "#f5f2ee", color: copiedChart === "category" ? "#10b981" : "#6f5f48" }}>
             {copiedChart === "category" ? "✓ Copied" : "Copy"}
           </button>
         </div>
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
           {[{ key: "category", label: "Category" }, { key: "material", label: "Material" }, { key: "brand", label: "Brand" }].map((opt) => (
             <button key={opt.key} onClick={() => setRightFilter(opt.key as typeof rightFilter)}
               className="px-2 py-1 rounded-lg text-xs font-medium"
-              style={{ background: rightFilter === opt.key ? "#726c5a" : "#f5f2ee", color: rightFilter === opt.key ? "#fff" : "#9f886c", border: "1px solid " + (rightFilter === opt.key ? "#726c5a" : "#e6e5d8") }}>
+              style={{ background: rightFilter === opt.key ? "#726c5a" : "#f5f2ee", color: rightFilter === opt.key ? "#fff" : "#6f5f48", border: "1px solid " + (rightFilter === opt.key ? "#726c5a" : "#e6e5d8") }}>
               {opt.label}
             </button>
           ))}
@@ -545,7 +545,7 @@ export default function AdminDashboard() {
               <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 p-5"
                 style={{ background: "#fff", border: "1px solid #e6e5d8" }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: "#4c4847" }}>Export CSV</p>
-                <p className="text-xs mb-4" style={{ color: "#9f886c" }}>
+                <p className="text-xs mb-4" style={{ color: "#6f5f48" }}>
                   Range: {dateRange.from} → {dateRange.to}
                 </p>
                 <button onClick={handleExportSummary} disabled={!stats}
@@ -559,7 +559,7 @@ export default function AdminDashboard() {
                     className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4 disabled:cursor-wait"
                     style={{ background: "#f5f2ee", color: "#4c4847", border: "1px solid #e6e5d8", opacity: exportingCustomers ? 0.6 : 1 }}>
                     {exportingCustomers ? "⏳ Exporting…" : "👤 Customers (raw)"}
-                    <span className="block text-[11px] font-normal" style={{ color: "#9f886c" }}>Customers registered in this range</span>
+                    <span className="block text-[11px] font-normal" style={{ color: "#6f5f48" }}>Customers registered in this range</span>
                   </button>
                 )}
               </div>
@@ -580,21 +580,21 @@ export default function AdminDashboard() {
 
       {/* Filter row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <p className="text-xs font-medium" style={{ color: "#9f886c" }}>
+        <p className="text-xs font-medium" style={{ color: "#6f5f48" }}>
           Showing stats for: <span style={{ color: "#726c5a" }}>{dateRange.from} → {dateRange.to}</span>
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { userPickedRange.current = true; setRangeMode("preset"); setStatFilter(v); }} />
           <button onClick={() => { userPickedRange.current = true; setRangeMode("custom"); }}
             className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
-            style={{ background: rangeMode === "custom" ? "#726c5a" : "#f5f2ee", color: rangeMode === "custom" ? "#fff" : "#9f886c", border: "1px solid " + (rangeMode === "custom" ? "#726c5a" : "#e6e5d8") }}>
+            style={{ background: rangeMode === "custom" ? "#726c5a" : "#f5f2ee", color: rangeMode === "custom" ? "#fff" : "#6f5f48", border: "1px solid " + (rangeMode === "custom" ? "#726c5a" : "#e6e5d8") }}>
             Custom
           </button>
           {rangeMode === "custom" && (
             <div className="flex items-center gap-1">
               <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => { userPickedRange.current = true; setCustomFrom(e.target.value); }}
                 className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
-              <span className="text-xs" style={{ color: "#9f886c" }}>–</span>
+              <span className="text-xs" style={{ color: "#6f5f48" }}>–</span>
               <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => { userPickedRange.current = true; setCustomTo(e.target.value); }}
                 className="px-2 py-1 rounded-lg outline-none text-xs" style={{ background: "#fff", border: "1px solid #e6e5d8", color: "#4c4847" }} />
             </div>
@@ -603,7 +603,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Stats Cards (draggable) ── */}
-      <p className="text-xs mb-2" style={{ color: "#cdc3ad" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
+      <p className="text-xs mb-2" style={{ color: "#8f8168" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {cardOrder.filter(isWidgetVisible).map((id) => (
           <DraggableCard key={id} id={id} dragOver={dragOver}
@@ -632,7 +632,7 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <p className="text-sm font-medium" style={{ color: "#4c4847" }}>{action.label}</p>
-              <p className="text-xs mt-1" style={{ color: "#9f886c" }}>{action.sub}</p>
+              <p className="text-xs mt-1" style={{ color: "#6f5f48" }}>{action.sub}</p>
             </Link>
           ))}
         </div>

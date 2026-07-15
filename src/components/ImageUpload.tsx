@@ -53,10 +53,10 @@ export default function ImageUpload({ value, onChange }: Props) {
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          <p className="text-sm" style={{ color: "#9f886c" }}>
+          <p className="text-sm" style={{ color: "#6f5f48" }}>
             {uploading ? "Uploading..." : "Click to upload image"}
           </p>
-          <p className="text-xs mt-1" style={{ color: "#cdc3ad" }}>PNG, JPG, WEBP</p>
+          <p className="text-xs mt-1" style={{ color: "#8f8168" }}>PNG, JPG, WEBP</p>
           <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
         </label>
       )}
