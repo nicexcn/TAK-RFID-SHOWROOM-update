@@ -683,14 +683,14 @@ function RFIDPageInner() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header — wraps on tablet so the action buttons don't overflow beside the title */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Surface Scan</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Surface Scan" }]} />
         </div>
         {session && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {sendSuccess && <p className="text-xs" style={{ color: "var(--color-success)" }}>✓ Sent to display</p>}
             <button onClick={() => setShowLogs(!showLogs)}
               className="px-4 py-2 rounded-xl text-sm flex items-center gap-2"
@@ -865,13 +865,13 @@ function RFIDPageInner() {
                       </optgroup>
                     )}
                   </select>
-                  <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <div className="flex items-center gap-1.5 text-xs w-full sm:w-auto" style={{ color: "var(--color-text-muted)" }}>
                     <span>Reader</span>
                     <input
                       value={deviceIps[wsDeviceId]}
                       onChange={(e) => setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value }))}
                       placeholder="Pick a reader ↑ or type: 192.168.1.104 / wss://…"
-                      className="px-2 py-1.5 rounded-lg outline-none w-72"
+                      className="px-2 py-1.5 rounded-lg outline-none w-full sm:w-72 max-w-full"
                       style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                   </div>
                   <button onClick={ws.connect} disabled={!deviceIps[wsDeviceId]}
@@ -1009,8 +1009,8 @@ function RFIDPageInner() {
                 <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No items scanned yet</p>
               </div>
             ) : (
-              <div className="overflow-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-max text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
                       {["Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (

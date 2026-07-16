@@ -102,6 +102,20 @@ input[type="password"]::-ms-clear {
   display: none !important;
 }
 
+/* Keyboard-focus ring. Most form fields use Tailwind `outline-none` (a transparent
+   outline) with nothing to replace it, so keyboard users lost all focus visibility.
+   These element+pseudo selectors are unlayered, so they beat the layered `.outline-none`
+   utility without !important; `:focus-visible` keeps mouse clicks ringless. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* TV slideshow crossfade — runs on every (re)mount of the incoming layer, so it
    fades even for cached images; the other layer stays opaque underneath. */
 @keyframes takImgFade {
