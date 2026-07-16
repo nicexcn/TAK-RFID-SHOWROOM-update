@@ -128,6 +128,14 @@ html.keyboard-nav textarea:focus {
   outline-offset: 2px;
 }
 
+/* Kill the browser's DEFAULT focus outline for POINTER focus (mouse/touch/drag).
+   Clicking or dragging a dashboard chart focuses Recharts' tabindex SVG surface and
+   Chrome draws a black `outline: auto 5px` ring. `:focus:not(:focus-visible)` matches
+   only pointer focus, so keyboard focus still shows a ring (via the rules above / UA). */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* TV slideshow crossfade — runs on every (re)mount of the incoming layer, so it
    fades even for cached images; the other layer stays opaque underneath. */
 @keyframes takImgFade {
