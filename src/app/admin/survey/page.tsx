@@ -1,5 +1,6 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
+import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 import { useState, useEffect } from "react";
 
@@ -22,7 +23,20 @@ export default function SurveyResultsPage() {
       .catch(() => setState("error"));
   }, []);
 
-  if (state === "loading") return <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>;
+  if (state === "loading") return (
+    <div>
+      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
+        <div>
+          <Skeleton className="h-7 mb-2" style={{ width: "12rem" }} />
+          <Skeleton className="h-3" style={{ width: "7rem" }} />
+        </div>
+        <Skeleton className="h-9" style={{ width: "9rem" }} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} lines={5} />)}
+      </div>
+    </div>
+  );
   if (state === "forbidden") return (
     <div>
       <h1 className="text-2xl font-semibold mb-2" style={{ color: "var(--color-text)" }}>Survey Results</h1>
