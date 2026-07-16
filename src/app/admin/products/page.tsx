@@ -19,6 +19,7 @@ interface Product {
   category: string | null;
   productCode: string | null;
   name: string;
+  imageUrl: string | null;
   isActive: boolean;
   _count?: { scans: number };
 }
@@ -202,6 +203,19 @@ export default function ProductsPage() {
   // Column defs (same cell JSX as before, relocated). accessor `id` defaults to the field
   // name → matches the server's sort allowlist; the Actions column is display-only (no sort).
   const columns = useMemo(() => [
+    columnHelper.display({ id: "image", header: "Image", cell: ({ row }) => {
+      const p = row.original;
+      return p.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={p.imageUrl} alt={p.name} className="w-12 h-10 object-cover rounded-lg" style={{ border: "1px solid var(--color-border)" }} />
+      ) : (
+        <div className="w-12 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+          <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="1.5" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
+          </svg>
+        </div>
+      );
+    } }),
     columnHelper.accessor("brand", { header: "Brand", cell: (i) => <span style={{ color: "var(--color-text)" }}>{i.getValue() || "-"}</span> }),
     columnHelper.accessor("materialType", { header: "Material Type", cell: (i) => <span style={{ color: "var(--color-text-muted)" }}>{i.getValue() || "-"}</span> }),
     columnHelper.accessor("category", { header: "Category", cell: (i) => <span style={{ color: "var(--color-text-muted)" }}>{i.getValue() || "-"}</span> }),
