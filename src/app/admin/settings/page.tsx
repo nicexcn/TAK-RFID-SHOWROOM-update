@@ -125,6 +125,7 @@ export default function SettingsPage() {
   const [slideDuration, setSlideDuration] = useState(5);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
+  const [relaySubscriberKey, setRelaySubscriberKey] = useState(""); // relay subscriber key (paired with relayUrl)
   const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
   const [displays, setDisplays] = useState<SavedDisplay[]>([]); // central TV screen (zone) registry
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
@@ -152,6 +153,7 @@ export default function SettingsPage() {
       if (d.slideDuration !== undefined) setSlideDuration(d.slideDuration);
       if (d.sessionTimeout !== undefined) setSessionTimeout(d.sessionTimeout);
       if (d.relayUrl !== undefined) setRelayUrl(d.relayUrl);
+      if (d.relaySubscriberKey !== undefined) setRelaySubscriberKey(d.relaySubscriberKey);
       if (d.idleVideoUrl !== undefined) setIdleVideoUrl(d.idleVideoUrl);
       if (d.idleVideoFit !== undefined) setIdleVideoFit(d.idleVideoFit);
       if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
@@ -778,6 +780,13 @@ export default function SettingsPage() {
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                   <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
                 </div>
+                <div className="mt-4 max-w-md">
+                  <label htmlFor="relay-subkey" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Relay Subscriber Key</label>
+                  <input id="relay-subkey" type="text" value={relaySubscriberKey} onChange={(e) => setRelaySubscriberKey(e.target.value)}
+                    placeholder="subscriberKey from the relay config (needed for relay readers)"
+                    className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Lets the Scan &amp; Display pages subscribe to the relay. Must match the relay&apos;s subscriberKey or reader connections close (1008). Read-only — receives scans, cannot inject.</p>
+                </div>
 
                 {/* Central reader registry — one source of truth, shown as a dropdown on Scan & Display */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
@@ -925,7 +934,7 @@ export default function SettingsPage() {
                 </div>
 
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "var(--color-success)" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
+                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                   Save
                 </button>

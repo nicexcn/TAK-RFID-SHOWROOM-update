@@ -219,6 +219,9 @@ model AppSettings {
   // Option E cloud relay base, e.g. "wss://relay.fly.dev". Set once; readers then
   // just need a room id (deviceId). Empty = use direct LAN ws:// URLs.
   relayUrl        String   @default("")
+  // Relay subscriber key — lets the browser (scan/display pages) authenticate as a
+  // relay subscriber. Read-only (receive scans, cannot inject); paired with relayUrl.
+  relaySubscriberKey String @default("")
   // Central reader registry (one source of truth for the whole app). Each entry is
   // { id, name, device, url }: `device` is the relay tag (?device=<device> against
   // relayUrl); `url` is an optional explicit override (LAN IP / full ws). The scan +

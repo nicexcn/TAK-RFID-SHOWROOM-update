@@ -31,14 +31,19 @@ export function normalizeReaders(input: unknown): SavedReader[] {
   return out;
 }
 
-// Resolve a reader to a concrete WebSocket subscriber URL, given the relay base.
-//  - explicit url  -> normalized and used as-is (LAN / direct / a different relay)
-//  - device tag    -> `${relayBase}/?device=<device>`
-//  - neither       -> `${relayBase}/` (all readers) if a base exists, else ""
-export function readerUrl(r: { device?: string; url?: string }, relayBase: string): string {
+// Resolve a reader to a concrete WebSocket subscriber URL, given the relay base and the
+// relay's subscriber key (so the browser passes the relay's subscriber-auth — without it
+// the relay upgrades then closes the socket with 1008).
+//  - explicit url  -> normalized and used as-is (LAN / direct reader — no relay auth)
+//  - device tag    -> `${relayBase}/?role=subscriber&key=<key>&device=<device>`
+//  - neither       -> `${relayBase}/?role=subscriber&key=<key>` (all readers)
+export function readerUrl(r: { device?: string; url?: string }, relayBase: string, subscriberKey = ""): string {
   const url = (r.url || "").trim();
-  if (url) return normalizeWsUrl(url);
+  if (url) return normalizeWsUrl(url); // direct reader — no relay involved, no auth
   const base = (relayBase || "").replace(/\/+$/, "");
   if (!base) return "";
-  return r.device ? `${base}/?device=${encodeURIComponent(r.device.trim())}` : `${base}/`;
+  const params = new URLSearchParams({ role: "subscriber" });
+  if (subscriberKey) params.set("key", subscriberKey);
+  if (r.device) params.set("device", r.device.trim());
+  return `${base}/?${params.toString()}`;
 }

@@ -12,7 +12,7 @@ export async function GET() {
       where: { id: "singleton" },
       select: {
         slideDuration: true, scheduleEnabled: true,
-        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true,
+        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, relaySubscriberKey: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true,
       },
     });
     return NextResponse.json({
@@ -22,6 +22,7 @@ export async function GET() {
       scheduleOff: s?.scheduleOff ?? "18:00",
       scheduleDays: s?.scheduleDays ?? [],
       relayUrl: s?.relayUrl ?? "",
+      relaySubscriberKey: s?.relaySubscriberKey ?? "",
       readers: normalizeReaders(s?.readers),
       displays: normalizeDisplays(s?.displays),
       idleVideoUrl: s?.idleVideoUrl ?? "",

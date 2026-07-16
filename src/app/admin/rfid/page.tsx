@@ -118,6 +118,7 @@ function RFIDPageInner() {
   const [deviceIps, setDeviceIps] = useState<Record<number, string>>({ 1: "", 2: "", 3: "", 4: "" });
   const [wsDeviceId, setWsDeviceId] = useState<DeviceId>(1);
   const [relayBase, setRelayBase] = useState(""); // relay base for the reader quick-pick
+  const [relaySubKey, setRelaySubKey] = useState(""); // relay subscriber key (from config) so the WS passes relay auth
   const [relayDevices, setRelayDevices] = useState<string[]>([]); // readers currently pushing to the relay
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [simulating, setSimulating] = useState(false);
@@ -156,6 +157,7 @@ function RFIDPageInner() {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       setSavedReaders(normalizeReaders(c?.readers));
       setDisplays(normalizeDisplays(c?.displays));
+      setRelaySubKey(String(c?.relaySubscriberKey || ""));
       const cfg = String(c?.relayUrl || "").replace(/\/+$/, "");
       if (typeof window === "undefined") { setRelayBase(cfg); return; }
       setRelayBase(window.location.protocol === "https:" ? cfg : `ws://${window.location.hostname}:8081`);
@@ -807,7 +809,7 @@ function RFIDPageInner() {
                       <optgroup label="Saved readers">
                         {savedReaders.map((r) => {
                           const b = r.device ? busyReaders[r.device] : undefined;
-                          const url = readerUrl(r, relayBase);
+                          const url = readerUrl(r, relayBase, relaySubKey);
                           return <option key={r.id} value={url} disabled={!url}>{b ? `🔴 ${r.name || r.device} — in use (${b.customerName})` : (r.name || r.device || r.url)}</option>;
                         })}
                       </optgroup>
@@ -816,7 +818,7 @@ function RFIDPageInner() {
                       <optgroup label="Connected to relay (live)">
                         {relayDevices.map((d) => {
                           const b = busyReaders[d];
-                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase)}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
+                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase, relaySubKey)}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
                         })}
                       </optgroup>
                     )}

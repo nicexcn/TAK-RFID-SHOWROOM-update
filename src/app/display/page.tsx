@@ -42,6 +42,7 @@ export default function DisplayPage() {
   const [productMap, setProductMap] = useState<Map<string, DProduct>>(new Map());
   const [imageMs, setImageMs] = useState(IMAGE_MS); // per-image slide duration (from Settings)
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base (from Settings)
+  const [relaySubKey, setRelaySubKey] = useState(""); // relay subscriber key so the TV's WS passes relay auth
   const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
@@ -96,6 +97,7 @@ export default function DisplayPage() {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
+      setRelaySubKey(String(c?.relaySubscriberKey || ""));
       const readers = normalizeReaders(c?.readers);
       setSavedReaders(readers);
       const dl = normalizeDisplays(c?.displays);
@@ -115,7 +117,7 @@ export default function DisplayPage() {
       // Auto-connect the bound reader (unless a manual ⚙ URL is already saved for this screen).
       // Guard: a display pointing at a since-deleted reader connects to nothing, not all readers.
       const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
-      const bound = boundReader ? readerUrl(boundReader, String(c?.relayUrl || "")) : "";
+      const bound = boundReader ? readerUrl(boundReader, String(c?.relayUrl || ""), String(c?.relaySubscriberKey || "")) : "";
       const ip = stored || bound;
       setReaderIp(ip); setIpDraft(ip);
     }).catch(() => { setReaderIp(stored); setIpDraft(stored); });
@@ -341,7 +343,7 @@ export default function DisplayPage() {
     if (!relayUrl) return;
     const base = relayUrl.replace(/\/+$/, "");
     const dev = cloudRoom.trim();
-    const url = dev ? `${base}/?device=${encodeURIComponent(dev)}` : `${base}/`;
+    const url = readerUrl({ device: dev }, base, relaySubKey);
     setIpDraft(url);
     window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
@@ -506,7 +508,7 @@ export default function DisplayPage() {
                 className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "var(--color-surface)" }}>
                 <option value="">Select reader…</option>
                 {savedReaders.map((r) => {
-                  const url = readerUrl(r, relayUrl);
+                  const url = readerUrl(r, relayUrl, relaySubKey);
                   return <option key={r.id} value={url} disabled={!url}>{r.name || r.device || r.url}</option>;
                 })}
               </select>

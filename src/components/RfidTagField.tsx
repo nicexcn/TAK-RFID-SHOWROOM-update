@@ -22,6 +22,7 @@ export default function RfidTagField({
   const [scanning, setScanning] = useState(false);
   const [scanMsg, setScanMsg] = useState("");
   const [relayBase, setRelayBase] = useState("");
+  const [relaySubKey, setRelaySubKey] = useState("");
   const [scanReaders, setScanReaders] = useState<SavedReader[]>([]);
   const [scanReaderId, setScanReaderId] = useState("");
   const capturedRef = useRef(false);
@@ -29,6 +30,7 @@ export default function RfidTagField({
   useEffect(() => {
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
       const cfg = String(c?.relayUrl || "").replace(/\/+$/, "");
+      setRelaySubKey(String(c?.relaySubscriberKey || ""));
       // HTTPS uses the configured (wss) relay; local HTTP uses the same host on :8081.
       setRelayBase(typeof window !== "undefined" && window.location.protocol === "https:" ? cfg : `ws://${window.location.hostname}:8081`);
       const rs = normalizeReaders(c?.readers);
@@ -39,7 +41,7 @@ export default function RfidTagField({
 
   // Listen to the chosen saved reader (device-filtered), or all readers via the relay.
   const scanReader = scanReaders.find((r) => r.id === scanReaderId);
-  const scanUrl = scanReader ? readerUrl(scanReader, relayBase) : (relayBase ? `${relayBase}/` : "");
+  const scanUrl = readerUrl(scanReader ?? {}, relayBase, relaySubKey);
 
   const onScannedTag = useCallback((epc: string) => {
     if (capturedRef.current || !epc) return; // capture only the first read per Scan press
