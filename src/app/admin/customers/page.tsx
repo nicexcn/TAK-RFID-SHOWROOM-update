@@ -215,11 +215,11 @@ export default function CustomersPage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm mb-2" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
-          {/* Fixed height + internal scroll so the breakdown never changes the card's
-              height (and never shifts the table below) regardless of how many customer
-              types have data — 15 types are possible, so a min-height can't cover them all.
-              The skeleton fills the same box, so load → data is shift-free. */}
-          <div className="h-[6.5rem] overflow-y-auto pr-1">
+          {/* min-height reserves ~5 rows so the common case doesn't shift the table when
+              the bars arrive, while still GROWING to show every active type (up to 15) —
+              seeing all types at a glance matters more than chasing an already-"good" CLS
+              to zero, and a fixed height would hide the overflow behind a scroll. */}
+          <div className="min-h-[6.5rem]">
           {loading && byTitleSorted.length === 0 ? (
             <div className="space-y-1.5">
               {Array.from({ length: 5 }).map((_, i) => (
