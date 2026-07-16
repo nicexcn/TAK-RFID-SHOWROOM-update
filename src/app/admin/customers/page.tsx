@@ -205,16 +205,24 @@ export default function CustomersPage() {
       <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Total Members</p>
-          <p className="text-4xl font-semibold" style={{ color: "var(--color-text)" }}>{total}</p>
+          {loading && byTitleSorted.length === 0 ? (
+            // Don't flash a misleading "0" while the count loads — skeleton the number
+            // at the same height (text-4xl line box) so the card doesn't shift either.
+            <Skeleton className="h-10" style={{ width: "3.5rem" }} />
+          ) : (
+            <p className="text-4xl font-semibold" style={{ color: "var(--color-text)" }}>{total}</p>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm mb-2" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
+          {/* Reserve ~5 rows of height so the breakdown (and the table below it) doesn't
+              shift when the bars arrive — covers the common case; only an unusually large
+              set of active types (>5) grows past it. */}
+          <div className="min-h-[6.5rem]">
           {loading && byTitleSorted.length === 0 ? (
-            // Reserve the breakdown's height on first load so the card doesn't grow when
-            // the bars arrive and push the table down (was the page's main layout shift).
             <div className="space-y-1.5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex items-center gap-2 h-4">
                   <Skeleton className="h-3" style={{ width: "6rem" }} />
                   <Skeleton className="flex-1 h-1.5 rounded-full" />
                   <Skeleton className="h-3" style={{ width: "1.5rem" }} />
@@ -236,6 +244,7 @@ export default function CustomersPage() {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 
