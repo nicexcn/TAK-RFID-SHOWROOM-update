@@ -31,7 +31,7 @@ export const SURVEY_ITEMS: SurveyItem[] = [
   ] },
   { type: "section", title: "Our Service Experience" },
   { key: "service", type: "scale", title: "How satisfied are you with our team’s service? / คุณพึงพอใจกับการให้บริการของทีม Nimitrlab มากน้อยเพียงใด (1 = น้อยที่สุด, 5 = มากที่สุด)", scale: 5 },
-  { key: "team_able", type: "checkbox", title: "Our team was able to… / ทีมงานของเราสามารถ…", options: [
+  { key: "team_able", type: "checkbox", title: "Our team was able to… / ทีมงานของเราช่วยคุณในเรื่องใดบ้าง", options: [
     "Understand your needs / เข้าใจความต้องการของคุณ", "Provide clear product information / ให้ข้อมูลสินค้าได้อย่างชัดเจน",
     "Recommend suitable materials & solutions / แนะนำวัสดุหรือ Solution ที่เหมาะสม", "Inspire new ideas for your project / ช่วยสร้างแรงบันดาลใจหรือไอเดียใหม่ ๆ",
   ] },
