@@ -9,6 +9,7 @@ import { subscribeNotifications } from "@/lib/notifChannel";
 import { isNotifyEnabled, setNotifyEnabled, enableNotifications, playBeep, showOsNotification } from "@/lib/notify";
 import { canAccessPath } from "@/lib/roles";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
+import { getDeviceId } from "@/lib/deviceId";
 
 interface UnreadNotif { product?: { name?: string }; customer?: { fullName?: string } | null }
 
@@ -33,11 +34,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [role, setRole] = useState(""); // #3: hide Survey Results from the basic/Sales role
   const [notifCount, setNotifCount] = useState(0);
   const [notifOn, setNotifOn] = useState(false);     // sound/alert preference (button UI)
+  const [hasSession, setHasSession] = useState(false); // live Surface-Scan session on this station → nav dot
   const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setUsername(d.username); if (d.role) setRole(d.role); });
     setNotifOn(isNotifyEnabled());
+  }, []);
+
+  // Surface-Scan "active session" cue: poll this device's session so staff who navigate
+  // away from the scan page see a dot on the nav item and can return to the live customer.
+  useEffect(() => {
+    const check = () => {
+      fetch(`/api/sessions?deviceId=${encodeURIComponent(getDeviceId())}`)
+        .then((r) => r.json()).then((d) => setHasSession(!!d?.id)).catch(() => {});
+    };
+    check();
+    const t = setInterval(check, 12000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -182,6 +196,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-danger)", fontSize: "10px" }}>
                     {notifCount}
                   </span>
+                )}
+                {item.label === "Surface Scan" && hasSession && (
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" title="Active session on this station"
+                    style={{ background: "var(--color-success)" }} aria-label="Active session" />
                 )}
               </Link>
             );

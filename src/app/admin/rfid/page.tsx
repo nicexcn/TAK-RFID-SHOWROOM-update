@@ -752,7 +752,7 @@ function RFIDPageInner() {
             <div className="flex gap-2 mb-3">
               <input value={customerQuery} onChange={(e) => setCustomerQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearchCustomer()}
-                placeholder={searchType === "code" ? "C0001..." : searchType === "name" ? "Search name..." : "08X-XXX-XXXX"}
+                placeholder={searchType === "code" ? "Customer ID, e.g. Ar00001" : searchType === "name" ? "Customer name" : "Phone number"}
                 className="flex-1 px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <button onClick={handleSearchCustomer} disabled={searching || !customerQuery.trim()}

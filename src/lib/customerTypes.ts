@@ -8,7 +8,7 @@ export const CUSTOMER_TYPES = [
   { value: "Contractor", prefix: "Ct", label: "Contractor",        labelTh: "ผู้รับเหมา",              color: "#4c4847" },
   { value: "Homeowner",  prefix: "Ho", label: "Home Owner",        labelTh: "เจ้าของบ้านหรือโครงการ", color: "#4a7c59" },
   { value: "Developer",  prefix: "DP", label: "Developer",         labelTh: "ผู้พัฒนาโครงการ",         color: "#b26a00" },
-  { value: "Other",      prefix: "Ot", label: "Other",             labelTh: "อื่นๆ",                  color: "#888" },
+  { value: "Other",      prefix: "Ot", label: "Other",             labelTh: "อื่นๆ",                  color: "#6b6560" },
 ] as const;
 
 export type CustomerType = (typeof CUSTOMER_TYPES)[number]["value"];
@@ -31,4 +31,4 @@ export const customerTypePrefix = (value: string): string => byValue.get(value a
 export const customerTypeLabel = (value: string): string => byValue.get(value as CustomerType)?.label ?? value;
 
 /** Colour for a stored title value (falls back to grey). */
-export const customerTypeColor = (value: string): string => byValue.get(value as CustomerType)?.color ?? "#888";
+export const customerTypeColor = (value: string): string => byValue.get(value as CustomerType)?.color ?? "#6b6560";

@@ -165,7 +165,7 @@ export default function LoansPage() {
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {l.customerId ? (
                       <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
-                        className="font-medium hover:underline" style={{ color: "var(--color-text-muted)" }}>{l.customerName}</a>
+                        className="font-medium underline underline-offset-2 hover:opacity-80" style={{ color: "var(--color-primary)" }}>{l.customerName}</a>
                     ) : <span className="font-medium" style={{ color: "var(--color-text)" }}>{l.customerName}</span>}
                     <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
                   </td>
