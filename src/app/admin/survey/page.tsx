@@ -23,35 +23,17 @@ export default function SurveyResultsPage() {
       .catch(() => setState("error"));
   }, []);
 
-  if (state === "loading") return (
-    <div>
-      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
-        <div>
-          <Skeleton className="h-7 mb-2" style={{ width: "12rem" }} />
-          <Skeleton className="h-3" style={{ width: "7rem" }} />
-        </div>
-        <Skeleton className="h-9" style={{ width: "9rem" }} />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} lines={5} />)}
-      </div>
-    </div>
-  );
-  if (state === "forbidden") return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-2" style={{ color: "var(--color-text)" }}>Survey Results</h1>
-      <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>You don’t have access to survey results.</p>
-    </div>
-  );
-  if (state === "error" || !data) return <p style={{ color: "var(--color-danger-soft)" }}>Failed to load results.</p>;
-
   return (
     <div>
+      {/* Static header renders immediately — title / breadcrumb / open-survey aren't data;
+          only the response count + result cards below depend on the fetch. */}
       <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Survey Results</h1>
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Survey Results" }]} />
-          <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>{data.total} response{data.total === 1 ? "" : "s"}</p>
+          {data
+            ? <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>{data.total} response{data.total === 1 ? "" : "s"}</p>
+            : state === "loading" ? <Skeleton className="h-3 mt-2" style={{ width: "7rem" }} /> : null}
         </div>
         <a href="/survey" target="_blank" rel="noopener noreferrer"
           className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
@@ -59,7 +41,15 @@ export default function SurveyResultsPage() {
         </a>
       </div>
 
-      {data.total === 0 ? (
+      {state === "loading" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} lines={5} />)}
+        </div>
+      ) : state === "forbidden" ? (
+        <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>You don’t have access to survey results.</p>
+      ) : state === "error" || !data ? (
+        <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>Failed to load results.</p>
+      ) : data.total === 0 ? (
         <div className="p-8 rounded-xl text-center" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <p className="text-sm mb-2" style={{ color: "var(--color-text-muted)" }}>No responses yet.</p>
           <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>Share the survey link: <span style={{ fontFamily: "monospace" }}>{surveyUrl}</span></p>
