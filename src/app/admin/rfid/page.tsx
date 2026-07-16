@@ -307,6 +307,43 @@ function RFIDPageInner() {
     }).then((r) => { if (r.ok) setSession((p) => (p ? { ...p, readerId: rid } : p)); }).catch(() => {});
   }, [ws.isConnected, session?.id, session?.readerId, deviceIps, wsDeviceId]);
 
+  // ── Reader connection UX ─────────────────────────────────────────────────
+  // Picking a reader from the dropdown connects immediately (no separate Connect click).
+  // setDeviceIps is async, so the socket must open on the NEXT render (after the url prop
+  // updates) — flag it here, open it in the effect below.
+  const [showManualReader, setShowManualReader] = useState(false);
+  const pendingConnectRef = useRef(false);
+  function pickReader(url: string) {
+    if (!url) return;
+    if (deviceIps[wsDeviceId] === url) { ws.connect(); return; } // address already loaded → connect now
+    pendingConnectRef.current = true;
+    setDeviceIps((p) => ({ ...p, [wsDeviceId]: url }));
+  }
+  useEffect(() => {
+    if (!pendingConnectRef.current) return;
+    if (!deviceIps[wsDeviceId]) { pendingConnectRef.current = false; return; }
+    pendingConnectRef.current = false;
+    ws.connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deviceIps, wsDeviceId]);
+
+  // Auto-reconnect on return: navigating away unmounts this page and closes the live socket,
+  // but the reader binding (session.readerId) and any scans that arrived meanwhile are kept
+  // server-side (relay → /api/scan). So on return, if the resumed session is still bound to a
+  // reader whose address we remember, re-open the socket automatically — the reader "stays
+  // connected" from the user's view. An intentional Disconnect clears readerId, so this won't
+  // fight the user. (A direct-LAN reader has no server binding → staff reconnect it manually.)
+  const autoReconnectedRef = useRef(false);
+  useEffect(() => {
+    if (autoReconnectedRef.current || ws.isConnected) return;
+    if (!session?.id || !session.readerId) return;
+    const url = deviceIps[wsDeviceId];
+    if (!url || readerIdFromUrl(url) !== session.readerId) return;
+    autoReconnectedRef.current = true;
+    ws.connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, session?.readerId, deviceIps, wsDeviceId, ws.isConnected]);
+
   const runSimulator = useCallback(() => {
     if (!session || productMap.size === 0) return;
     setSimulating(true);
@@ -801,42 +838,51 @@ function RFIDPageInner() {
               </div>
               {!ws.isConnected ? (
                 <>
-                  <select aria-label="Reader address" value="" onChange={(e) => { if (e.target.value) setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value })); }}
-                    className="px-2 py-1.5 rounded-lg outline-none text-xs"
+                  {/* Pick a reader → connects immediately (no separate Connect click). */}
+                  <select aria-label="Choose a reader to connect" value="" onChange={(e) => pickReader(e.target.value)}
+                    className="px-3 py-2 rounded-lg outline-none text-sm flex-1 min-w-[12rem] sm:flex-none sm:w-64 max-w-full"
                     style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                    <option value="">Select reader…</option>
+                    <option value="">{savedReaders.length || relayDevices.length ? "Choose a reader to connect…" : "No readers online yet…"}</option>
                     {savedReaders.length > 0 && (
                       <optgroup label="Saved readers">
                         {savedReaders.map((r) => {
                           const b = r.device ? busyReaders[r.device] : undefined;
                           const url = readerUrl(r, relayBase, relaySubKey);
-                          return <option key={r.id} value={url} disabled={!url}>{b ? `🔴 ${r.name || r.device} — in use (${b.customerName})` : (r.name || r.device || r.url)}</option>;
+                          return <option key={r.id} value={url} disabled={!url}>{b ? `🔴 ${r.name || r.device} — in use by ${b.customerName}` : (r.name || r.device || r.url)}</option>;
                         })}
                       </optgroup>
                     )}
                     {relayDevices.length > 0 && (
-                      <optgroup label="Connected to relay (live)">
+                      <optgroup label="Live on relay">
                         {relayDevices.map((d) => {
                           const b = busyReaders[d];
-                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase, relaySubKey)}>{b ? `🔴 ${d} — in use (${b.customerName})` : `🟢 ${d}`}</option>;
+                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase, relaySubKey)}>{b ? `🔴 ${d} — in use by ${b.customerName}` : `🟢 ${d}`}</option>;
                         })}
                       </optgroup>
                     )}
                   </select>
-                  <div className="flex items-center gap-1.5 text-xs w-full sm:w-auto" style={{ color: "var(--color-text-muted)" }}>
-                    <span>Reader</span>
-                    <input
-                      value={deviceIps[wsDeviceId]}
-                      onChange={(e) => setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value }))}
-                      placeholder="Select a reader above, or enter its address"
-                      className="px-2 py-1.5 rounded-lg outline-none w-full sm:w-72 max-w-full"
-                      style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-                  </div>
-                  <button onClick={ws.connect} disabled={!deviceIps[wsDeviceId]}
-                    className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
-                    style={{ background: deviceIps[wsDeviceId] ? "#4a6fa5" : "var(--color-sidebar)" }}>
-                    Connect
-                  </button>
+                  {/* Manual address is a troubleshooting escape hatch — hidden from staff by default. */}
+                  {showManualReader ? (
+                    <div className="flex items-center gap-1.5 text-xs w-full sm:w-auto" style={{ color: "var(--color-text-muted)" }}>
+                      <span>Address</span>
+                      <input
+                        value={deviceIps[wsDeviceId]}
+                        onChange={(e) => setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value }))}
+                        placeholder="ws://192.168.1.50:8080  or  wss://relay/?device=…"
+                        className="px-2 py-1.5 rounded-lg outline-none w-full sm:w-72 max-w-full"
+                        style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                      <button onClick={ws.connect} disabled={!deviceIps[wsDeviceId]}
+                        className="px-4 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50"
+                        style={{ background: "#4a6fa5" }}>
+                        Connect
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setShowManualReader(true)}
+                      className="text-xs underline underline-offset-2" style={{ color: "var(--color-text-subtle)" }}>
+                      Enter address manually
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
