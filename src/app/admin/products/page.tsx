@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
 import { DataTable } from "@/components/DataTable";
 import { createColumnHelper, type SortingState } from "@tanstack/react-table";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
@@ -35,7 +36,8 @@ interface ImportResult {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // instant input value (responsive)
+  const globalFilter = useDebouncedValue(searchInput, 300); // debounced → drives the fetch
   const [status, setStatus] = useState<"active" | "archived" | "all">("active");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,6 +45,7 @@ export default function ProductsPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const reqSeq = useRef(0); // drop out-of-order responses (a slow early request landing late)
   const confirm = useConfirm();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -59,25 +62,30 @@ export default function ProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchProducts() {
+    const seq = ++reqSeq.current;
     setLoading(true);
     setFetchError(false);
     try {
       const s = sorting[0];
       const sortQ = s ? `&sort=${s.id}&dir=${s.desc ? "desc" : "asc"}` : "";
-      const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}${sortQ}`);
+      const res = await fetch(`/api/products?search=${encodeURIComponent(globalFilter)}&page=${page}&status=${status}${sortQ}`);
       if (!res.ok) throw new Error("Failed to load products");
       const data = await res.json();
+      if (seq !== reqSeq.current) return; // a newer request superseded this one → ignore
       setProducts(data.products || []);
       setTotalPages(data.totalPages || 1);
       setTotal(data.total || 0);
     } catch {
-      setFetchError(true);
+      if (seq === reqSeq.current) setFetchError(true);
     } finally {
-      setLoading(false);
+      if (seq === reqSeq.current) setLoading(false);
     }
   }
 
-  useEffect(() => { fetchProducts(); }, [search, page, status, sorting]);
+  useEffect(() => { fetchProducts(); }, [globalFilter, page, status, sorting]);
+  // Any filter/sort change resets to page 1 (page changes alone must NOT reset).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); }, [globalFilter, status, sorting]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -295,7 +303,9 @@ export default function ProductsPage() {
         errorMessage="Could not load products. Please check your connection and try again."
         emptyMessage="No products found"
         sorting={sorting}
-        onSortingChange={(updater) => { setSorting(updater); setPage(1); }}
+        onSortingChange={setSorting}
+        globalFilter={globalFilter}
+        onGlobalFilterChange={setSearchInput}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
@@ -305,11 +315,11 @@ export default function ProductsPage() {
           <>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
               <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-              <input placeholder="Search products" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              <input placeholder="Search products" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
                 className="outline-none text-sm bg-transparent w-40 sm:w-56" style={{ color: "var(--color-text)" }} />
             </div>
             {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
-              <button key={k} onClick={() => { setStatus(k); setPage(1); }}
+              <button key={k} onClick={() => setStatus(k)}
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                 style={{
                   background: status === k ? "var(--color-primary)" : "var(--color-surface)",

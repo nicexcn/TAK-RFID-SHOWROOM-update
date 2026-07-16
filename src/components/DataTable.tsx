@@ -7,6 +7,7 @@ import {
   useReactTable,
   type Column,
   type ColumnDef,
+  type ColumnFiltersState,
   type Header,
   type OnChangeFn,
   type SortingState,
@@ -51,6 +52,13 @@ export interface DataTableProps<T> {
   skeletonRows?: number;
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
+  // Server-side (manual) filtering: the table holds the filter values; the parent reads
+  // them to build the query. globalFilter = the search box; columnFilters = per-column
+  // filters keyed by column id (e.g. { id: "title", value: "Architect" }).
+  globalFilter?: string;
+  onGlobalFilterChange?: OnChangeFn<string>;
+  columnFilters?: ColumnFiltersState;
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
@@ -160,6 +168,10 @@ export function DataTable<T>({
   skeletonRows = 8,
   sorting,
   onSortingChange,
+  globalFilter,
+  onGlobalFilterChange,
+  columnFilters,
+  onColumnFiltersChange,
   page = 1,
   totalPages = 1,
   onPageChange,
@@ -192,11 +204,14 @@ export function DataTable<T>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility, columnOrder },
+    state: { sorting, columnVisibility, columnOrder, globalFilter, columnFilters },
     onSortingChange,
+    onGlobalFilterChange,
+    onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
     manualSorting: true,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
     getRowId,
   });
