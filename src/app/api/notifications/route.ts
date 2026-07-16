@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       : await prisma.notification.create({
           data: {
             type: "PREPARE_PRODUCT",
-            title: title || "เตรียมสินค้าตัวอย่าง",
+            title: title || "Prepare product sample",
             message: message || "",
             productId,
             customerId: customerId || null,
