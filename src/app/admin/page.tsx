@@ -1,6 +1,6 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
-import { Spinner } from "@/components/Spinner";
+import { Skeleton } from "@/components/Skeleton";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -377,8 +377,28 @@ export default function AdminDashboard() {
   ] : [];
 
   if (!settingsLoaded) return (
-    <div className="flex items-center justify-center h-64">
-      <Spinner size="lg" />
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <Skeleton className="h-7" style={{ width: "10rem" }} />
+        <Skeleton className="h-9" style={{ width: "8rem" }} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-5 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+            <Skeleton className="h-3 mb-3" style={{ width: "40%" }} />
+            <Skeleton className="h-8 mb-2" style={{ width: "55%" }} />
+            <Skeleton className="h-3" style={{ width: "70%" }} />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="p-5 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+            <Skeleton className="h-4 mb-4" style={{ width: "35%" }} />
+            <Skeleton className="h-48 rounded-xl" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -403,7 +423,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner size="md" className="my-2" /> : (
+        {loadingStats ? <div className="space-y-2 my-2"><Skeleton className="h-7" style={{ width: "45%" }} /><Skeleton className="h-3" style={{ width: "70%" }} /><Skeleton className="h-3" style={{ width: "55%" }} /></div> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
             <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>{stats?.totalSessions === 0 ? "No visits yet" : "Total sessions"}</p>
@@ -430,7 +450,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner size="md" className="my-2" /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
+        {loadingStats ? <div className="space-y-2 my-2"><Skeleton className="h-7" style={{ width: "45%" }} /><Skeleton className="h-3" style={{ width: "70%" }} /><Skeleton className="h-3" style={{ width: "55%" }} /></div> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
             <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} people</p>
@@ -467,7 +487,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner size="md" className="my-2" /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
+        {loadingStats ? <div className="space-y-2 my-2"><Skeleton className="h-7" style={{ width: "45%" }} /><Skeleton className="h-3" style={{ width: "70%" }} /><Skeleton className="h-3" style={{ width: "55%" }} /></div> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <ResponsiveContainer width="100%" height={120}>
               <PieChart>
@@ -513,9 +533,7 @@ export default function AdminDashboard() {
           </button>
         </div>
         {loadingStats ? (
-          <div className="flex items-center justify-center h-48">
-            <Spinner size="md" />
-          </div>
+          <Skeleton className="h-48 rounded-xl" />
         ) : compData.length === 0 ? <EmptyState label="No visits yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={compData}>
@@ -556,9 +574,7 @@ export default function AdminDashboard() {
           ))}
         </div>
         {loadingStats ? (
-          <div className="flex items-center justify-center h-48">
-            <Spinner size="md" />
-          </div>
+          <Skeleton className="h-48 rounded-xl" />
         ) : (rightChartData[rightFilter] ?? []).length === 0 ? <EmptyState label="No scan data yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={rightChartData[rightFilter]} layout="vertical" margin={{ left: 10 }}>
