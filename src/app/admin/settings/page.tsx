@@ -7,6 +7,12 @@ import { displayUrl, type SavedDisplay } from "@/lib/displays";
 import { uploadFile } from "@/lib/uploadImage";
 import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
 import { ROLES } from "@/lib/roles";
+import { formatDate } from "@/lib/formatDate";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
+
+const errToast = (msg: string) =>
+  toast(msg, { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } });
 
 // Mints a stable id for a registry row (reader or display).
 const newRegistryId = () =>
@@ -46,10 +52,10 @@ const GRAPH_COLORS = [
 ];
 
 const WIDGETS = [
-  { key: "walkins",         label: "Walk-ins" },
+  { key: "walkins",         label: "Visits" },
   { key: "customerTypes",   label: "Type of Customers" },
-  { key: "newVsTotal",      label: "New vs Total Customers" },
-  { key: "comparisonGraph", label: "Walk-ins by Month" },
+  { key: "newVsTotal",      label: "New vs Returning" },
+  { key: "comparisonGraph", label: "Visits by Month" },
   { key: "categoryGraph",   label: "Interest by Category Graph" },
 ];
 
@@ -62,7 +68,13 @@ const cardStyle: React.CSSProperties = {
 const iS = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
 
 export default function SettingsPage() {
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Ids of rows whose DELETE request is in flight — disables the control + gates local removal on res.ok.
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
+  const [deletingOptionId, setDeletingOptionId] = useState<string | null>(null);
 
   // Dashboard
   const [dashboardSettings, setDashboardSettings] = useState({
@@ -171,7 +183,7 @@ export default function SettingsPage() {
   async function handleCreateUser() {
     setCreateError(""); setCreateSuccess("");
     if (!createForm.username || !createForm.password) {
-      setCreateError("Username และ Password จำเป็นต้องกรอก"); return;
+      setCreateError("Username and Password are required"); return;
     }
     setCreateLoading(true);
     const res = await fetch("/api/users", {
@@ -180,13 +192,13 @@ export default function SettingsPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setCreateSuccess("✓ สร้าง user สำเร็จ");
+      setCreateSuccess("✓ User created");
       setCreateForm({ username: "", password: "", firstName: "", lastName: "", role: "user" });
       setShowCreate(false);
       await fetchUsers();
       setTimeout(() => setCreateSuccess(""), 3000);
     } else {
-      setCreateError(data.error || "เกิดข้อผิดพลาด");
+      setCreateError(data.error || "Something went wrong");
     }
     setCreateLoading(false);
   }
@@ -213,20 +225,31 @@ export default function SettingsPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setEditSuccess("✓ บันทึกสำเร็จ");
+      setEditSuccess("✓ Saved");
       setUsers((p) => p.map((u) => u.id === data.id ? data : u));
       setTimeout(() => { setEditingUser(null); setEditSuccess(""); }, 1200);
     } else {
-      setEditError(data.error || "เกิดข้อผิดพลาด");
+      setEditError(data.error || "Something went wrong");
     }
     setEditLoading(false);
   }
 
   async function handleDeleteUser(u: UserItem) {
-    if (u.id === currentUser.id) { alert("ไม่สามารถลบ account ของตัวเองได้"); return; }
-    if (!confirm(`ลบ user "${u.username}" ?`)) return;
-    await fetch(`/api/users/${u.id}`, { method: "DELETE" });
-    setUsers((p) => p.filter((x) => x.id !== u.id));
+    if (u.id === currentUser.id) { errToast("You cannot delete your own account."); return; }
+    if (!(await confirm({ title: "Delete user?", message: `Delete user "${u.username}"?`, danger: true }))) return;
+    setDeletingUserId(u.id);
+    try {
+      const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setUsers((p) => p.filter((x) => x.id !== u.id));
+      } else {
+        errToast("Failed to delete user.");
+      }
+    } catch {
+      errToast("Failed to delete user.");
+    } finally {
+      setDeletingUserId(null);
+    }
   }
 
   async function fetchMediaFiles() {
@@ -239,10 +262,21 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteMedia(id: string) {
-    if (!confirm("Delete this image?")) return;
-    await fetch(`/api/products/images/${id}`, { method: "DELETE" });
-    setMediaFiles((p) => p.filter((f) => f.id !== id));
-    setMediaSuccess("✓ Image deleted"); setTimeout(() => setMediaSuccess(""), 2000);
+    if (!(await confirm({ title: "Delete image?", message: "Delete this image?", danger: true }))) return;
+    setDeletingMediaId(id);
+    try {
+      const res = await fetch(`/api/products/images/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMediaFiles((p) => p.filter((f) => f.id !== id));
+        setMediaSuccess("✓ Image deleted"); setTimeout(() => setMediaSuccess(""), 2000);
+      } else {
+        errToast("Failed to delete image.");
+      }
+    } catch {
+      errToast("Failed to delete image.");
+    } finally {
+      setDeletingMediaId(null);
+    }
   }
 
   // Persist a partial AppSettings patch (the Display Settings Save button used to
@@ -306,12 +340,23 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteOption(id: string) {
-    if (!confirm("Delete this option?")) return;
-    await fetch("/api/dropdown", {
-      method: "DELETE", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    await fetchOptions();
+    if (!(await confirm({ title: "Delete option?", message: "Delete this option?", danger: true }))) return;
+    setDeletingOptionId(id);
+    try {
+      const res = await fetch("/api/dropdown", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        await fetchOptions();
+      } else {
+        errToast("Failed to delete option.");
+      }
+    } catch {
+      errToast("Failed to delete option.");
+    } finally {
+      setDeletingOptionId(null);
+    }
   }
 
   const selectedColor = GRAPH_COLORS[dashboardSettings.graphColor];
@@ -360,18 +405,19 @@ export default function SettingsPage() {
             <div>
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Widget Visibility</h2>
-                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือก widget ที่จะแสดงบน Dashboard</p>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Choose which widgets appear on the Dashboard</p>
                 <div className="space-y-2">
                   {WIDGETS.map((w) => {
                     const isOn = dashboardSettings.visibleWidgets[w.key as keyof typeof dashboardSettings.visibleWidgets];
                     return (
                       <div key={w.key} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: "var(--color-bg)" }}>
                         <span className="text-sm" style={{ color: "var(--color-text)" }}>{w.label}</span>
-                        <div onClick={() => setDashboardSettings((p) => ({ ...p, visibleWidgets: { ...p.visibleWidgets, [w.key]: !isOn } }))}
+                        <button type="button" role="switch" aria-checked={isOn} aria-label={w.label}
+                          onClick={() => setDashboardSettings((p) => ({ ...p, visibleWidgets: { ...p.visibleWidgets, [w.key]: !isOn } }))}
                           className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
                           style={{ background: isOn ? "var(--color-primary)" : "var(--color-sidebar)" }}>
                           <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: isOn ? "22px" : "4px" }} />
-                        </div>
+                        </button>
                       </div>
                     );
                   })}
@@ -380,7 +426,7 @@ export default function SettingsPage() {
 
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Default Filter</h2>
-                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>ตั้งค่า filter เริ่มต้นของ stats cards</p>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Set the default filter for the stats cards</p>
                 <div className="flex gap-2 flex-wrap">
                   {(["daily","weekly","monthly","annually"] as const).map((f) => (
                     <button key={f} onClick={() => setDashboardSettings((p) => ({ ...p, defaultFilter: f }))}
@@ -398,7 +444,7 @@ export default function SettingsPage() {
 
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Graph Color Theme</h2>
-                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือก color theme สำหรับ graph บน Dashboard</p>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Choose the color theme for the Dashboard graphs</p>
                 <div className="flex gap-3 flex-wrap mb-4">
                   {GRAPH_COLORS.map((color, i) => (
                     <button key={i} onClick={() => setDashboardSettings((p) => ({ ...p, graphColor: i }))}
@@ -429,7 +475,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {dashboardSuccess && <p className="text-sm mb-3" style={{ color: "#4a9f4a" }}>{dashboardSuccess}</p>}
+              {dashboardSuccess && <p className="text-sm mb-3" style={{ color: "var(--color-success)" }}>{dashboardSuccess}</p>}
               <button
                 onClick={async () => {
                   await fetch("/api/settings", {
@@ -458,7 +504,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>User Management</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>จัดการ account ผู้ใช้งานในระบบ</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Manage user accounts in the system</p>
                   </div>
                   <button onClick={() => { setShowCreate(true); setEditingUser(null); setCreateError(""); setCreateSuccess(""); }}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
@@ -473,7 +519,7 @@ export default function SettingsPage() {
                 {/* Search */}
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
                   style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-                  <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
                   <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
@@ -489,44 +535,44 @@ export default function SettingsPage() {
                 {showCreate && (
                   <div className="rounded-xl p-5 mb-4" style={{ background: "var(--color-bg)", border: "1.5px solid var(--color-primary)" }}>
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>สร้าง User ใหม่</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Create New User</p>
                       <button onClick={() => setShowCreate(false)} style={{ color: "var(--color-text-muted)" }}>✕</button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                        <input value={createForm.username} onChange={(e) => setCreateForm((p) => ({ ...p, username: e.target.value }))}
+                        <label htmlFor="create-username" className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                        <input id="create-username" value={createForm.username} onChange={(e) => setCreateForm((p) => ({ ...p, username: e.target.value }))}
                           placeholder="username"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Password <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                        <input type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                        <label htmlFor="create-password" className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Password <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                        <input id="create-password" type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
                           placeholder="password"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
-                        <input value={createForm.firstName} onChange={(e) => setCreateForm((p) => ({ ...p, firstName: e.target.value }))}
-                          placeholder="ชื่อ"
+                        <label htmlFor="create-firstName" className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
+                        <input id="create-firstName" value={createForm.firstName} onChange={(e) => setCreateForm((p) => ({ ...p, firstName: e.target.value }))}
+                          placeholder="First name"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
-                        <input value={createForm.lastName} onChange={(e) => setCreateForm((p) => ({ ...p, lastName: e.target.value }))}
-                          placeholder="นามสกุล"
+                        <label htmlFor="create-lastName" className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
+                        <input id="create-lastName" value={createForm.lastName} onChange={(e) => setCreateForm((p) => ({ ...p, lastName: e.target.value }))}
+                          placeholder="Last name"
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
-                        <select aria-label="Role" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                        <label htmlFor="create-role" className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
+                        <select id="create-role" aria-label="Role" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
                           className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                           {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                         </select>
                       </div>
                     </div>
                     {createError && <p className="text-xs mt-3" style={{ color: "var(--color-danger)" }}>{createError}</p>}
-                    {createSuccess && <p className="text-xs mt-3" style={{ color: "#4a9f4a" }}>{createSuccess}</p>}
+                    {createSuccess && <p className="text-xs mt-3" style={{ color: "var(--color-success)" }}>{createSuccess}</p>}
                     <div className="flex gap-2 mt-4">
                       <button onClick={() => setShowCreate(false)}
                         className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
@@ -549,7 +595,7 @@ export default function SettingsPage() {
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <p className="text-center text-sm py-8" style={{ color: "var(--color-text-subtle)" }}>
-                    {userSearch ? "ไม่พบ user" : "ยังไม่มี user"}
+                    {userSearch ? "No users found" : "No users yet"}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -559,7 +605,7 @@ export default function SettingsPage() {
                           style={{ background: editingUser?.id === u.id ? "rgba(114,108,90,0.06)" : "var(--color-bg)", border: editingUser?.id === u.id ? "1.5px solid var(--color-primary)" : "1px solid transparent" }}>
                           {/* Avatar */}
                           <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                            style={{ background: u.role === "admin" ? "var(--color-primary)" : "#9f886c" }}>
+                            style={{ background: u.role === "admin" ? "var(--color-primary)" : "var(--color-icon-muted)" }}>
                             {u.username.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -570,64 +616,64 @@ export default function SettingsPage() {
                                 {u.role}
                               </span>
                               {u.id === currentUser.id && (
-                                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#dbeafe", color: "#3b82f6" }}>คุณ</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#dbeafe", color: "var(--color-info)" }}>You</span>
                               )}
                             </div>
                             <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
-                              {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"} · สร้าง {new Date(u.createdAt).toLocaleDateString("th-TH")}
+                              {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"} · Created {formatDate(u.createdAt)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button onClick={() => editingUser?.id === u.id ? setEditingUser(null) : openEdit(u)}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium"
                               style={{ background: editingUser?.id === u.id ? "var(--color-primary)" : "var(--color-surface)", color: editingUser?.id === u.id ? "var(--color-surface)" : "var(--color-primary)", border: "1px solid var(--color-border)" }}>
-                              {editingUser?.id === u.id ? "ยกเลิก" : "แก้ไข"}
+                              {editingUser?.id === u.id ? "Cancel" : "Edit"}
                             </button>
                             <button onClick={() => handleDeleteUser(u)}
-                              disabled={u.id === currentUser.id}
+                              disabled={u.id === currentUser.id || deletingUserId === u.id}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30"
-                              style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
-                              ลบ
+                              style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>
+                              {deletingUserId === u.id ? "Deleting…" : "Delete"}
                             </button>
                           </div>
                         </div>
 
                         {/* Inline edit form */}
                         {editingUser?.id === u.id && (
-                          <div className="rounded-xl p-4 mt-1" style={{ background: "#faf9f7", border: "1px solid var(--color-border)" }}>
-                            <p className="text-xs font-semibold mb-3" style={{ color: "var(--color-text-muted)" }}>แก้ไขข้อมูล</p>
+                          <div className="rounded-xl p-4 mt-1" style={{ background: "var(--color-hover)", border: "1px solid var(--color-border)" }}>
+                            <p className="text-xs font-semibold mb-3" style={{ color: "var(--color-text-muted)" }}>Edit details</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username</label>
-                                <input value={editForm.username} onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
+                                <label htmlFor={`edit-username-${u.id}`} className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Username</label>
+                                <input id={`edit-username-${u.id}`} value={editForm.username} onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Password ใหม่ (ถ้าต้องการเปลี่ยน)</label>
-                                <input type="password" value={editForm.password} onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
-                                  placeholder="เว้นว่างถ้าไม่ต้องการเปลี่ยน"
+                                <label htmlFor={`edit-password-${u.id}`} className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>New Password (if changing)</label>
+                                <input id={`edit-password-${u.id}`} type="password" value={editForm.password} onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
+                                  placeholder="Leave blank to keep current"
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
-                                <input value={editForm.firstName} onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
+                                <label htmlFor={`edit-firstName-${u.id}`} className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>First Name</label>
+                                <input id={`edit-firstName-${u.id}`} value={editForm.firstName} onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div>
-                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
-                                <input value={editForm.lastName} onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
+                                <label htmlFor={`edit-lastName-${u.id}`} className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Last Name</label>
+                                <input id={`edit-lastName-${u.id}`} value={editForm.lastName} onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                               </div>
                               <div className="col-span-2">
-                                <label className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
-                                <select aria-label="Role" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                                <label htmlFor={`edit-role-${u.id}`} className="block text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Role</label>
+                                <select id={`edit-role-${u.id}`} aria-label="Role" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
                                   className="w-full px-3 py-2.5 rounded-xl outline-none text-sm" style={iS}>
                                   {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                                 </select>
                               </div>
                             </div>
                             {editError && <p className="text-xs mt-2" style={{ color: "var(--color-danger)" }}>{editError}</p>}
-                            {editSuccess && <p className="text-xs mt-2" style={{ color: "#4a9f4a" }}>{editSuccess}</p>}
+                            {editSuccess && <p className="text-xs mt-2" style={{ color: "var(--color-success)" }}>{editSuccess}</p>}
                             <div className="flex gap-2 mt-3">
                               <button onClick={() => setEditingUser(null)}
                                 className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
@@ -637,7 +683,7 @@ export default function SettingsPage() {
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                                 style={{ background: "var(--color-primary)" }}>
                                 {editLoading && <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />}
-                                {editLoading ? "Saving..." : "บันทึก"}
+                                {editLoading ? "Saving..." : "Save"}
                               </button>
                             </div>
                           </div>
@@ -680,7 +726,7 @@ export default function SettingsPage() {
                       className="px-4 py-2 rounded-xl text-sm font-medium"
                       style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>+ Add</button>
                   </div>
-                  {dropdownMessage && <p className="text-sm mb-2" style={{ color: "#4a9f4a" }}>{dropdownMessage}</p>}
+                  {dropdownMessage && <p className="text-sm mb-2" style={{ color: "var(--color-success)" }}>{dropdownMessage}</p>}
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {options.length === 0 ? (
                       <p className="text-sm text-center py-6" style={{ color: "var(--color-text-subtle)" }}>No options yet</p>
@@ -688,8 +734,9 @@ export default function SettingsPage() {
                       <div key={opt.id} className="flex items-center justify-between px-4 py-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                         <span className="text-sm" style={{ color: "var(--color-text)" }}>{opt.value}</span>
                         <button onClick={() => handleDeleteOption(opt.id)}
-                          className="text-xs px-2 py-1 rounded-lg"
-                          style={{ color: "var(--color-danger-soft)", background: "#fff0f0" }}>Delete</button>
+                          disabled={deletingOptionId === opt.id}
+                          className="text-xs px-2 py-1 rounded-lg disabled:opacity-40"
+                          style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === opt.id ? "Deleting…" : "Delete"}</button>
                       </div>
                     ))}
                   </div>
@@ -705,7 +752,7 @@ export default function SettingsPage() {
                 <div className="flex items-start justify-between gap-2 mb-4">
                   <div>
                     <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Display Settings</h2>
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>ตั้งค่าการแสดงผลบน TV display</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Configure the TV display output</p>
                   </div>
                   <a href="/display" target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
@@ -715,21 +762,21 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                   <div>
-                    <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Slide Duration (sec)</label>
-                    <input type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
+                    <label htmlFor="slide-duration" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Slide Duration (sec)</label>
+                    <input id="slide-duration" type="number" value={slideDuration} onChange={(e) => setSlideDuration(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>ต่อ 1 รูป</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Per image</p>
                   </div>
                   <div>
-                    <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Session Reset (min)</label>
-                    <input type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(+e.target.value)}
+                    <label htmlFor="session-timeout" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Session Reset (min)</label>
+                    <input id="session-timeout" type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(+e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
-                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Auto-clear หลังไม่มีการใช้งาน</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Auto-clear after inactivity</p>
                   </div>
                 </div>
                 <div className="mt-4 max-w-md">
-                  <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Cloud Relay URL (Option E)</label>
-                  <input type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
+                  <label htmlFor="relay-url" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Cloud Relay URL (Option E)</label>
+                  <input id="relay-url" type="text" value={relayUrl} onChange={(e) => setRelayUrl(e.target.value)}
                     placeholder="wss://relay.fly.dev (empty = use direct LAN ws://)"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                   <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>The shared base for every relay reader below — set the relay host once, then add readers by device tag. Empty = direct LAN.</p>
@@ -758,7 +805,7 @@ export default function SettingsPage() {
                           <input value={r.url} onChange={(e) => updateReader(r.id, { url: e.target.value })}
                             placeholder="or full URL / IP (direct)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
                           <button onClick={() => removeReader(r.id)} title="Remove"
-                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>✕</button>
+                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>✕</button>
                         </div>
                       ))}
                     </div>
@@ -780,7 +827,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="space-y-2">
                       {displays.map((d) => (
-                        <div key={d.id} className="rounded-lg" style={{ background: "#faf9f6", border: "1px solid #eceadf", padding: 8 }}>
+                        <div key={d.id} className="rounded-lg" style={{ background: "var(--color-hover)", border: "1px solid var(--color-border)", padding: 8 }}>
                           <div className="grid grid-cols-12 gap-2 items-center">
                             <input value={d.name} onChange={(e) => updateDisplay(d.id, { name: e.target.value })}
                               placeholder="Name (e.g. Table A)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
@@ -796,7 +843,7 @@ export default function SettingsPage() {
                               {[0, 90, 180, 270].map((deg) => <option key={deg} value={deg}>{deg}°</option>)}
                             </select>
                             <button onClick={() => removeDisplay(d.id)} title="Remove"
-                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>✕</button>
+                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>✕</button>
                           </div>
                           {d.name.trim() ? (
                             // Only expose the URL once the row has a name — an unnamed row is dropped on
@@ -817,7 +864,7 @@ export default function SettingsPage() {
 
                 {/* Idle video — loops full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle video (/display)</label>
+                  <label htmlFor="idle-video-url" className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle video (/display)</label>
                   <p className="text-xs mb-1" style={{ color: "var(--color-text-subtle)" }}>
                     Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
                   </p>
@@ -825,7 +872,7 @@ export default function SettingsPage() {
                     Upload limits: <b>MP4 or WEBM</b> only · max <b>{MAX_UPLOAD_MB} MB</b> · plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps the file small.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <input type="text" value={idleVideoUrl} onChange={(e) => setIdleVideoUrl(e.target.value)}
+                    <input id="idle-video-url" type="text" value={idleVideoUrl} onChange={(e) => setIdleVideoUrl(e.target.value)}
                       placeholder="https://… .mp4   (or Upload →)"
                       className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                     <label className={`px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer whitespace-nowrap ${videoUploading ? "opacity-60 pointer-events-none" : ""}`}
@@ -835,7 +882,7 @@ export default function SettingsPage() {
                     </label>
                     {idleVideoUrl && (
                       <button onClick={() => setIdleVideoUrl("")} className="px-3 py-2.5 rounded-xl text-sm"
-                        style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>Remove</button>
+                        style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>Remove</button>
                     )}
                   </div>
                   {videoErr && <p className="text-xs mt-1" style={{ color: "var(--color-danger-soft)" }}>{videoErr}</p>}
@@ -880,7 +927,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "#4a9f4a" }}>{displaySettingsSuccess}</p>}
+                {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "var(--color-success)" }}>{displaySettingsSuccess}</p>}
                 <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                   Save
@@ -896,14 +943,14 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
                   style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-                  <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
                   <input value={mediaSearch} onChange={(e) => setMediaSearch(e.target.value)}
                     placeholder="Search by product name or code..."
                     className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
                 </div>
-                {mediaSuccess && <p className="text-sm mb-3" style={{ color: "#4a9f4a" }}>{mediaSuccess}</p>}
+                {mediaSuccess && <p className="text-sm mb-3" style={{ color: "var(--color-success)" }}>{mediaSuccess}</p>}
                 {mediaLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
@@ -939,8 +986,9 @@ export default function SettingsPage() {
                             </svg>
                           </a>
                           <button onClick={() => handleDeleteMedia(file.id)}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg" style={{ background: "#fff0f0" }}>
-                            <svg width="11" height="11" fill="none" stroke="#9f4a4a" strokeWidth="2" viewBox="0 0 24 24">
+                            disabled={deletingMediaId === file.id}
+                            className="w-6 h-6 flex items-center justify-center rounded-lg disabled:opacity-40" style={{ background: "var(--color-danger-bg)" }}>
+                            <svg width="11" height="11" fill="none" stroke="var(--color-danger-soft)" strokeWidth="2" viewBox="0 0 24 24">
                               <polyline points="3 6 5 6 21 6"/>
                               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                               <path d="M10 11v6M14 11v6"/>
@@ -960,27 +1008,28 @@ export default function SettingsPage() {
             <div>
               <div style={cardStyle}>
                 <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Takeaway Limit</h2>
-                <p className="text-xs mb-6" style={{ color: "var(--color-text-muted)" }}>กำหนดจำนวนสินค้าตัวอย่างสูงสุดที่ลูกค้าสามารถนำออกได้ต่อครั้ง</p>
+                <p className="text-xs mb-6" style={{ color: "var(--color-text-muted)" }}>Set the maximum number of sample products a customer can take out per session</p>
                 <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "var(--color-bg)" }}>
                   <div>
-                    <p className="font-medium text-sm" style={{ color: "var(--color-text)" }}>เปิดใช้งาน Takeaway Limit</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>จำกัดจำนวนสินค้าที่ลูกค้านำออกได้</p>
+                    <p className="font-medium text-sm" style={{ color: "var(--color-text)" }}>Enable Takeaway Limit</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Limit how many products a customer can take out</p>
                   </div>
-                  <div onClick={() => setTakeawayEnabled((p) => !p)}
+                  <button type="button" role="switch" aria-checked={takeawayEnabled} aria-label="Enable Takeaway Limit"
+                    onClick={() => setTakeawayEnabled((p) => !p)}
                     className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
                     style={{ background: takeawayEnabled ? "var(--color-primary)" : "var(--color-sidebar)" }}>
                     <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: takeawayEnabled ? "22px" : "4px" }} />
-                  </div>
+                  </button>
                 </div>
                 <div className={takeawayEnabled ? "" : "opacity-40 pointer-events-none"}>
-                  <p className="text-sm font-medium mb-4" style={{ color: "var(--color-text)" }}>จำนวนสินค้าสูงสุดต่อครั้ง</p>
+                  <p className="text-sm font-medium mb-4" style={{ color: "var(--color-text)" }}>Maximum products per session</p>
                   <div className="flex items-center gap-6 mb-6">
                     <button onClick={() => setTakeawayLimit((v) => Math.max(1, v - 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
                       style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>−</button>
                     <div className="text-center">
                       <p className="text-5xl font-bold" style={{ color: "var(--color-text)" }}>{takeawayLimit}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>ชิ้น / ครั้ง</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>items / session</p>
                     </div>
                     <button onClick={() => setTakeawayLimit((v) => Math.min(20, v + 1))}
                       className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
@@ -1006,7 +1055,7 @@ export default function SettingsPage() {
 
                 {/* Borrow / Return period — drives the default due date + "overdue" flag */}
                 <div className="mt-6 pt-5" style={{ borderTop: "1px solid var(--color-border)" }}>
-                  <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>ระยะเวลายืม / Borrow period</p>
+                  <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Borrow period</p>
                   <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
                   <div className="flex items-center gap-6 mb-4">
                     <button onClick={() => setBorrowDays((v) => Math.max(1, v - 1))}
@@ -1038,7 +1087,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "#4a9f4a" }}>{takeawaySuccess}</p>}
+                {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "var(--color-success)" }}>{takeawaySuccess}</p>}
                 <button
                   onClick={async () => {
                     await fetch("/api/settings", {

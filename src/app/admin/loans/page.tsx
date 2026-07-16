@@ -2,6 +2,7 @@
 import Breadcrumb from "@/components/Breadcrumb";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDate } from "@/lib/formatDate";
 
 // Borrow / Return ("ยืม / คืน") tracking. A "loan" is a takeaway (Scan.takeawayQty > 0);
 // the return side is tracked on the same Scan. See src/lib/loanStatus.ts and /api/loans.
@@ -39,7 +40,7 @@ const TABS: { key: string; label: string; countKey: keyof Counts }[] = [
   { key: "all",         label: "All",         countKey: "all" },
 ];
 
-const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+const fmtDate = (d: string | null) => (d ? formatDate(d) : "—");
 const toDateInput = (d: string) => new Date(d).toLocaleDateString("en-CA"); // YYYY-MM-DD (local)
 
 export default function LoansPage() {
@@ -96,8 +97,8 @@ export default function LoansPage() {
     <div>
       <div className="mb-5">
         <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Borrow / Return</h1>
-        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications", href: "/admin/notifications" }, { label: "Borrow & Return" }]} />
-        <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>ยืม / คืนสินค้า · items a customer took (takeaway) and whether they came back</p>
+        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Borrow" }, { label: "Return" }]} />
+        <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>Items a customer took (takeaway) and whether they came back</p>
       </div>
 
       {/* Tabs */}
@@ -128,7 +129,7 @@ export default function LoansPage() {
 
       {/* Table */}
       <div className="overflow-x-auto" style={card}>
-        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+        <table className="w-full min-w-max text-sm" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>
               {["Item", "Customer", "Borrowed", "Due", "Returned", "Status", ""].map((h, i) => (

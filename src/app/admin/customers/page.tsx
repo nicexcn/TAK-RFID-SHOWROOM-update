@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toCsv } from "@/lib/csv";
 import { CUSTOMER_TYPES, customerTypeLabel, customerTypeColor } from "@/lib/customerTypes";
+import { formatDate } from "@/lib/formatDate";
+import { toast } from "sonner";
+
+const errorToast = { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } };
 
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => t.value);
 
@@ -18,6 +22,7 @@ export default function CustomersPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [filterTitle, setFilterTitle] = useState("all");
   const [startingSession, setStartingSession] = useState<string | null>(null);
@@ -33,13 +38,21 @@ export default function CustomersPage() {
 
   async function fetchCustomers() {
     setLoading(true);
+    setLoadError(false);
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (filterTitle !== "all") params.set("title", filterTitle);
-    const res = await fetch(`/api/customers?${params}`);
-    const data = await res.json();
-    setCustomers(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/customers?${params}`);
+      if (!res.ok) throw new Error("request failed");
+      const data = await res.json();
+      setCustomers(Array.isArray(data) ? data : []);
+    } catch {
+      setLoadError(true);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleExport() {
@@ -48,10 +61,10 @@ export default function CustomersPage() {
     try {
     const res = await fetch("/api/customers");
     const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) { alert("ไม่มีข้อมูล"); return; }
+    if (!Array.isArray(data) || data.length === 0) { toast("No data to export", errorToast); return; }
     const rows = [
       ["Code","Full Name","Title","Company","Phone","Email","Channels","Source","Sales","Registered"],
-      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.source ?? "", c.salesPerson ?? "", new Date(c.createdAt).toLocaleDateString("th-TH")]),
+      ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.source ?? "", c.salesPerson ?? "", formatDate(c.createdAt)]),
     ];
     const csv = toCsv(rows);
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -59,7 +72,7 @@ export default function CustomersPage() {
     const a = document.createElement("a"); a.href = url; a.download = `customers_${new Date().toISOString().slice(0,10)}.csv`; a.click();
     URL.revokeObjectURL(url);
     } catch {
-      alert("Export failed. Please try again.");
+      toast("Export failed. Please try again.", errorToast);
     } finally {
       setExporting(false);
     }
@@ -76,7 +89,7 @@ export default function CustomersPage() {
       if (res.ok) {
         router.push(`/admin/rfid?customer=${customer.customerCode}&name=${encodeURIComponent(customer.fullName)}`);
       } else {
-        alert("ไม่สามารถเริ่ม session ได้");
+        toast("Could not start session", errorToast);
       }
     } finally {
       setStartingSession(null);
@@ -132,7 +145,7 @@ export default function CustomersPage() {
       {/* Stats — total + occupation breakdown in one card (like the dashboard widget) */}
       <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         {/* Total */}
-        <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "#f0eee6" }}>
+        <div className="flex-shrink-0 sm:w-44 sm:pr-5 sm:border-r" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Total Members</p>
           <p className="text-4xl font-semibold" style={{ color: "var(--color-text)" }}>{customers.length}</p>
         </div>
@@ -162,7 +175,7 @@ export default function CustomersPage() {
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl flex-1 max-w-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Global Search"
+            placeholder="Search customers"
             className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
         </div>
         <div className="relative">
@@ -191,7 +204,7 @@ export default function CustomersPage() {
             </div>
             <div>
               <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
-                พบลูกค้า: {customers[0].fullName}
+                Customer found: {customers[0].fullName}
               </p>
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                 {customers[0].customerCode} · {customerTypeLabel(customers[0].title)} · {customers[0].company}
@@ -206,12 +219,25 @@ export default function CustomersPage() {
             {startingSession === customers[0].id ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <svg width="14" height="14" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+              <svg aria-hidden="true" width="14" height="14" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="14" y="14" width="7" height="7"/><path d="M3 17h4v4H3z"/>
               </svg>
             )}
-            {startingSession === customers[0].id ? "กำลังเริ่ม..." : "เริ่ม Surface Scan"}
+            {startingSession === customers[0].id ? "Starting..." : "Start Surface Scan"}
+          </button>
+        </div>
+      )}
+
+      {/* Load error banner */}
+      {loadError && (
+        <div className="rounded-xl p-4 mb-4 flex items-center justify-between gap-3"
+          style={{ background: "var(--color-danger-bg)", border: "1px solid var(--color-danger-border)" }}>
+          <p className="text-sm" style={{ color: "var(--color-danger-soft)" }}>Could not load customers. Please try again.</p>
+          <button onClick={fetchCustomers}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-danger-border)", color: "var(--color-danger-soft)" }}>
+            Retry
           </button>
         </div>
       )}
@@ -233,7 +259,7 @@ export default function CustomersPage() {
               <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (
               <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? "1px solid var(--color-bg)" : "none" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#faf9f7")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-hover)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <td className="px-4 py-3"><code className="text-xs" style={{ color: "var(--color-text-muted)" }}>{c.customerCode}</code></td>
                 <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text)" }}>{c.fullName}</td>
@@ -254,7 +280,7 @@ export default function CustomersPage() {
                     {c.knowChannel.length > 2 && <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>+{c.knowChannel.length - 2}</span>}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{new Date(c.createdAt).toLocaleDateString("th-TH")}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{formatDate(c.createdAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Link href={`/admin/customers/${c.id}`}
@@ -262,13 +288,14 @@ export default function CustomersPage() {
                     <button
                       onClick={() => handleStartScan(c)}
                       disabled={startingSession === c.id}
-                      title="เริ่ม Surface Scan"
+                      title="Start Surface Scan"
+                      aria-label={`Start Surface Scan for ${c.fullName}`}
                       className="w-7 h-7 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-50"
                       style={{ background: "var(--color-primary)" }}>
                       {startingSession === c.id ? (
                         <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" width="12" height="12" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
                           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                           <rect x="14" y="14" width="7" height="7"/><path d="M3 17h4v4H3z"/>
                         </svg>

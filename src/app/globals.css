@@ -75,10 +75,16 @@
   --color-sidebar:     #cdc3ad;  /* sidebar / dividers */
   /* accent */
   --color-primary:     #726c5a;  /* buttons / accent surfaces */
+  --color-icon-muted:  #9f886c;  /* SVG strokes / chart ticks (was a stray hex in 6+ files) */
+  --color-hover:       #faf9f7;  /* row / list hover surface (unified from #faf9f7/#faf8f4/#faf9f6) */
   /* semantic */
-  --color-danger:      #dc2626;  /* required / destructive */
-  --color-danger-soft: #9f4a4a;  /* softer danger text */
-  --color-success:     #10b981;  /* success / connected */
+  --color-danger:        #dc2626;  /* required / destructive */
+  --color-danger-soft:   #9f4a4a;  /* softer danger text */
+  --color-danger-bg:     #fff0f0;  /* soft-danger button/box background */
+  --color-danger-border: #f5c0c0;  /* soft-danger border */
+  --color-success:       #10b981;  /* success / connected */
+  --color-success-soft:  #4a7c59;  /* calmer success text (for on-surface confirmations) */
+  --color-info:          #3b82f6;  /* info / in-progress blue */
   --font-sans: 'Archer', 'DB Heavent', sans-serif;
 }
 

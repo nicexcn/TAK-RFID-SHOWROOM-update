@@ -3,6 +3,8 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
 import { toCsv } from "@/lib/csv";
+import { formatDate } from "@/lib/formatDate";
+import { toast } from "sonner";
 
 // #4 Report: product activity by period + search by customer code / Project / Sale,
 // with the "all scanned" and "taken home" lists (image1) and interest breakdowns.
@@ -53,7 +55,7 @@ export default function ReportsPage() {
     if (!data) return;
     const rows: (string | number)[][] = [
       [`Report — ${PERIODS.find((p) => p.key === data.period.key)?.label || data.period.label}${query ? ` — "${query}"` : ""}`],
-      [`${new Date(data.period.from).toLocaleDateString("en-GB")} – ${new Date(data.period.to).toLocaleDateString("en-GB")}`],
+      [`${formatDate(data.period.from)} – ${formatDate(data.period.to)}`],
       [],
       ["Visits", data.summary.visits], ["Customers", data.summary.customers],
       ["Items scanned", data.summary.totalScans], ["Pieces taken home", data.summary.totalTaken], [],
@@ -82,7 +84,7 @@ export default function ReportsPage() {
       const params = new URLSearchParams({ period, detail: "takeaways" });
       if (query.trim()) params.set("q", query.trim());
       const res = await fetch(`/api/reports?${params}`);
-      if (!res.ok) { alert("Export failed — please try again."); return; }
+      if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
       const takeaways = (d.takeaways || []) as { date: string; customerCode: string; customer: string; company: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; project: string }[];
       const rows: (string | number)[][] = [
@@ -98,7 +100,7 @@ export default function ReportsPage() {
       a.href = URL.createObjectURL(blob);
       a.download = `erp_takeaways_${period}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
-    } catch { alert("Export failed — please try again."); }
+    } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
     finally { setExportingErp(false); }
   }
 
@@ -197,7 +199,7 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-6">
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            {new Date(data.period.from).toLocaleDateString("en-GB")} – {new Date(data.period.to).toLocaleDateString("en-GB")}
+            {formatDate(data.period.from)} – {formatDate(data.period.to)}
             {query && <> · search &quot;{query}&quot;</>}
           </p>
 
@@ -274,8 +276,8 @@ function productTable(title: string, rows: ProductRow[], mode: "scan" | "taken")
       {rows.length === 0 ? (
         <p className="text-sm py-10 text-center" style={{ color: "var(--color-text-subtle)" }}>No data in this period</p>
       ) : (
-        <div className="max-h-[60vh] overflow-y-auto">
-          <table className="w-full text-sm">
+        <div className="max-h-[60vh] overflow-x-auto overflow-y-auto">
+          <table className="w-full min-w-max text-sm">
             <thead>
               <tr style={{ color: "var(--color-text-muted)" }}>
                 <th className="text-left font-normal px-5 py-2 text-xs">Product</th>

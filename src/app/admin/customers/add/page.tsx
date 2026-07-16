@@ -17,6 +17,10 @@ export default function AddCustomerPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // #8: per-field feedback (red ring + helper text) keyed by field name.
+  type FieldKey = "fullName" | "title" | "titleOther" | "company" | "phone" | "email" | "pdpa" | "source";
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const clearFieldError = (k: FieldKey) => setFieldErrors((p) => (p[k] ? { ...p, [k]: undefined } : p));
   const [fullName, setFullName] = useState("");
   const [title, setTitle] = useState<TitleType | "">("");
   const [titleOther, setTitleOther] = useState("");
@@ -70,16 +74,19 @@ export default function AddCustomerPage() {
 
   async function handleSubmit() {
     setError("");
-    const req = "กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน";
-    // Show the error AND focus/scroll to the first missing required field.
-    if (!fullName) { setError(req); fullNameRef.current?.focus(); return; }
-    if (!title) { setError(req); scrollTo(occupationRef.current); return; }
-    if (title === "Other" && !titleOther.trim()) { setError("กรุณาระบุอาชีพ (Other)"); titleOtherRef.current?.focus(); return; }
-    if (!company) { setError(req); companyRef.current?.focus(); return; }
-    if (!phone) { setError(req); phoneRef.current?.focus(); return; }
-    if (!email) { setError(req); emailRef.current?.focus(); return; }
-    if (!pdpa) { setError("กรุณายืนยัน PDPA consent"); scrollTo(pdpaRef.current); return; }
-    if (!source) { setError("กรุณาเลือกแหล่งที่มา (Source)"); scrollTo(sourceRef.current); return; }
+    setFieldErrors({});
+    const req = "Please fill in all required fields (*).";
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    // Show the summary error AND per-field helper text; focus/scroll to the first invalid field.
+    if (!fullName) { setError(req); setFieldErrors({ fullName: "Full name is required" }); fullNameRef.current?.focus(); return; }
+    if (!title) { setError(req); setFieldErrors({ title: "Please select an option" }); scrollTo(occupationRef.current); return; }
+    if (title === "Other" && !titleOther.trim()) { setError(req); setFieldErrors({ titleOther: "Please specify the occupation" }); titleOtherRef.current?.focus(); return; }
+    if (!company) { setError(req); setFieldErrors({ company: "Company is required" }); companyRef.current?.focus(); return; }
+    if (!phone) { setError(req); setFieldErrors({ phone: "Mobile phone is required" }); phoneRef.current?.focus(); return; }
+    if (!email) { setError(req); setFieldErrors({ email: "Email is required" }); emailRef.current?.focus(); return; }
+    if (!emailOk) { setError("Please enter a valid email address."); setFieldErrors({ email: "Enter a valid email address" }); emailRef.current?.focus(); return; }
+    if (!pdpa) { setError("Please confirm PDPA consent."); setFieldErrors({ pdpa: "Consent is required" }); scrollTo(pdpaRef.current); return; }
+    if (!source) { setError("Please select a source."); setFieldErrors({ source: "Please select a source" }); scrollTo(sourceRef.current); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/customers", {
@@ -98,18 +105,20 @@ export default function AddCustomerPage() {
         }),
       });
       if (res.ok) { router.push("/admin/customers"); }
-      else { const d = await res.json(); setError(d.error || "เกิดข้อผิดพลาด"); }
+      else { const d = await res.json(); setError(d.error || "Something went wrong. Please try again."); }
     } finally { setSaving(false); }
   }
 
-  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
+  const inputStyle = { background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
+  // #8: red ring for an invalid field (merged onto inputStyle).
+  const errorRing = { boxShadow: "0 0 0 2px var(--color-danger)", borderColor: "var(--color-danger)" };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Register Customer</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add New" }]} />
+          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Add Customer</h1>
+          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add Customer" }]} />
         </div>
         <button onClick={() => router.back()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
@@ -124,12 +133,15 @@ export default function AddCustomerPage() {
           <h2 className="text-base font-semibold mb-5" style={{ color: "var(--color-text)" }}>Personal Information</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+              <label htmlFor="fullName" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
                 Full Name / ชื่อ-นามสกุล <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
-              <input ref={fullNameRef} value={fullName} onChange={(e) => setFullName(e.target.value)}
-                placeholder="กรอกชื่อ-นามสกุล"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              <input id="fullName" ref={fullNameRef} value={fullName}
+                onChange={(e) => { setFullName(e.target.value); clearFieldError("fullName"); }}
+                aria-invalid={!!fieldErrors.fullName}
+                placeholder="Enter full name"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.fullName ? { ...inputStyle, ...errorRing } : inputStyle} />
+              {fieldErrors.fullName && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.fullName}</p>}
             </div>
             <div ref={occupationRef}>
               <label className="block text-sm mb-2" style={{ color: "var(--color-text)" }}>
@@ -137,7 +149,7 @@ export default function AddCustomerPage() {
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {TITLE_OPTIONS.map((t) => (
-                  <button key={t.value} type="button" onClick={() => setTitle(t.value)}
+                  <button key={t.value} type="button" onClick={() => { setTitle(t.value); clearFieldError("title"); }}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition-all text-left"
                     style={{
                       borderColor: title === t.value ? "var(--color-primary)" : "var(--color-border)",
@@ -152,10 +164,16 @@ export default function AddCustomerPage() {
                   </button>
                 ))}
               </div>
+              {fieldErrors.title && <p className="text-xs mt-1.5" style={{ color: "var(--color-danger)" }}>{fieldErrors.title}</p>}
               {title === "Other" && (
-                <input ref={titleOtherRef} value={titleOther} onChange={(e) => setTitleOther(e.target.value)}
-                  placeholder="ระบุตำแหน่ง..."
-                  className="w-full px-4 py-3 rounded-xl outline-none text-sm mt-2" style={inputStyle} />
+                <>
+                  <input id="titleOther" ref={titleOtherRef} value={titleOther}
+                    onChange={(e) => { setTitleOther(e.target.value); clearFieldError("titleOther"); }}
+                    aria-invalid={!!fieldErrors.titleOther}
+                    placeholder="Specify occupation..."
+                    className="w-full px-4 py-3 rounded-xl outline-none text-sm mt-2" style={fieldErrors.titleOther ? { ...inputStyle, ...errorRing } : inputStyle} />
+                  {fieldErrors.titleOther && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.titleOther}</p>}
+                </>
               )}
             </div>
           </div>
@@ -168,34 +186,43 @@ export default function AddCustomerPage() {
           <h2 className="text-base font-semibold mb-5" style={{ color: "var(--color-text)" }}>Company & Contact</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+              <label htmlFor="company" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
                 Company / บริษัท <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
-              <input ref={companyRef} value={company} onChange={(e) => setCompany(e.target.value)}
-                placeholder="ชื่อบริษัท / หน่วยงาน"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              <input id="company" ref={companyRef} value={company}
+                onChange={(e) => { setCompany(e.target.value); clearFieldError("company"); }}
+                aria-invalid={!!fieldErrors.company}
+                placeholder="Company / organisation name"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.company ? { ...inputStyle, ...errorRing } : inputStyle} />
+              {fieldErrors.company && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.company}</p>}
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+              <label htmlFor="phone" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
                 Mobile Phone <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
-              <input ref={phoneRef} value={phone} onChange={(e) => setPhone(e.target.value)}
+              <input id="phone" ref={phoneRef} value={phone}
+                onChange={(e) => { setPhone(e.target.value); clearFieldError("phone"); }}
+                aria-invalid={!!fieldErrors.phone}
                 placeholder="0XX-XXX-XXXX"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.phone ? { ...inputStyle, ...errorRing } : inputStyle} />
+              {fieldErrors.phone && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.phone}</p>}
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>LINE ID</label>
-              <input value={lineId} onChange={(e) => setLineId(e.target.value)}
+              <label htmlFor="lineId" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>LINE ID</label>
+              <input id="lineId" value={lineId} onChange={(e) => setLineId(e.target.value)}
                 placeholder="LINE ID"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
+              <label htmlFor="email" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
                 Email <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
-              <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              <input id="email" ref={emailRef} type="email" value={email}
+                onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
+                aria-invalid={!!fieldErrors.email}
                 placeholder="email@example.com"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.email ? { ...inputStyle, ...errorRing } : inputStyle} />
+              {fieldErrors.email && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.email}</p>}
             </div>
           </div>
         </section>
@@ -207,7 +234,7 @@ export default function AddCustomerPage() {
           <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>
             How do you know us? / คุณรู้จักเราจากที่ไหน
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>เลือกได้มากกว่า 1 ช่องทาง</p>
+          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>You can select more than one channel</p>
           <div className="grid grid-cols-2 gap-2">
             {KNOW_CHANNELS.map((ch) => {
               const active = channels.includes(ch);
@@ -234,7 +261,7 @@ export default function AddCustomerPage() {
           </div>
           {channels.includes("Other") && (
             <input value={channelOther} onChange={(e) => setChannelOther(e.target.value)}
-              placeholder="ระบุช่องทางอื่นๆ..."
+              placeholder="Specify other channel..."
               className="w-full px-4 py-3 rounded-xl outline-none text-sm mt-3" style={inputStyle} />
           )}
         </section>
@@ -243,7 +270,7 @@ export default function AddCustomerPage() {
 
         {/* PDPA */}
         <section ref={pdpaRef}>
-          <button type="button" onClick={() => setPdpa(!pdpa)} className="flex items-start gap-3 w-full text-left">
+          <button type="button" onClick={() => { setPdpa(!pdpa); clearFieldError("pdpa"); }} className="flex items-start gap-3 w-full text-left">
             <div className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
               style={{ borderColor: pdpa ? "var(--color-primary)" : "var(--color-sidebar)", background: pdpa ? "var(--color-primary)" : "transparent" }}>
               {pdpa && (
@@ -258,40 +285,43 @@ export default function AddCustomerPage() {
               registration, event communication, and related promotional purposes.
             </p>
           </button>
+          {fieldErrors.pdpa && <p className="text-xs mt-1.5 ml-8" style={{ color: "var(--color-danger)" }}>{fieldErrors.pdpa}</p>}
         </section>
 
         {/* #2: staff-only section — visually separated from the customer-filled fields above */}
         <section className="rounded-xl p-5" style={{ background: "var(--color-bg)", border: "1px dashed var(--color-sidebar)" }}>
           <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>
-            For staff use / สำหรับเจ้าหน้าที่
+            For staff use
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>กรอกโดยพนักงาน — ไม่ใช่ส่วนที่ลูกค้ากรอก</p>
+          <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Filled in by staff — not part of the customer form.</p>
           <div className="mb-4" ref={sourceRef}>
-            <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Source / แหล่งที่มา <span style={{ color: "var(--color-danger)" }}>*</span></label>
-            <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source"
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-              <option value="">— เลือก / select —</option>
+            <label htmlFor="source" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Source <span style={{ color: "var(--color-danger)" }}>*</span></label>
+            <select id="source" value={source} onChange={(e) => { setSource(e.target.value); clearFieldError("source"); }} aria-label="Source"
+              aria-invalid={!!fieldErrors.source}
+              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.source ? { background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", ...errorRing } : { background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+              <option value="">— Select —</option>
               {CUSTOMER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Sales invite = เซลล์ TWC เชิญ · Walk-in = เดินเข้ามาเอง (Sales = ทีมโชว์รูม)</p>
+            {fieldErrors.source && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.source}</p>}
+            <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Sales invite = invited by a TWC salesperson · Walk-in = came in on their own (Sales = showroom team).</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales / เซลล์ผู้ดูแล</label>
-              <select value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
+              <label htmlFor="salesPerson" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales</label>
+              <select id="salesPerson" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                <option value="">— เลือกเซลล์ / select sales —</option>
+                <option value="">— Select sales —</option>
                 {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                Walk-in จะตั้งชื่อเซลล์โชว์รูมผู้ดูแลให้อัตโนมัติ · จัดการรายชื่อเซลล์ได้ที่ Settings → Product Management → Salesperson
+                Walk-ins are auto-assigned to the showroom sales on duty · Manage the sales list in Settings → Product Management → Salesperson
               </p>
             </div>
             <div>
-              <label className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project / โปรเจกต์</label>
-              <input value={project} onChange={(e) => setProject(e.target.value)}
-                placeholder="เช่น Samsung Office"
+              <label htmlFor="project" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project</label>
+              <input id="project" value={project} onChange={(e) => setProject(e.target.value)}
+                placeholder="e.g. Samsung Office"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Used in Reports search &amp; printed on the sticker</p>
@@ -311,7 +341,7 @@ export default function AddCustomerPage() {
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-50"
             style={{ background: "var(--color-primary)" }}>
             {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-            {saving ? "Saving..." : "Register Customer"}
+            {saving ? "Saving..." : "Add Customer"}
           </button>
         </div>
       </div>

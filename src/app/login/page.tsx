@@ -38,16 +38,16 @@ export default function LoginPage() {
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Username</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+              <label htmlFor="username" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Username</label>
+              <input id="username" type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()} placeholder="Enter your username"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
             </div>
             <div>
-              <label className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Password</label>
+              <label htmlFor="password" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={password}
+                <input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   placeholder="••••••••"
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
             <button onClick={handleLogin} disabled={loading}
               className="w-full py-3 rounded-xl text-sm font-medium transition-opacity"
               style={{ background: "var(--color-primary)", color: "var(--color-surface)", opacity: loading ? 0.7 : 1 }}>

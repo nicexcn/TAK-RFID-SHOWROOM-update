@@ -9,13 +9,19 @@ import {
 } from "recharts";
 import { toCsv } from "@/lib/csv";
 import { customerTypeLabel } from "@/lib/customerTypes";
+import { formatDate } from "@/lib/formatDate";
+import { toast } from "sonner";
+
+const errorToastStyle = {
+  style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" },
+};
 
 const GRAPH_COLORS = [
-  { primary: "#726c5a", secondary: "#cdc3ad" },
+  { primary: "var(--color-primary)", secondary: "var(--color-sidebar)" },
   { primary: "#4a6fa5", secondary: "#a8c0dd" },
   { primary: "#4a7c59", secondary: "#a8cbb5" },
   { primary: "#9f6b6b", secondary: "#d4a8a8" },
-  { primary: "#4c4847", secondary: "#9f886c" },
+  { primary: "var(--color-text)", secondary: "var(--color-icon-muted)" },
 ];
 
 type FilterPeriod = "daily" | "weekly" | "monthly" | "annually";
@@ -34,9 +40,10 @@ interface DashboardStats {
 
 function FilterButtons({ value, onChange }: { value: FilterPeriod | null; onChange: (v: FilterPeriod) => void }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1" role="tablist" aria-label="Date range preset">
       {(["daily", "weekly", "monthly", "annually"] as FilterPeriod[]).map((o) => (
         <button key={o} onClick={() => onChange(o)}
+          role="tab" aria-selected={value === o} aria-current={value === o ? "true" : undefined}
           className="px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all"
           style={{ background: value === o ? "var(--color-primary)" : "var(--color-bg)", color: value === o ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (value === o ? "var(--color-primary)" : "var(--color-border)") }}>
           {o.charAt(0).toUpperCase() + o.slice(1)}
@@ -50,7 +57,7 @@ function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
       <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
-        <svg width="18" height="18" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24">
+        <svg width="18" height="18" fill="none" stroke="var(--color-sidebar)" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
         </svg>
       </div>
@@ -64,14 +71,21 @@ function Spinner() {
 }
 
 // ── Draggable Card Wrapper ──────────────────────────────────────────────────
+// Keeps native drag-and-drop for pointer users, and adds keyboard-operable
+// "Move up"/"Move down" buttons (same state setter) so the reorder is a11y-usable.
 function DraggableCard({
-  id, dragOver, onDragStart, onDragEnter, onDragEnd, children,
+  id, label, dragOver, onDragStart, onDragEnter, onDragEnd, onMoveUp, onMoveDown, canMoveUp, canMoveDown, children,
 }: {
   id: string;
+  label: string;
   dragOver: string | null;
   onDragStart: (id: string) => void;
   onDragEnter: (id: string) => void;
   onDragEnd: () => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -81,7 +95,7 @@ function DraggableCard({
       onDragEnter={() => onDragEnter(id)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => e.preventDefault()}
-      className="rounded-xl transition-all duration-200"
+      className="rounded-xl transition-all duration-200 relative group"
       style={{
         background: "var(--color-surface)",
         border: "1px solid " + (dragOver === id ? "var(--color-primary)" : "var(--color-border)"),
@@ -90,6 +104,24 @@ function DraggableCard({
         transform: dragOver === id ? "scale(0.98)" : "scale(1)",
       }}
     >
+      <div className="absolute top-2 right-2 z-10 flex gap-1">
+        <button type="button" onClick={() => onMoveUp(id)} disabled={!canMoveUp}
+          aria-label={`Move ${label} up`}
+          className="w-6 h-6 rounded-md flex items-center justify-center disabled:opacity-30"
+          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </button>
+        <button type="button" onClick={() => onMoveDown(id)} disabled={!canMoveDown}
+          aria-label={`Move ${label} down`}
+          className="w-6 h-6 rounded-md flex items-center justify-center disabled:opacity-30"
+          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
       {children}
     </div>
   );
@@ -157,10 +189,10 @@ export default function AdminDashboard() {
       ["Metric", "Value"],
       ["Total customers", stats.totalCustomers],
       ["New customers", stats.newCustomers],
-      ["Walk-ins (sessions)", stats.totalSessions], [],
+      ["Visits (sessions)", stats.totalSessions], [],
       ["Customer Type", "Count"], ...stats.customersByTitle.map((t) => [customerTypeLabel(t.title), t.count]), [],
       ["Know Channel", "Count"], ...stats.customersByChannel.map((c) => [c.channel, c.count]), [],
-      ["Month", "Walk-ins"], ...stats.sessionsByMonth.map((m) => [m.month, m.count]), [],
+      ["Month", "Visits"], ...stats.sessionsByMonth.map((m) => [m.month, m.count]), [],
       ["Category", "Scans"], ...stats.scansByCategory.map((c) => [c.name, c.value]), [],
       ["Material", "Scans"], ...stats.scansByMaterial.map((c) => [c.name, c.value]), [],
       ["Brand", "Scans"], ...stats.scansByBrand.map((c) => [c.name, c.value]),
@@ -175,12 +207,12 @@ export default function AdminDashboard() {
       const { from, to } = currentRange();
       const res = await fetch(`/api/customers?from=${from}&to=${to}`);
       const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) { alert("No customers in this range"); return; }
+      if (!Array.isArray(data) || data.length === 0) { toast("No customers in this range", errorToastStyle); return; }
       const rows = [
         ["Code", "Full Name", "Title", "Company", "Phone", "Email", "Channels", "Registered"],
         ...data.map((c: { customerCode: string; fullName: string; title: string; company: string; phone: string; email: string; knowChannel: string[]; createdAt: string }) => [
           c.customerCode, c.fullName, c.title, c.company, c.phone, c.email,
-          c.knowChannel.join(";"), new Date(c.createdAt).toLocaleDateString("th-TH"),
+          c.knowChannel.join(";"), formatDate(c.createdAt),
         ]),
       ];
       const csv = toCsv(rows);
@@ -191,7 +223,7 @@ export default function AdminDashboard() {
       URL.revokeObjectURL(url);
       setShowExport(false);
     } catch {
-      alert("Export failed. Please try again.");
+      toast("Export failed. Please try again.", errorToastStyle);
     } finally {
       setExportingCustomers(false);
     }
@@ -225,16 +257,44 @@ export default function AdminDashboard() {
   const dragChartItem = useRef<string | null>(null);
   const [dragChartOver, setDragChartOver] = useState<string | null>(null);
 
+  // Announced to screen readers whenever the card/chart order changes (drag or keyboard).
+  const [reorderStatus, setReorderStatus] = useState("");
+  const CARD_LABELS: Record<string, string> = {
+    walkins: "Visits", customerTypes: "Type of Customers", newVsTotal: "New vs Returning",
+    sessions: "Visits by Month", category: "Interest by Category",
+  };
+  function announceOrder(order: string[], moved: string) {
+    const pos = order.indexOf(moved) + 1;
+    setReorderStatus(`${CARD_LABELS[moved] ?? moved} moved to position ${pos} of ${order.length}.`);
+  }
+  function moveInOrder(order: string[], id: string, dir: -1 | 1): string[] {
+    const from = order.indexOf(id);
+    const to = from + dir;
+    if (from < 0 || to < 0 || to >= order.length) return order;
+    const next = [...order];
+    next.splice(from, 1);
+    next.splice(to, 0, id);
+    return next;
+  }
+  function moveCard(id: string, dir: -1 | 1) {
+    setCardOrder((prev) => { const next = moveInOrder(prev, id, dir); if (next !== prev) announceOrder(next, id); return next; });
+  }
+  function moveChart(id: string, dir: -1 | 1) {
+    setChartOrder((prev) => { const next = moveInOrder(prev, id, dir); if (next !== prev) announceOrder(next, id); return next; });
+  }
+
   function handleDragStart(id: string) { dragItem.current = id; }
   function handleDragEnter(id: string) { setDragOver(id); }
   function handleDragEnd() {
     if (dragItem.current && dragOver && dragItem.current !== dragOver) {
+      const moved = dragItem.current;
       setCardOrder((prev) => {
         const next = [...prev];
-        const from = next.indexOf(dragItem.current!);
+        const from = next.indexOf(moved);
         const to = next.indexOf(dragOver);
         next.splice(from, 1);
-        next.splice(to, 0, dragItem.current!);
+        next.splice(to, 0, moved);
+        announceOrder(next, moved);
         return next;
       });
     }
@@ -246,12 +306,14 @@ export default function AdminDashboard() {
   function handleChartDragEnter(id: string) { setDragChartOver(id); }
   function handleChartDragEnd() {
     if (dragChartItem.current && dragChartOver && dragChartItem.current !== dragChartOver) {
+      const moved = dragChartItem.current;
       setChartOrder((prev) => {
         const next = [...prev];
-        const from = next.indexOf(dragChartItem.current!);
+        const from = next.indexOf(moved);
         const to = next.indexOf(dragChartOver);
         next.splice(from, 1);
-        next.splice(to, 0, dragChartItem.current!);
+        next.splice(to, 0, moved);
+        announceOrder(next, moved);
         return next;
       });
     }
@@ -308,7 +370,7 @@ export default function AdminDashboard() {
     brand: stats?.scansByBrand ?? [],
   };
 
-  // Pie data สำหรับ New vs Total
+  // Pie data for New vs Total
   const pieData = hasCustomers ? [
     { name: "New", value: stats!.newCustomers, color: color.primary },
     { name: "Returning", value: stats!.totalCustomers - stats!.newCustomers, color: color.secondary },
@@ -325,26 +387,26 @@ export default function AdminDashboard() {
     if (id === "walkins") return (
       <div className="p-5 h-full">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Walk-ins</p>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Visits</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
-              <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
+              <svg width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24" aria-label="Drag to reorder">
-              <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />
+            <svg width="14" height="14" fill="none" stroke="var(--color-sidebar)" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="5" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="5" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="12" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="12" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="19" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="19" r="1" fill="var(--color-sidebar)" />
             </svg>
           </div>
         </div>
         {loadingStats ? <Spinner /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
-            <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>{stats?.totalSessions === 0 ? "ยังไม่มี session" : "Total sessions"}</p>
+            <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>{stats?.totalSessions === 0 ? "No visits yet" : "Total sessions"}</p>
           </>
         )}
       </div>
@@ -356,22 +418,22 @@ export default function AdminDashboard() {
           <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
-              <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
+              <svg width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
                 <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
               </svg>
             </div>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24">
-              <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />
+            <svg width="14" height="14" fill="none" stroke="var(--color-sidebar)" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="5" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="5" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="12" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="12" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="19" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="19" r="1" fill="var(--color-sidebar)" />
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
+        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
-            <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} คน</p>
+            <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} people</p>
             <div className="space-y-1">
               {stats!.customersByTitle.slice(0, 4).map((d) => (
                 <div key={d.title} className="flex items-center gap-2">
@@ -394,25 +456,25 @@ export default function AdminDashboard() {
           <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>New vs Returning</p>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
-              <svg width="14" height="14" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
+              <svg width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />
               </svg>
             </div>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" strokeWidth="1.5" viewBox="0 0 24 24">
-              <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />
+            <svg width="14" height="14" fill="none" stroke="var(--color-sidebar)" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="5" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="5" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="12" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="12" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="19" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="19" r="1" fill="var(--color-sidebar)" />
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"ยังไม่มีลูกค้า\nลงทะเบียน"} /> : (
+        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <ResponsiveContainer width="100%" height={120}>
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={32} outerRadius={52} dataKey="value" paddingAngle={2}>
                   {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
-                <Tooltip formatter={(v, n) => [`${v} คน`, n]} />
+                <Tooltip formatter={(v, n) => [`${v} people`, n]} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-4 mt-1">
@@ -436,11 +498,11 @@ export default function AdminDashboard() {
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Walk-ins by Month</h2>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" viewBox="0 0 24 24">
-              <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Visits by Month</h2>
+            <svg width="14" height="14" fill="none" stroke="var(--color-sidebar)" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="5" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="5" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="12" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="12" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="19" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="19" r="1" fill="var(--color-sidebar)" />
             </svg>
           </div>
           <button onClick={() => copyChartData("sessions", compData.map((d) => `${d.month}: ${d.count}`).join("\n"))}
@@ -453,14 +515,14 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-center h-48">
             <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
           </div>
-        ) : compData.length === 0 ? <EmptyState label="ยังไม่มี session / walk-in" /> : (
+        ) : compData.length === 0 ? <EmptyState label="No visits yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={compData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f5f2ee" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#9f886c" }} />
-              <YAxis tick={{ fontSize: 10, fill: "#9f886c" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--color-icon-muted)" }} />
+              <YAxis tick={{ fontSize: 10, fill: "var(--color-icon-muted)" }} />
               <Tooltip />
-              <Line type="monotone" dataKey="count" name="Sessions" stroke={color.primary} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="count" name="Visits" stroke={color.primary} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -472,10 +534,10 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Interest by Category</h2>
-            <svg width="14" height="14" fill="none" stroke="#cdc3ad" viewBox="0 0 24 24">
-              <circle cx="9" cy="5" r="1" fill="#cdc3ad" /><circle cx="15" cy="5" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="12" r="1" fill="#cdc3ad" /><circle cx="15" cy="12" r="1" fill="#cdc3ad" />
-              <circle cx="9" cy="19" r="1" fill="#cdc3ad" /><circle cx="15" cy="19" r="1" fill="#cdc3ad" />
+            <svg width="14" height="14" fill="none" stroke="var(--color-sidebar)" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="5" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="5" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="12" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="12" r="1" fill="var(--color-sidebar)" />
+              <circle cx="9" cy="19" r="1" fill="var(--color-sidebar)" /><circle cx="15" cy="19" r="1" fill="var(--color-sidebar)" />
             </svg>
           </div>
           <button onClick={() => copyChartData("category", (rightChartData[rightFilter] ?? []).map((d) => `${d.name}: ${d.value}`).join("\n"))}
@@ -484,9 +546,10 @@ export default function AdminDashboard() {
             {copiedChart === "category" ? "✓ Copied" : "Copy"}
           </button>
         </div>
-        <div className="flex gap-1 mb-4">
+        <div className="flex gap-1 mb-4" role="tablist" aria-label="Interest breakdown">
           {[{ key: "category", label: "Category" }, { key: "material", label: "Material" }, { key: "brand", label: "Brand" }].map((opt) => (
             <button key={opt.key} onClick={() => setRightFilter(opt.key as typeof rightFilter)}
+              role="tab" aria-selected={rightFilter === opt.key} aria-current={rightFilter === opt.key ? "true" : undefined}
               className="px-2 py-1 rounded-lg text-xs font-medium"
               style={{ background: rightFilter === opt.key ? "var(--color-primary)" : "var(--color-bg)", color: rightFilter === opt.key ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (rightFilter === opt.key ? "var(--color-primary)" : "var(--color-border)") }}>
               {opt.label}
@@ -497,11 +560,11 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-center h-48">
             <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
           </div>
-        ) : (rightChartData[rightFilter] ?? []).length === 0 ? <EmptyState label="ยังไม่มีข้อมูล scan" /> : (
+        ) : (rightChartData[rightFilter] ?? []).length === 0 ? <EmptyState label="No scan data yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={rightChartData[rightFilter]} layout="vertical" margin={{ left: 10 }}>
-              <XAxis type="number" tick={{ fontSize: 10, fill: "#9f886c" }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#9f886c" }} width={72} />
+              <XAxis type="number" tick={{ fontSize: 10, fill: "var(--color-icon-muted)" }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "var(--color-icon-muted)" }} width={72} />
               <Tooltip />
               <Bar dataKey="value" fill={color.primary} radius={[0, 4, 4, 0]} />
             </BarChart>
@@ -546,7 +609,7 @@ export default function AdminDashboard() {
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
                 <p className="text-sm font-semibold mb-1" style={{ color: "var(--color-text)" }}>Export CSV</p>
                 <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
-                  Range: {dateRange.from} → {dateRange.to}
+                  Range: {formatDate(dateRange.from)} → {formatDate(dateRange.to)}
                 </p>
                 <button onClick={handleExportSummary} disabled={!stats}
                   className="w-full mb-2 py-2.5 rounded-xl text-sm font-medium text-white text-left px-4"
@@ -568,10 +631,10 @@ export default function AdminDashboard() {
           {/* Search */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 min-w-0 sm:flex-none sm:w-56"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-            <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
+            <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
-            <input placeholder="Search product..." className="outline-none text-sm w-full"
+            <input placeholder="Search product..." aria-label="Search product" className="outline-none text-sm w-full"
               style={{ background: "transparent", color: "var(--color-text)" }} />
           </div>
         </div>
@@ -581,11 +644,12 @@ export default function AdminDashboard() {
       {/* Filter row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <p className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
-          Showing stats for: <span style={{ color: "var(--color-text-muted)" }}>{dateRange.from} → {dateRange.to}</span>
+          Showing stats for: <span style={{ color: "var(--color-text-muted)" }}>{formatDate(dateRange.from)} → {formatDate(dateRange.to)}</span>
         </p>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap" role="tablist" aria-label="Date range mode">
           <FilterButtons value={rangeMode === "preset" ? statFilter : null} onChange={(v) => { userPickedRange.current = true; setRangeMode("preset"); setStatFilter(v); }} />
           <button onClick={() => { userPickedRange.current = true; setRangeMode("custom"); }}
+            role="tab" aria-selected={rangeMode === "custom"} aria-current={rangeMode === "custom" ? "true" : undefined}
             className="px-3 py-1 rounded-lg text-xs font-medium transition-all"
             style={{ background: rangeMode === "custom" ? "var(--color-primary)" : "var(--color-bg)", color: rangeMode === "custom" ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid " + (rangeMode === "custom" ? "var(--color-primary)" : "var(--color-border)") }}>
             Custom
@@ -603,14 +667,18 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Stats Cards (draggable) ── */}
-      <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>ลาก card เพื่อเปลี่ยนตำแหน่ง</p>
+      <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>Drag a card, or use the arrow buttons, to reorder</p>
+      {/* Screen-reader announcement of the new order (drag or keyboard) */}
+      <div aria-live="polite" className="sr-only">{reorderStatus}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {cardOrder.filter(isWidgetVisible).map((id) => (
-          <DraggableCard key={id} id={id} dragOver={dragOver}
-            onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd}>
+        {(() => { const visible = cardOrder.filter(isWidgetVisible); return visible.map((id, i) => (
+          <DraggableCard key={id} id={id} label={CARD_LABELS[id] ?? id} dragOver={dragOver}
+            onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd}
+            onMoveUp={(x) => moveCard(x, -1)} onMoveDown={(x) => moveCard(x, 1)}
+            canMoveUp={i > 0} canMoveDown={i < visible.length - 1}>
             {renderCard(id)}
           </DraggableCard>
-        ))}
+        )); })()}
       </div>
 
       {/* Quick Actions */}
@@ -627,7 +695,7 @@ export default function AdminDashboard() {
               onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "var(--color-bg)" }}>
-                <svg width="18" height="18" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
+                <svg width="18" height="18" fill="none" stroke="var(--color-primary)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </div>
@@ -640,12 +708,14 @@ export default function AdminDashboard() {
 
       {/* ── Chart Cards (draggable) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {chartOrder.filter(isWidgetVisible).map((id) => (
-          <DraggableCard key={id} id={id} dragOver={dragChartOver}
-            onDragStart={handleChartDragStart} onDragEnter={handleChartDragEnter} onDragEnd={handleChartDragEnd}>
+        {(() => { const visible = chartOrder.filter(isWidgetVisible); return visible.map((id, i) => (
+          <DraggableCard key={id} id={id} label={CARD_LABELS[id] ?? id} dragOver={dragChartOver}
+            onDragStart={handleChartDragStart} onDragEnter={handleChartDragEnter} onDragEnd={handleChartDragEnd}
+            onMoveUp={(x) => moveChart(x, -1)} onMoveDown={(x) => moveChart(x, 1)}
+            canMoveUp={i > 0} canMoveDown={i < visible.length - 1}>
             {renderChart(id)}
           </DraggableCard>
-        ))}
+        )); })()}
       </div>
     </div>
   );

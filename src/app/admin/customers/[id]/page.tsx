@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
+import { formatDateTime } from "@/lib/formatDate";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
+
+const errorToast = { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } };
 
 // Item 6: which roles may edit / delete a customer profile. The basic Presenter (`user`) and
 // prep staff can view/register but not modify; deleting is limited further to admins.
@@ -49,6 +54,7 @@ const STATUS: Record<string, { label: string; bg: string; color: string }> = {
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const confirm = useConfirm();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,6 +65,7 @@ export default function CustomerDetailPage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [salesOptions, setSalesOptions] = useState<string[]>([]);
   const canEdit = CAN_EDIT_ROLES.includes(role);
   const canDelete = CAN_DELETE_ROLES.includes(role);
@@ -92,16 +99,24 @@ export default function CustomerDetailPage() {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
       });
       if (res.ok) { const updated = await res.json(); setCustomer((c) => (c ? { ...c, ...updated } : c)); setEditing(false); }
-      else alert(res.status === 403 ? "You don't have permission to edit customers" : "Failed to save");
-    } catch { alert("Failed to save"); }
+      else toast(res.status === 403 ? "You don't have permission to edit customers" : "Failed to save", errorToast);
+    } catch { toast("Failed to save", errorToast); }
     finally { setSaving(false); }
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this customer?")) return;
-    const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
-    if (res.ok) router.push("/admin/customers");
-    else alert("Failed to delete");
+    if (deleting) return;
+    if (!(await confirm({ title: "Delete customer?", message: "This can't be undone.", danger: true }))) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
+      if (res.ok) { router.push("/admin/customers"); return; }
+      toast("Failed to delete", errorToast);
+    } catch {
+      toast("Failed to delete", errorToast);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function addContact() {
@@ -112,8 +127,8 @@ export default function CustomerDetailPage() {
         body: JSON.stringify({ name: cName.trim(), phone: cPhone.trim() }),
       });
       if (res.ok) { const c = await res.json(); setContacts((p) => [...p, c]); setCName(""); setCPhone(""); }
-      else alert("Failed to add contact");
-    } catch { alert("Failed to add contact"); }
+      else toast("Failed to add contact", errorToast);
+    } catch { toast("Failed to add contact", errorToast); }
   }
   async function removeContact(cid: string) {
     const prev = contacts;
@@ -149,7 +164,7 @@ export default function CustomerDetailPage() {
     ["Sales", customer.salesPerson || "—"],
     ["Project", customer.project || "—"],
     ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
-    ["Created", new Date(customer.createdAt).toLocaleString("en-GB")],
+    ["Created", formatDateTime(customer.createdAt)],
   ];
   // Item 6: the basic Presenter "cannot access sales information" — hide the sales/assignment fields.
   const visibleFields = role === "user" ? fields.filter(([l]) => !["Source", "Sales", "Project"].includes(l)) : fields;
@@ -176,7 +191,7 @@ export default function CustomerDetailPage() {
             <button onClick={startEdit} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>✎ Edit</button>
           )}
           {canDelete && (
-            <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>Delete</button>
+            <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-xl text-sm disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>{deleting ? "Deleting…" : "Delete"}</button>
           )}
         </div>
       </div>
@@ -217,7 +232,7 @@ export default function CustomerDetailPage() {
               )}
               {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
               <label className="block">
-                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales (เซลล์ผู้ดูแล)</span>
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales</span>
                 <select aria-label="Sales" value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                   <option value="">— none —</option>
@@ -293,7 +308,7 @@ export default function CustomerDetailPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{scan.product.name}</p>
                       <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
-                        {[scan.product.brand, scan.product.location, new Date(scan.scannedAt).toLocaleString("en-GB")].filter(Boolean).join(" · ")}
+                        {[scan.product.brand, scan.product.location, formatDateTime(scan.scannedAt)].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     {scan.takeawayQty > 0 && scan.isLoan !== false && (

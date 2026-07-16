@@ -8,6 +8,7 @@ import { Toaster, toast } from "sonner";
 import { subscribeNotifications } from "@/lib/notifChannel";
 import { isNotifyEnabled, setNotifyEnabled, enableNotifications, playBeep, showOsNotification } from "@/lib/notify";
 import { canAccessPath } from "@/lib/roles";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 
 interface UnreadNotif { product?: { name?: string }; customer?: { fullName?: string } | null }
 
@@ -123,6 +124,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
+    <ConfirmProvider>
+    <a href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium"
+      style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+      Skip to content
+    </a>
     <div className="min-h-screen flex" style={{ background: "var(--color-border)" }}>
       {/* In-app toasts for new notifications — stacks, auto-dismisses, a11y live region.
           Works on iOS PWA too. */}
@@ -147,13 +154,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             : "-translate-x-full px-4 lg:translate-x-0 lg:w-0 lg:px-0 lg:overflow-hidden"
         }`}
         style={{ background: "var(--color-sidebar)", minHeight: "100vh" }}>
-        <div className="mb-2 px-2 flex-shrink-0">
+        <div className="mb-2 px-2 flex-shrink-0 flex items-center justify-between">
           <Image src="/b-logo.png" alt="Nimitr Lab" width={160} height={55} className="object-contain" />
+          {/* Explicit close on mobile: the open drawer covers the top-bar hamburger, so
+              staff need a visible way to close it besides tapping the dimmed backdrop. */}
+          <button onClick={() => setSidebarOpen(false)} aria-label="Close menu"
+            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0"
+            style={{ color: "var(--color-text)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         <div className="px-2 mb-8 mt-4 flex-shrink-0">
           <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--color-text)" }}>NimitrLog</p>
         </div>
-        <nav className="flex-1 space-y-1">
+        <nav aria-label="Primary" className="flex-1 space-y-1">
           {navItems.filter((item) => role !== "" && canAccessPath(role, item.href)).map((item) => {
             const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
@@ -196,8 +212,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="hidden sm:inline">{notifOn ? "Sound on" : "Enable sound"}</span>
           </button>
         </div>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
+        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
+    </ConfirmProvider>
   );
 }

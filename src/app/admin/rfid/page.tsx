@@ -19,6 +19,11 @@ const STATION_READER_KEY = "tak-station-reader-url";
 const warn = (msg: string) =>
   toast(msg, { icon: "⚠️", duration: 3000, style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } });
 
+// A success toast — same fixed top-right placement as warn(), so "sent to display"
+// feedback is visible even when the user has scrolled down the scan list.
+const notifyOk = (msg: string) =>
+  toast(msg, { icon: "✓", duration: 3000, style: { background: "var(--color-success-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } });
+
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Product {
   id: string; name: string; brand: string | null; productCode: string | null;
@@ -49,9 +54,9 @@ const DEVICES = [1, 2, 3, 4] as const;
 type DeviceId = typeof DEVICES[number];
 
 const STATUS_STYLE = {
-  NONE:      { label: "",             bg: "transparent", color: "var(--color-text-subtle)" },
-  PREPARING: { label: "กำลังเตรียม", bg: "#dbeafe",    color: "#3b82f6" },
-  COMPLETE:  { label: "พร้อมแล้ว",   bg: "#d1fae5",    color: "var(--color-success)" },
+  NONE:      { label: "",         bg: "transparent", color: "var(--color-text-subtle)" },
+  PREPARING: { label: "Preparing", bg: "#dbeafe",    color: "#3b82f6" },
+  COMPLETE:  { label: "Ready",    bg: "#d1fae5",    color: "var(--color-success)" },
 };
 
 // A relay subscriber URL may pin one reader as `?device=<device_id>`. If present, that
@@ -100,7 +105,6 @@ function RFIDPageInner() {
   const [takeawayLimit, setTakeawayLimit] = useState(3);       // max takeaway pieces per session
   const [takeawayEnabled, setTakeawayEnabled] = useState(true); // whether the limit is enforced
   const [sending, setSending] = useState(false);
-  const [sendSuccess, setSendSuccess] = useState(false);
   const [displayedId, setDisplayedId] = useState<string | null>(null); // session id currently on a TV
   const [displays, setDisplays] = useState<SavedDisplay[]>([]); // TV screen registry (from Settings)
   const [targetDisplay, setTargetDisplay] = useState(""); // which screen "Send to Display" targets ("" = default screen)
@@ -474,10 +478,10 @@ function RFIDPageInner() {
       const data = await res.json();
       // Guard: never enter the active-session branch with a missing id (would make
       // every subsequent scan hit /api/sessions/undefined/scans).
-      if (!res.ok || !data?.id) { setError("เริ่ม session ไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+      if (!res.ok || !data?.id) { setError("Couldn't start — try again"); return; }
       setSession({ ...data, scans: [] });
     } catch {
-      setError("เริ่ม session ไม่สำเร็จ ลองใหม่อีกครั้ง");
+      setError("Couldn't start — try again");
     } finally {
       setLoading(false);
     }
@@ -499,13 +503,13 @@ function RFIDPageInner() {
       setContactName(""); // "" = primary contact; only set when staff pick an extra contact
       fetch(`/api/customers/${data.id}/contacts`).then((r) => r.json())
         .then((cs) => { if (searchSeqRef.current === seq) setContacts(Array.isArray(cs) ? cs : []); }).catch(() => {});
-    } else setSearchError("ไม่พบข้อมูลสมาชิก");
+    } else setSearchError("No matching member found");
     setSearching(false);
   }
 
   async function handleStartSession() {
     const code = customerInfo?.customerCode || customerQuery.trim();
-    if (!code) { setError("กรุณาระบุ Customer ID"); return; }
+    if (!code) { setError("Please enter a Customer ID"); return; }
     await handleStartSessionWith(code, customerInfo?.id || null, contactName);
   }
 
@@ -559,7 +563,7 @@ function RFIDPageInner() {
     }
     // image3: give-away items are handed over as-is — no prepare/notification.
     if (scan.product.returnable === false) {
-      warn("สินค้าให้ไปเลย — ไม่ต้องเตรียม/แจ้งเตือน");
+      warn("Give-away item — no prep/alert needed");
       return;
     }
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "PREPARING" } : s) } : p);
@@ -572,7 +576,7 @@ function RFIDPageInner() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: scan.product.id, customerId: session?.customerId || null,
-          sessionId: session?.id, title: "เตรียมสินค้าตัวอย่าง",
+          sessionId: session?.id, title: "Prepare product sample",
           message: `${scan.product.name}${scan.product.location ? ` (${scan.product.location})` : ""}`,
         }),
       }),
@@ -583,7 +587,7 @@ function RFIDPageInner() {
     if (skipped) {
       setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "NONE" } : s) } : p);
       await patchScan(scan, { prepareStatus: "NONE" });
-      warn("สินค้าให้ไปเลย — ไม่ต้องเตรียม/แจ้งเตือน");
+      warn("Give-away item — no prep/alert needed");
     }
   }
 
@@ -643,7 +647,7 @@ function RFIDPageInner() {
 
   async function handleSendToDisplay() {
     if (!session?.id) return;
-    setSending(true); setSendSuccess(false);
+    setSending(true);
     try {
       const res = await fetch("/api/sessions/display", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -652,12 +656,12 @@ function RFIDPageInner() {
       });
       if (res.ok) {
         setDisplayedId(session.id);
-        setSendSuccess(true); setTimeout(() => setSendSuccess(false), 3000);
+        notifyOk("Sent to display");
       } else {
-        setError("ส่งขึ้นจอไม่สำเร็จ"); setTimeout(() => setError(""), 3000);
+        warn("Couldn't send to display");
       }
     } catch {
-      setError("ส่งขึ้นจอไม่สำเร็จ"); setTimeout(() => setError(""), 3000);
+      warn("Couldn't send to display");
     } finally {
       setSending(false);
     }
@@ -673,7 +677,6 @@ function RFIDPageInner() {
         body: JSON.stringify({ sessionId: session.id }),
       });
       setDisplayedId(null);
-      setSendSuccess(false);
     } catch { /* the display's fallback poll reconciles */ }
   }
 
@@ -691,7 +694,6 @@ function RFIDPageInner() {
         </div>
         {session && (
           <div className="flex flex-wrap items-center gap-2">
-            {sendSuccess && <p className="text-xs" style={{ color: "var(--color-success)" }}>✓ Sent to display</p>}
             <button onClick={() => setShowLogs(!showLogs)}
               className="px-4 py-2 rounded-xl text-sm flex items-center gap-2"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
@@ -737,25 +739,25 @@ function RFIDPageInner() {
         <div className="max-w-md mx-auto mt-12">
           <div className="rounded-2xl p-8" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <h2 className="text-lg font-semibold mb-1 text-center" style={{ color: "var(--color-text)" }}>Start New Session</h2>
-            <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>ค้นหาลูกค้าหรือกรอก ID เพื่อเริ่ม session</p>
+            <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>Search a customer or enter an ID to start</p>
             <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: "var(--color-bg)" }}>
               {(["code","name","phone"] as const).map((t) => (
                 <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
                   className="flex-1 py-2 text-xs font-medium transition-colors"
                   style={{ background: searchType === t ? "var(--color-primary)" : "transparent", color: searchType === t ? "var(--color-surface)" : "var(--color-text-muted)" }}>
-                  {t === "code" ? "ID" : t === "name" ? "ชื่อ" : "เบอร์"}
+                  {t === "code" ? "ID" : t === "name" ? "Name" : "Phone"}
                 </button>
               ))}
             </div>
             <div className="flex gap-2 mb-3">
               <input value={customerQuery} onChange={(e) => setCustomerQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearchCustomer()}
-                placeholder={searchType === "code" ? "C0001..." : searchType === "name" ? "ค้นหาชื่อ..." : "08X-XXX-XXXX"}
+                placeholder={searchType === "code" ? "C0001..." : searchType === "name" ? "Search name..." : "08X-XXX-XXXX"}
                 className="flex-1 px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <button onClick={handleSearchCustomer} disabled={searching || !customerQuery.trim()}
                 className="px-4 py-3 rounded-xl text-sm font-medium disabled:opacity-50" style={btnStyle}>
-                {searching ? "..." : "ค้นหา"}
+                {searching ? "..." : "Search"}
               </button>
             </div>
             {searchError && <p className="text-sm mb-3 px-1" style={{ color: "var(--color-danger)" }}>{searchError}</p>}
@@ -770,7 +772,7 @@ function RFIDPageInner() {
                 {contacts.length > 0 && (
                   <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
                     className="w-full mt-2 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                    <option value="">{customerInfo.fullName} (หลัก)</option>
+                    <option value="">{customerInfo.fullName} (primary)</option>
                     {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
                 )}
@@ -786,7 +788,7 @@ function RFIDPageInner() {
             {loading ? (
               <div className="flex items-center justify-center py-3">
                 <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
-                <span className="ml-2 text-sm" style={{ color: "var(--color-text-muted)" }}>กำลังเริ่ม session...</span>
+                <span className="ml-2 text-sm" style={{ color: "var(--color-text-muted)" }}>Starting…</span>
               </div>
             ) : (
               <button onClick={handleStartSession} disabled={loading}
@@ -807,7 +809,7 @@ function RFIDPageInner() {
               <p className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
                 {customerInfo?.fullName ? `${customerInfo.fullName} (${session.customerCode})` : session.customerCode}
               </p>
-              {session.contactName && <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>ผู้ติดต่อ: {session.contactName}</p>}
+              {session.contactName && <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Contact: {session.contactName}</p>}
             </div>
             <div className="text-right">
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Total Scans</p>
@@ -822,7 +824,7 @@ function RFIDPageInner() {
               <div className="flex items-center gap-2">
                 {ws.isConnected && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
                 <span className="text-xs" style={{ color: ws.isConnected ? "var(--color-success)" : "var(--color-text-muted)" }}>
-                  {ws.isConnected ? "เชื่อมต่อแล้ว" : ws.error || "ยังไม่ได้เชื่อมต่อ"}
+                  {ws.isConnected ? "Connected" : ws.error || "Not connected"}
                 </span>
               </div>
             </div>
@@ -870,14 +872,14 @@ function RFIDPageInner() {
                     <input
                       value={deviceIps[wsDeviceId]}
                       onChange={(e) => setDeviceIps((p) => ({ ...p, [wsDeviceId]: e.target.value }))}
-                      placeholder="Pick a reader ↑ or type: 192.168.1.104 / wss://…"
+                      placeholder="Select a reader above, or enter its address"
                       className="px-2 py-1.5 rounded-lg outline-none w-full sm:w-72 max-w-full"
                       style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                   </div>
                   <button onClick={ws.connect} disabled={!deviceIps[wsDeviceId]}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
                     style={{ background: deviceIps[wsDeviceId] ? "#4a6fa5" : "var(--color-sidebar)" }}>
-                    เชื่อมต่อ WebSocket
+                    Connect
                   </button>
                 </>
               ) : (
@@ -892,7 +894,7 @@ function RFIDPageInner() {
                   <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
-                    ตัดการเชื่อมต่อ
+                    Disconnect
                   </button>
                 </>
               )}
@@ -912,11 +914,11 @@ function RFIDPageInner() {
                 <button onClick={runSimulator} disabled={simulating || productMap.size === 0}
                   className="px-4 py-1.5 rounded-lg text-xs font-medium text-white"
                   style={{ background: simulating ? "var(--color-sidebar)" : "var(--color-primary)" }}>
-                  {simulating ? "กำลังจำลอง..." : `จำลองการสแกน (Fix Reader burst 3000)`}
+                  {simulating ? "Simulating…" : "Demo scan"}
                 </button>
               </div>
               <span className="text-xs ml-auto" style={{ color: "var(--color-text-subtle)" }}>
-                สินค้าในระบบ: {productMap.size} รายการ
+                {productMap.size} products loaded
               </span>
             </div>
           </div>
@@ -934,11 +936,11 @@ function RFIDPageInner() {
               <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
                 <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>Device Log</p>
                 <button onClick={() => setDeviceLogs([])} className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>ล้าง</button>
+                  style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>Clear</button>
               </div>
               <div className="max-h-52 overflow-y-auto">
                 {deviceLogs.length === 0 ? (
-                  <p className="text-center py-8 text-sm" style={{ color: "var(--color-text-subtle)" }}>ยังไม่มี log</p>
+                  <p className="text-center py-8 text-sm" style={{ color: "var(--color-text-subtle)" }}>No log yet</p>
                 ) : deviceLogs.map((log, i) => {
                   return (
                     <div key={i} className="flex items-center gap-3 px-4 py-2.5"
@@ -947,7 +949,7 @@ function RFIDPageInner() {
                       <span className="text-xs font-mono flex-shrink-0" style={{ color: "var(--color-text-subtle)" }}>{log.tag}</span>
                       <span className={`text-xs flex-1 ${log.ok ? "" : "text-red-500"}`}
                         style={{ color: log.ok ? "var(--color-text)" : "var(--color-danger)" }}>
-                        {log.ok ? log.productName : "❌ ไม่พบสินค้า"}
+                        {log.ok ? log.productName : "❌ Not found"}
                       </span>
                       <span className="text-xs" style={{ color: log.ok ? "var(--color-success)" : "var(--color-danger)" }}>
                         {log.ok ? "✓" : "✗"}
@@ -988,7 +990,7 @@ function RFIDPageInner() {
             {/* Tabs */}
             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
               <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
-                รายการสแกน <span style={{ color: "var(--color-text-muted)" }}>({session.scans.length})</span>
+                Scanned items <span style={{ color: "var(--color-text-muted)" }}>({session.scans.length})</span>
               </p>
               {visibleScans.some((s) => s.prepareStatus === "NONE" && s.product.returnable !== false) && (
                 <button onClick={() => {
@@ -999,7 +1001,7 @@ function RFIDPageInner() {
                 }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                   style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                  เตรียมทั้งหมด
+                  Prepare all
                 </button>
               )}
             </div>
@@ -1007,6 +1009,9 @@ function RFIDPageInner() {
             {visibleScans.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No items scanned yet</p>
+                {!ws.isConnected && (
+                  <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>Connect a reader to start scanning</p>
+                )}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1084,19 +1089,19 @@ function RFIDPageInner() {
                               <button onClick={() => handlePrepare(scan)}
                                 className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
                                 style={{ background: "#dbeafe", color: "#3b82f6" }}>
-                                🔔 เตรียมสินค้า
+                                🔔 Prepare
                               </button>
                             )}
                             {scan.prepareStatus === "NONE" && scan.product.returnable === false && (
                               <span className="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap" style={{ background: "#f0eee6", color: "var(--color-text-muted)" }}>
-                                ให้ไปเลย
+                                Give-away
                               </span>
                             )}
                             {scan.prepareStatus === "PREPARING" && (
                               <button onClick={() => handleMarkComplete(scan)}
                                 className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
                                 style={{ background: "#d1fae5", color: "var(--color-success)" }}>
-                                ✓ เสร็จสิ้น
+                                ✓ Done
                               </button>
                             )}
                           </td>

@@ -5,6 +5,8 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import BulkImageImport from "@/components/BulkImageImport";
 import { parseCsv } from "@/lib/csv";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -33,6 +35,8 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const confirm = useConfirm();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -49,12 +53,19 @@ export default function ProductsPage() {
 
   async function fetchProducts() {
     setLoading(true);
-    const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}`);
-    const data = await res.json();
-    setProducts(data.products || []);
-    setTotalPages(data.totalPages || 1);
-    setTotal(data.total || 0);
-    setLoading(false);
+    setFetchError(false);
+    try {
+      const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}`);
+      if (!res.ok) throw new Error("Failed to load products");
+      const data = await res.json();
+      setProducts(data.products || []);
+      setTotalPages(data.totalPages || 1);
+      setTotal(data.total || 0);
+    } catch {
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { fetchProducts(); }, [search, page, status]);
@@ -67,14 +78,23 @@ export default function ProductsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // The row-actions menu is position:fixed placed via getBoundingClientRect — close it on
+  // scroll so it can't strand away from its trigger.
+  useEffect(() => {
+    if (!openMenu) return;
+    function handleScroll() { setOpenMenu(null); }
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [openMenu]);
+
   async function handleDelete(id: string) {
     const prod = products.find((p) => p.id === id);
     const hasHistory = (prod?._count?.scans ?? 0) > 0;
     // Tailor the confirm to what will actually happen (archive vs hard delete).
-    const msg = hasHistory
+    const message = hasHistory
       ? "This product has scan history, so it will be ARCHIVED (hidden but kept — its RFID tag is freed for reuse). You can permanently delete it later from the Archived tab. Continue?"
       : "Delete this product? This permanently removes it.";
-    if (!confirm(msg)) return;
+    if (!(await confirm({ title: hasHistory ? "Archive product" : "Delete product", message, danger: true }))) return;
     await fetch(`/api/products/${id}`, { method: "DELETE" });
     fetchProducts();
   }
@@ -85,13 +105,13 @@ export default function ProductsPage() {
     });
     const body = await res.json().catch(() => ({} as { tagRecovered?: boolean; rfidTag?: string }));
     if (res.ok && body.tagRecovered === false) {
-      alert(`Restored — but its original RFID tag was already taken, so it kept a placeholder tag (${body.rfidTag}). Edit the product to set a new tag.`);
+      toast(`Restored — but its original RFID tag was already taken, so it kept a placeholder tag (${body.rfidTag}). Edit the product to set a new tag.`);
     }
     fetchProducts();
   }
 
   async function handlePurge(id: string) {
-    if (!confirm("Permanently delete this product AND its scan history? This cannot be undone.")) return;
+    if (!(await confirm({ title: "Delete forever", message: "Permanently delete this product AND its scan history? This cannot be undone.", danger: true }))) return;
     await fetch(`/api/products/${id}?purge=true`, { method: "DELETE" });
     fetchProducts();
   }
@@ -209,7 +229,7 @@ export default function ProductsPage() {
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1"
           style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-          <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
+          <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
           <input
@@ -251,11 +271,22 @@ export default function ProductsPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>Loading...</td></tr>
+            ) : fetchError ? (
+              <tr>
+                <td colSpan={6} className="text-center py-10">
+                  <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>Could not load products. Please check your connection and try again.</p>
+                  <button onClick={fetchProducts}
+                    className="px-4 py-2 rounded-xl text-sm font-medium"
+                    style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+                    Retry
+                  </button>
+                </td>
+              </tr>
             ) : products.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>No products found</td></tr>
             ) : (
               products.map((product) => (
-                <tr key={product.id} style={{ borderBottom: "1px solid var(--color-bg)", background: product.isActive ? undefined : "#faf8f4", opacity: product.isActive ? 1 : 0.6 }}>
+                <tr key={product.id} style={{ borderBottom: "1px solid var(--color-bg)", background: product.isActive ? undefined : "var(--color-hover)", opacity: product.isActive ? 1 : 0.6 }}>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{product.brand || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.materialType || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.category || "-"}</td>
@@ -264,7 +295,7 @@ export default function ProductsPage() {
                     {product.name}
                     {!product.isActive && (
                       <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
-                        style={{ background: "#ece8df", color: "var(--color-text-muted)" }}>Archived</span>
+                        style={{ background: "var(--color-border)", color: "var(--color-text-muted)" }}>Archived</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -282,7 +313,7 @@ export default function ProductsPage() {
                       }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg"
                       style={{ background: openMenu === product.id ? "var(--color-bg)" : "transparent" }}>
-                      <svg width="16" height="16" fill="#9f886c" viewBox="0 0 24 24">
+                      <svg width="16" height="16" fill="var(--color-icon-muted)" viewBox="0 0 24 24">
                         <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                       </svg>
                     </button>
@@ -314,7 +345,7 @@ export default function ProductsPage() {
             <>
               <button onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                style={{ color: "#4a7c59" }}
+                style={{ color: "var(--color-success-soft)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#eef6f0")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -325,7 +356,7 @@ export default function ProductsPage() {
               <button onClick={() => { handlePurge(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                 style={{ color: "var(--color-danger-soft)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger-bg)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <polyline points="3 6 5 6 21 6"/>
@@ -364,7 +395,7 @@ export default function ProductsPage() {
                 <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                   style={{ color: "var(--color-danger-soft)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger-bg)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <polyline points="3 6 5 6 21 6"/>
@@ -396,7 +427,7 @@ export default function ProductsPage() {
               <button onClick={handleCloseImport}
                 className="w-8 h-8 flex items-center justify-center rounded-lg"
                 style={{ background: "var(--color-bg)" }}>
-                <svg width="14" height="14" fill="none" stroke="#4c4847" strokeWidth="2" viewBox="0 0 24 24">
+                <svg width="14" height="14" fill="none" stroke="var(--color-text)" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
               </button>
@@ -425,8 +456,8 @@ export default function ProductsPage() {
                 <div className="flex items-center justify-between p-4 rounded-xl mb-4"
                   style={{ background: "var(--color-bg)" }}>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>ดาวน์โหลด Template</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>ใช้ template นี้เป็นแนวทางในการกรอกข้อมูล</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>Download Template</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Use this template as a guide for filling in your data</p>
                   </div>
                   <button onClick={downloadTemplate}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium"
@@ -441,19 +472,19 @@ export default function ProductsPage() {
 
                 {/* Column mapping guide */}
                 <div className="mb-4 p-4 rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
-                  <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text)" }}>Columns ที่รองรับ</p>
+                  <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text)" }}>Supported columns</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {[
-                      ["rfidTag *", "RFID Tag (จำเป็น)"],
-                      ["name *", "ชื่อสินค้า (จำเป็น)"],
-                      ["brand", "แบรนด์"],
-                      ["materialType", "ประเภทวัสดุ"],
-                      ["category", "หมวดหมู่"],
-                      ["productCode", "รหัสสินค้า"],
-                      ["size", "ขนาด"],
-                      ["colour", "สี"],
-                      ["description", "รายละเอียด"],
-                      ["location", "ตำแหน่งจัดเก็บ"],
+                      ["rfidTag *", "RFID Tag (required)"],
+                      ["name *", "Product name (required)"],
+                      ["brand", "Brand"],
+                      ["materialType", "Material type"],
+                      ["category", "Category"],
+                      ["productCode", "Product code"],
+                      ["size", "Size"],
+                      ["colour", "Colour"],
+                      ["description", "Description"],
+                      ["location", "Storage location"],
                     ].map(([col, desc]) => (
                       <div key={col} className="flex items-center gap-2">
                         <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{col}</code>
@@ -462,7 +493,7 @@ export default function ProductsPage() {
                     ))}
                   </div>
                   <p className="text-xs mt-2" style={{ color: "var(--color-text-subtle)" }}>
-                    * ถ้า rfidTag มีอยู่แล้วในระบบ จะทำการ <strong>update</strong> ข้อมูล ถ้าไม่มีจะ <strong>สร้างใหม่</strong>
+                    * If the rfidTag already exists, the record is <strong>updated</strong>; otherwise a <strong>new one is created</strong>.
                   </p>
                 </div>
 
@@ -480,21 +511,21 @@ export default function ProductsPage() {
                   <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
                   {importFile ? (
                     <div>
-                      <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
+                      <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="var(--color-primary)" strokeWidth="2" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
                       </svg>
                       <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>{importFile.name}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>คลิกเพื่อเปลี่ยนไฟล์</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>Click to change file</p>
                     </div>
                   ) : (
                     <div>
-                      <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="#cdc3ad" strokeWidth="2" viewBox="0 0 24 24">
+                      <svg className="mx-auto mb-2" width="24" height="24" fill="none" stroke="var(--color-sidebar)" strokeWidth="2" viewBox="0 0 24 24">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
-                      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>คลิกหรือลากไฟล์มาวางที่นี่</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>รองรับ .csv</p>
+                      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Click or drag a file here</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Supports .csv</p>
                     </div>
                   )}
                 </div>
@@ -503,7 +534,7 @@ export default function ProductsPage() {
                 {importPreview.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-medium mb-2" style={{ color: "var(--color-text)" }}>
-                      Preview (5 rows แรก)
+                      Preview (first 5 rows)
                     </p>
                     <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
                       <table className="w-full text-xs min-w-max">
@@ -531,7 +562,7 @@ export default function ProductsPage() {
                 )}
 
                 {importError && (
-                  <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
+                  <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>
                     {importError}
                   </div>
                 )}
@@ -563,25 +594,25 @@ export default function ProductsPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--color-text)" }}>
-                  {importResult.failed === 0 ? "Import สำเร็จ!" : "Import เสร็จสิ้น (มีบางรายการที่ผิดพลาด)"}
+                  {importResult.failed === 0 ? "Import complete!" : "Import finished (some rows failed)"}
                 </h3>
                 <div className="flex justify-center gap-6 my-5">
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "var(--color-success)" }}>{importResult.created}</p>
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>สร้างใหม่</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Created</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>{importResult.updated}</p>
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>อัปเดต</p>
+                    <p className="text-2xl font-bold" style={{ color: "var(--color-info)" }}>{importResult.updated}</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Updated</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: "#ef4444" }}>{importResult.failed}</p>
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>ผิดพลาด</p>
+                    <p className="text-2xl font-bold" style={{ color: "var(--color-danger)" }}>{importResult.failed}</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Failed</p>
                   </div>
                 </div>
                 {importResult.errors.length > 0 && (
                   <div className="text-left p-3 rounded-xl mb-4 max-h-32 overflow-y-auto"
-                    style={{ background: "#fff0f0", border: "1px solid #f5c0c0" }}>
+                    style={{ background: "var(--color-danger-bg)", border: "1px solid var(--color-danger-border)" }}>
                     {importResult.errors.map((e, i) => (
                       <p key={i} className="text-xs" style={{ color: "var(--color-danger-soft)" }}>{e}</p>
                     ))}
