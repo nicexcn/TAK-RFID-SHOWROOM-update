@@ -376,11 +376,73 @@ export default function AdminDashboard() {
     { name: "Returning", value: stats!.totalCustomers - stats!.newCustomers, color: color.secondary },
   ] : [];
 
+  // Header (title / breadcrumb / export / search) is static chrome — render it
+  // immediately in every branch. Only the data regions below get skeletons.
+  const headerEl = (
+    <>
+      <PageHeader
+        title="Dashboard"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]}
+        actions={
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Export */}
+          <div className="relative">
+            <button onClick={() => setShowExport(!showExport)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Export Data
+            </button>
+            {showExport && (
+              <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 p-5"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: "var(--color-text)" }}>Export CSV</p>
+                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
+                  Range: {formatDate(dateRange.from)} → {formatDate(dateRange.to)}
+                </p>
+                <button onClick={handleExportSummary} disabled={!stats}
+                  className="w-full mb-2 py-2.5 rounded-xl text-sm font-medium text-white text-left px-4"
+                  style={{ background: "var(--color-primary)", opacity: stats ? 1 : 0.5 }}>
+                  📊 Dashboard Summary
+                  <span className="block text-[11px] font-normal opacity-80">Aggregated stats for the selected range</span>
+                </button>
+                {role === "super_admin" && (
+                  <button onClick={handleExportCustomers} disabled={exportingCustomers}
+                    className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4 disabled:cursor-wait"
+                    style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)", opacity: exportingCustomers ? 0.6 : 1 }}>
+                    {exportingCustomers ? "⏳ Exporting…" : "👤 Customers (raw)"}
+                    <span className="block text-[11px] font-normal" style={{ color: "var(--color-text-muted)" }}>Customers registered in this range</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Search */}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 min-w-0 sm:flex-none sm:w-56"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+            <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input placeholder="Search product..." aria-label="Search product" className="outline-none text-sm w-full"
+              style={{ background: "transparent", color: "var(--color-text)" }} />
+          </div>
+        </div>
+        }
+      />
+      {showExport && <div className="fixed inset-0 z-40" onClick={() => setShowExport(false)} />}
+    </>
+  );
+
   if (!settingsLoaded) return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <Skeleton className="h-7" style={{ width: "10rem" }} />
-        <Skeleton className="h-9" style={{ width: "8rem" }} />
+      {headerEl}
+      {/* Filter row placeholder — its active preset depends on settings, so skeleton it. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <Skeleton className="h-3" style={{ width: "14rem" }} />
+        <Skeleton className="h-7" style={{ width: "18rem" }} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -601,60 +663,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <PageHeader
-        title="Dashboard"
-        crumbs={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]}
-        actions={
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Export */}
-          <div className="relative">
-            <button onClick={() => setShowExport(!showExport)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Export Data
-            </button>
-            {showExport && (
-              <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 p-5"
-                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: "var(--color-text)" }}>Export CSV</p>
-                <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
-                  Range: {formatDate(dateRange.from)} → {formatDate(dateRange.to)}
-                </p>
-                <button onClick={handleExportSummary} disabled={!stats}
-                  className="w-full mb-2 py-2.5 rounded-xl text-sm font-medium text-white text-left px-4"
-                  style={{ background: "var(--color-primary)", opacity: stats ? 1 : 0.5 }}>
-                  📊 Dashboard Summary
-                  <span className="block text-[11px] font-normal opacity-80">Aggregated stats for the selected range</span>
-                </button>
-                {role === "super_admin" && (
-                  <button onClick={handleExportCustomers} disabled={exportingCustomers}
-                    className="w-full py-2.5 rounded-xl text-sm font-medium text-left px-4 disabled:cursor-wait"
-                    style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)", opacity: exportingCustomers ? 0.6 : 1 }}>
-                    {exportingCustomers ? "⏳ Exporting…" : "👤 Customers (raw)"}
-                    <span className="block text-[11px] font-normal" style={{ color: "var(--color-text-muted)" }}>Customers registered in this range</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Search */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 min-w-0 sm:flex-none sm:w-56"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-            <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-            <input placeholder="Search product..." aria-label="Search product" className="outline-none text-sm w-full"
-              style={{ background: "transparent", color: "var(--color-text)" }} />
-          </div>
-        </div>
-        }
-      />
-      {showExport && <div className="fixed inset-0 z-40" onClick={() => setShowExport(false)} />}
+      {headerEl}
 
       {/* Filter row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
