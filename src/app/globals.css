@@ -31,10 +31,27 @@
   font-weight: 600;
 }
 
+/* DB Heavent — Thai face (Archer has no Thai glyphs). Loaded at weights that
+   pair with Archer's Book/Semibold/Bold so bilingual text matches. */
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent-Li.ttf') format('truetype');
   font-weight: 300;
+}
+@font-face {
+  font-family: 'DB Heavent';
+  src: url('/fonts/DB-Heavent.ttf') format('truetype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'DB Heavent';
+  src: url('/fonts/DB-Heavent-Med.ttf') format('truetype');
+  font-weight: 500;
+}
+@font-face {
+  font-family: 'DB Heavent';
+  src: url('/fonts/DB-Heavent-Bd.ttf') format('truetype');
+  font-weight: 600 700;
 }
 
 /* ── Design tokens (single source of truth for colour). Change here → whole app.
@@ -55,11 +72,11 @@
   --color-danger:      #dc2626;  /* required / destructive */
   --color-danger-soft: #9f4a4a;  /* softer danger text */
   --color-success:     #10b981;  /* success / connected */
-  --font-sans: 'Archer', sans-serif;
+  --font-sans: 'Archer', 'DB Heavent', sans-serif;
 }
 
 * {
-  font-family: 'Archer', sans-serif;
+  font-family: 'Archer', 'DB Heavent', sans-serif;
 }
 
 body {
