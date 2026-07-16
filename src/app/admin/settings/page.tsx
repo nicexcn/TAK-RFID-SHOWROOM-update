@@ -1,5 +1,8 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
+import { Spinner } from "@/components/Spinner";
+import { Toggle } from "@/components/Toggle";
+import { Stepper } from "@/components/Stepper";
 
 import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
@@ -372,10 +375,8 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Settings</h1>
-        <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Settings" }]} />
-      </div>
+      <PageHeader title="Settings" crumbs={[{ label: "Home", href: "/admin" }, { label: "Settings" }]} />
+
 
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sidebar */}
@@ -412,12 +413,8 @@ export default function SettingsPage() {
                     return (
                       <div key={w.key} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: "var(--color-bg)" }}>
                         <span className="text-sm" style={{ color: "var(--color-text)" }}>{w.label}</span>
-                        <button type="button" role="switch" aria-checked={isOn} aria-label={w.label}
-                          onClick={() => setDashboardSettings((p) => ({ ...p, visibleWidgets: { ...p.visibleWidgets, [w.key]: !isOn } }))}
-                          className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
-                          style={{ background: isOn ? "var(--color-primary)" : "var(--color-sidebar)" }}>
-                          <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: isOn ? "22px" : "4px" }} />
-                        </button>
+                        <Toggle checked={isOn} label={w.label}
+                          onChange={() => setDashboardSettings((p) => ({ ...p, visibleWidgets: { ...p.visibleWidgets, [w.key]: !isOn } }))} />
                       </div>
                     );
                   })}
@@ -581,7 +578,7 @@ export default function SettingsPage() {
                       <button onClick={handleCreateUser} disabled={createLoading}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                         style={{ background: "var(--color-primary)" }}>
-                        {createLoading && <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />}
+                        {createLoading && <Spinner size="xs" color="#fff" />}
                         {createLoading ? "Saving..." : "Create User"}
                       </button>
                     </div>
@@ -591,7 +588,7 @@ export default function SettingsPage() {
                 {/* User list */}
                 {usersLoading ? (
                   <div className="flex justify-center py-10">
-                    <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+                    <Spinner size="md" />
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <p className="text-center text-sm py-8" style={{ color: "var(--color-text-subtle)" }}>
@@ -682,7 +679,7 @@ export default function SettingsPage() {
                               <button onClick={handleSaveEdit} disabled={editLoading}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                                 style={{ background: "var(--color-primary)" }}>
-                                {editLoading && <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />}
+                                {editLoading && <Spinner size="xs" color="#fff" />}
                                 {editLoading ? "Saving..." : "Save"}
                               </button>
                             </div>
@@ -953,7 +950,7 @@ export default function SettingsPage() {
                 {mediaSuccess && <p className="text-sm mb-3" style={{ color: "var(--color-success)" }}>{mediaSuccess}</p>}
                 {mediaLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+                    <Spinner size="lg" />
                   </div>
                 ) : filteredMedia.length === 0 ? (
                   <div className="text-center py-12">
@@ -1014,26 +1011,14 @@ export default function SettingsPage() {
                     <p className="font-medium text-sm" style={{ color: "var(--color-text)" }}>Enable Takeaway Limit</p>
                     <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Limit how many products a customer can take out</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={takeawayEnabled} aria-label="Enable Takeaway Limit"
-                    onClick={() => setTakeawayEnabled((p) => !p)}
-                    className="w-10 h-6 rounded-full relative cursor-pointer transition-all"
-                    style={{ background: takeawayEnabled ? "var(--color-primary)" : "var(--color-sidebar)" }}>
-                    <div className="w-4 h-4 bg-white rounded-full absolute top-1 transition-all" style={{ left: takeawayEnabled ? "22px" : "4px" }} />
-                  </button>
+                  <Toggle checked={takeawayEnabled} label="Enable Takeaway Limit"
+                    onChange={(v) => setTakeawayEnabled(v)} />
                 </div>
                 <div className={takeawayEnabled ? "" : "opacity-40 pointer-events-none"}>
                   <p className="text-sm font-medium mb-4" style={{ color: "var(--color-text)" }}>Maximum products per session</p>
-                  <div className="flex items-center gap-6 mb-6">
-                    <button onClick={() => setTakeawayLimit((v) => Math.max(1, v - 1))}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
-                      style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>−</button>
-                    <div className="text-center">
-                      <p className="text-5xl font-bold" style={{ color: "var(--color-text)" }}>{takeawayLimit}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>items / session</p>
-                    </div>
-                    <button onClick={() => setTakeawayLimit((v) => Math.min(20, v + 1))}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
-                      style={{ background: "var(--color-primary)" }}>+</button>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Stepper value={takeawayLimit} onChange={setTakeawayLimit} min={1} max={20} ariaLabel="Maximum products per session" />
+                    <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>items / session</span>
                   </div>
                   <div>
                     <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preset</p>
@@ -1057,17 +1042,9 @@ export default function SettingsPage() {
                 <div className="mt-6 pt-5" style={{ borderTop: "1px solid var(--color-border)" }}>
                   <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Borrow period</p>
                   <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
-                  <div className="flex items-center gap-6 mb-4">
-                    <button onClick={() => setBorrowDays((v) => Math.max(1, v - 1))}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium"
-                      style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>−</button>
-                    <div className="text-center">
-                      <p className="text-5xl font-bold" style={{ color: "var(--color-text)" }}>{borrowDays}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>days</p>
-                    </div>
-                    <button onClick={() => setBorrowDays((v) => Math.min(365, v + 1))}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-medium text-white"
-                      style={{ background: "var(--color-primary)" }}>+</button>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Stepper value={borrowDays} onChange={setBorrowDays} min={1} max={365} ariaLabel="Borrow period in days" />
+                    <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>days</span>
                   </div>
                   <div>
                     <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preset</p>

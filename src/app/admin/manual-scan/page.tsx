@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getDeviceId } from "@/lib/deviceId";
+import { CustomerPicker } from "@/components/CustomerPicker";
 
 // #5: manual item-selection ("scan without RFID") — for back-office give-outs / souvenirs.
 // Reuses the exact same session + scan APIs as Surface Scan, so records feed the same
@@ -18,12 +19,6 @@ interface Product {
 }
 interface ScanItem { product: Product; takeawayQty: number; }
 interface Customer { id: string; customerCode: string; fullName: string; company: string; phone: string; }
-
-const SEARCH_TYPES = [
-  { key: "code", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "phone", label: "Phone" },
-] as const;
 
 const SHOWN_CAP = 60;
 
@@ -228,8 +223,6 @@ export default function ManualScanPage() {
     if (sid) await fetch(`/api/sessions/${sid}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
   }
 
-  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -253,55 +246,15 @@ export default function ManualScanPage() {
         /* Step 1 — choose a customer (or start a walk-in) */
         <div className="rounded-xl p-6 max-w-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>Select customer</h2>
-          <div className="flex gap-2 mb-3">
-            {SEARCH_TYPES.map((t) => (
-              <button key={t.key} onClick={() => setSearchType(t.key)}
-                className="px-3 py-1.5 rounded-lg text-sm"
-                style={{ background: searchType === t.key ? "var(--color-primary)" : "var(--color-bg)", color: searchType === t.key ? "var(--color-surface)" : "var(--color-text-muted)" }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchCustomer()}
-              placeholder={searchType === "code" ? "Customer ID, e.g. Ar00001" : searchType === "name" ? "Customer name" : "Phone number"}
-              className="flex-1 px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle} />
-            <button onClick={searchCustomer} disabled={searching}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50" style={{ background: "var(--color-primary)" }}>
-              {searching ? "..." : "Search"}
-            </button>
-          </div>
-          {searchError && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{searchError}</p>}
-          {customer && (
-            <div className="mt-4 p-4 rounded-xl" style={{ background: "var(--color-bg)" }}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text)" }}>{customer.customerCode} · {customer.fullName}</p>
-                  <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{[customer.company, customer.phone].filter(Boolean).join(" · ")}</p>
-                </div>
-                <button onClick={() => startSession(customer.customerCode, customer.id, contactName)} disabled={starting}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 flex-shrink-0" style={{ background: "#4a7c59" }}>
-                  {starting ? "..." : "Start"}
-                </button>
-              </div>
-              {contacts.length > 0 && (
-                <div className="mt-3">
-                  <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Contact</label>
-                  <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                    <option value="">{customer.fullName} (primary)</option>
-                    {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f0eee6" }}>
-            <button onClick={() => startSession("WALK-IN", null)} disabled={starting}
-              className="text-sm underline disabled:opacity-50" style={{ color: "var(--color-text-muted)" }}>
-              Or start without a customer (Walk-in)
-            </button>
-          </div>
+          <CustomerPicker
+            searchType={searchType} onSearchTypeChange={setSearchType}
+            query={query} onQueryChange={setQuery} onSearch={searchCustomer}
+            searching={searching} searchError={searchError}
+            customer={customer} contacts={contacts} contactName={contactName} onContactChange={setContactName}
+            onStart={() => customer && startSession(customer.customerCode, customer.id, contactName)}
+            starting={starting} startLabel="Start" startMode="card"
+            allowWalkIn onWalkIn={() => startSession("WALK-IN", null)}
+          />
         </div>
       ) : (
         /* Step 2 — pick products + review the taken list */

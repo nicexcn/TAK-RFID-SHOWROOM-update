@@ -1,5 +1,6 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
+import { Spinner } from "@/components/Spinner";
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -193,36 +194,35 @@ export default function ProductsPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Product Management</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management" }]} />
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Import Button */}
-          <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            Import
-          </button>
-          {/* Add Product Button */}
-          <Link
-            href="/admin/products/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add Product
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Product Management"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Product Management" }]}
+        actions={
+          <>
+            {/* Import Button */}
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import
+            </button>
+            {/* Add Product Button */}
+            <Link
+              href="/admin/products/new"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+              style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Product
+            </Link>
+          </>
+        }
+      />
 
       {/* Search */}
       <div className="p-4 rounded-xl mb-4 flex items-center gap-3"
@@ -576,7 +576,7 @@ export default function ProductsPage() {
                   <button onClick={handleImport} disabled={!importFile || importing}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 disabled:opacity-50"
                     style={{ background: "var(--color-primary)" }}>
-                    {importing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                    {importing && <Spinner size="sm" color="#fff" />}
                     {importing ? "Importing..." : "Import Products"}
                   </button>
                 </div>

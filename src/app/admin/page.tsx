@@ -1,5 +1,6 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
+import { Spinner } from "@/components/Spinner";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -64,10 +65,6 @@ function EmptyState({ label }: { label: string }) {
       <p className="text-xs text-center" style={{ color: "var(--color-text-subtle)" }}>{label}</p>
     </div>
   );
-}
-
-function Spinner() {
-  return <div className="w-5 h-5 rounded-full border-2 animate-spin my-2" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />;
 }
 
 // ── Draggable Card Wrapper ──────────────────────────────────────────────────
@@ -381,7 +378,7 @@ export default function AdminDashboard() {
 
   if (!settingsLoaded) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+      <Spinner size="lg" />
     </div>
   );
 
@@ -406,7 +403,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner /> : (
+        {loadingStats ? <Spinner size="md" className="my-2" /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{(stats?.totalSessions ?? 0).toLocaleString()}</p>
             <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>{stats?.totalSessions === 0 ? "No visits yet" : "Total sessions"}</p>
@@ -433,7 +430,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
+        {loadingStats ? <Spinner size="md" className="my-2" /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <p className="text-3xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>{stats!.customersByTitle[0] ? customerTypeLabel(stats!.customersByTitle[0].title) : "-"}</p>
             <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>Top type · {stats!.customersByTitle[0]?.count ?? 0} people</p>
@@ -470,7 +467,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
         </div>
-        {loadingStats ? <Spinner /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
+        {loadingStats ? <Spinner size="md" className="my-2" /> : !hasCustomers ? <EmptyState label={"No customers\nregistered yet"} /> : (
           <>
             <ResponsiveContainer width="100%" height={120}>
               <PieChart>
@@ -517,7 +514,7 @@ export default function AdminDashboard() {
         </div>
         {loadingStats ? (
           <div className="flex items-center justify-center h-48">
-            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+            <Spinner size="md" />
           </div>
         ) : compData.length === 0 ? <EmptyState label="No visits yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
@@ -560,7 +557,7 @@ export default function AdminDashboard() {
         </div>
         {loadingStats ? (
           <div className="flex items-center justify-center h-48">
-            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+            <Spinner size="md" />
           </div>
         ) : (rightChartData[rightFilter] ?? []).length === 0 ? <EmptyState label="No scan data yet" /> : (
           <ResponsiveContainer width="100%" height={200}>
@@ -589,11 +586,10 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Dashboard</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]} />
-        </div>
+      <PageHeader
+        title="Dashboard"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Dashboard" }]}
+        actions={
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Export */}
           <div className="relative">
@@ -640,7 +636,8 @@ export default function AdminDashboard() {
               style={{ background: "transparent", color: "var(--color-text)" }} />
           </div>
         </div>
-      </div>
+        }
+      />
       {showExport && <div className="fixed inset-0 z-40" onClick={() => setShowExport(false)} />}
 
       {/* Filter row */}

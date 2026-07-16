@@ -1,5 +1,6 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
+import { Spinner } from "@/components/Spinner";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -106,12 +107,10 @@ export default function CustomersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Customer Management</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]} />
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Customer Management"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]}
+        actions={<>
           {canExport && (
             <button onClick={handleExport} disabled={exporting}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
@@ -139,8 +138,9 @@ export default function CustomersPage() {
             </svg>
             Add Customer
           </Link>
-        </div>
-      </div>
+        </>}
+      />
+
 
       {/* Stats — total + occupation breakdown in one card (like the dashboard widget) */}
       <div className="p-5 rounded-xl mb-6 flex flex-col sm:flex-row gap-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
@@ -217,7 +217,7 @@ export default function CustomersPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-60"
             style={{ background: "var(--color-primary)" }}>
             {startingSession === customers[0].id ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <Spinner size="sm" color="#fff" />
             ) : (
               <svg aria-hidden="true" width="14" height="14" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -254,7 +254,7 @@ export default function CustomersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-16"><div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} /></td></tr>
+              <tr><td colSpan={9} className="text-center py-16"><Spinner size="lg" className="mx-auto" /></td></tr>
             ) : customers.length === 0 ? (
               <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (
@@ -293,7 +293,7 @@ export default function CustomersPage() {
                       className="w-7 h-7 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-50"
                       style={{ background: "var(--color-primary)" }}>
                       {startingSession === c.id ? (
-                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                        <Spinner size="xs" color="#fff" />
                       ) : (
                         <svg aria-hidden="true" width="12" height="12" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
                           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>

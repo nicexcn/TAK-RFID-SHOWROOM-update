@@ -13,17 +13,25 @@ import { getDeviceId } from "@/lib/deviceId";
 
 interface UnreadNotif { product?: { name?: string }; customer?: { fullName?: string } | null }
 
-const navItems = [
-  { label: "Dashboard",           href: "/admin" },
-  { label: "Reports",             href: "/admin/reports" },
-  { label: "Survey Results",      href: "/admin/survey" },
-  { label: "Product Management",  href: "/admin/products" },
-  { label: "Customer Management", href: "/admin/customers" },
-  { label: "Surface Scan",        href: "/admin/rfid" },
-  { label: "Manual Scan",         href: "/admin/manual-scan" },
-  { label: "Notifications",       href: "/admin/notifications" },
-  { label: "Borrow / Return",     href: "/admin/loans" },
-  { label: "Settings",            href: "/admin/settings" },
+// Grouped nav: the daily floor work (Operate) sits at the top since staff live there,
+// then reporting (Analyze), then admin (Manage). Items are still role-filtered per-link.
+const navGroups = [
+  { section: "Operate", items: [
+    { label: "Surface Scan",        href: "/admin/rfid" },
+    { label: "Manual Scan",         href: "/admin/manual-scan" },
+    { label: "Customer Management", href: "/admin/customers" },
+    { label: "Notifications",       href: "/admin/notifications" },
+    { label: "Borrow / Return",     href: "/admin/loans" },
+  ] },
+  { section: "Analyze", items: [
+    { label: "Dashboard",           href: "/admin" },
+    { label: "Reports",             href: "/admin/reports" },
+    { label: "Survey Results",      href: "/admin/survey" },
+  ] },
+  { section: "Manage", items: [
+    { label: "Product Management",  href: "/admin/products" },
+    { label: "Settings",            href: "/admin/settings" },
+  ] },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -183,25 +191,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-2 mb-8 mt-4 flex-shrink-0">
           <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--color-text)" }}>NimitrLog</p>
         </div>
-        <nav aria-label="Primary" className="flex-1 space-y-1">
-          {navItems.filter((item) => role !== "" && canAccessPath(role, item.href)).map((item) => {
-            const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        <nav aria-label="Primary" className="flex-1 space-y-4 overflow-y-auto">
+          {navGroups.map((group) => {
+            const items = group.items.filter((item) => role !== "" && canAccessPath(role, item.href));
+            if (items.length === 0) return null; // hide a whole section a role can't access
             return (
-              <Link key={item.href} href={item.href}
-                onClick={() => { if (isMobile()) setSidebarOpen(false); }} // close the drawer on mobile
-                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center justify-between"
-                style={{ background: isActive ? "rgba(255,255,255,0.5)" : "transparent", color: "var(--color-text)", fontWeight: isActive ? 600 : 400, borderLeft: isActive ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
-                <span>{item.label}</span>
-                {item.label === "Notifications" && notifCount > 0 && (
-                  <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-danger)", fontSize: "10px" }}>
-                    {notifCount}
-                  </span>
-                )}
-                {item.label === "Surface Scan" && hasSession && (
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" title="Active session on this station"
-                    style={{ background: "var(--color-success)" }} aria-label="Active session" />
-                )}
-              </Link>
+              <div key={group.section} className="space-y-1">
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>{group.section}</p>
+                {items.map((item) => {
+                  const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+                  return (
+                    <Link key={item.href} href={item.href}
+                      onClick={() => { if (isMobile()) setSidebarOpen(false); }} // close the drawer on mobile
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center justify-between"
+                      style={{ background: isActive ? "rgba(255,255,255,0.5)" : "transparent", color: "var(--color-text)", fontWeight: isActive ? 600 : 400, borderLeft: isActive ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+                      <span>{item.label}</span>
+                      {item.label === "Notifications" && notifCount > 0 && (
+                        <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-danger)", fontSize: "10px" }}>
+                          {notifCount}
+                        </span>
+                      )}
+                      {item.label === "Surface Scan" && hasSession && (
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" title="Active session on this station"
+                          style={{ background: "var(--color-success)" }} aria-label="Active session" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>

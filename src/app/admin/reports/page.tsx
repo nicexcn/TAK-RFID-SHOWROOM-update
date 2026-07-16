@@ -1,5 +1,5 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
 
 import { useState, useEffect, useCallback } from "react";
 import { toCsv } from "@/lib/csv";
@@ -146,30 +146,30 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Reports</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Reports" }]} />
-        </div>
-        <div className="flex gap-2">
-          <button onClick={exportCsv} disabled={!data}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-            Export CSV
-          </button>
-          <button onClick={exportErp} disabled={!data || exportingErp} title="Per-takeaway lines for ERP stock-cut"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
-            style={{ background: "var(--color-primary)" }}>
-            {exportingErp ? (
-              <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
-            ) : (
+      <PageHeader
+        title="Reports"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Reports" }]}
+        actions={
+          <>
+            <button onClick={exportCsv} disabled={!data}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-            )}
-            {exportingErp ? "Exporting…" : "Export for ERP"}
-          </button>
-        </div>
-      </div>
+              Export CSV
+            </button>
+            <button onClick={exportErp} disabled={!data || exportingErp} title="Per-takeaway lines for ERP stock-cut"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
+              style={{ background: "var(--color-primary)" }}>
+              {exportingErp ? (
+                <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
+              ) : (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              )}
+              {exportingErp ? "Exporting…" : "Export for ERP"}
+            </button>
+          </>
+        }
+      />
 
       {/* Period tabs + search */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">

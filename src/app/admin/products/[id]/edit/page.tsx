@@ -1,5 +1,5 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -116,17 +116,17 @@ export default function EditProductPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Edit Product</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Product Management", href: "/admin/products" }, { label: "Edit Product" }]} />
-        </div>
-        <button onClick={() => router.push("/admin/products")}
-          className="px-5 py-2 rounded-xl text-sm"
-          style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
-          ← Back
-        </button>
-      </div>
+      <PageHeader
+        title="Edit Product"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Product Management", href: "/admin/products" }, { label: "Edit Product" }]}
+        actions={
+          <button onClick={() => router.push("/admin/products")}
+            className="px-5 py-2 rounded-xl text-sm"
+            style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+            ← Back
+          </button>
+        }
+      />
 
       <div className="rounded-xl p-6 max-w-3xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="space-y-4">

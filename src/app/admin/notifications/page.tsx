@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { Spinner } from "@/components/Spinner";
 import { subscribeNotifications } from "@/lib/notifChannel";
 
 interface Notif {
@@ -145,8 +146,7 @@ export default function NotificationsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-6 h-6 rounded-full border-2 animate-spin"
-            style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
+          <Spinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>

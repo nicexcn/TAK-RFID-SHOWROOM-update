@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId } from "@/lib/deviceId";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
@@ -740,62 +741,15 @@ function RFIDPageInner() {
           <div className="rounded-2xl p-8" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <h2 className="text-lg font-semibold mb-1 text-center" style={{ color: "var(--color-text)" }}>Start New Session</h2>
             <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>Search a customer or enter an ID to start</p>
-            <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: "var(--color-bg)" }}>
-              {(["code","name","phone"] as const).map((t) => (
-                <button key={t} onClick={() => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
-                  className="flex-1 py-2 text-xs font-medium transition-colors"
-                  style={{ background: searchType === t ? "var(--color-primary)" : "transparent", color: searchType === t ? "var(--color-surface)" : "var(--color-text-muted)" }}>
-                  {t === "code" ? "ID" : t === "name" ? "Name" : "Phone"}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 mb-3">
-              <input value={customerQuery} onChange={(e) => setCustomerQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchCustomer()}
-                placeholder={searchType === "code" ? "Customer ID, e.g. Ar00001" : searchType === "name" ? "Customer name" : "Phone number"}
-                className="flex-1 px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-              <button onClick={handleSearchCustomer} disabled={searching || !customerQuery.trim()}
-                className="px-4 py-3 rounded-xl text-sm font-medium disabled:opacity-50" style={btnStyle}>
-                {searching ? "..." : "Search"}
-              </button>
-            </div>
-            {searchError && <p className="text-sm mb-3 px-1" style={{ color: "var(--color-danger)" }}>{searchError}</p>}
-            {customerInfo && customerInfo.id && (
-              <div className="p-4 rounded-xl mb-4 space-y-1" style={{ background: "var(--color-bg)" }}>
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{customerInfo.fullName}</p>
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--color-border)", color: "var(--color-text-muted)" }}>{customerInfo.title}</span>
-                </div>
-                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>🏢 {customerInfo.company}</p>
-                <p className="text-xs font-mono" style={{ color: "var(--color-text-muted)" }}>🏷️ {customerInfo.customerCode} · 📞 {customerInfo.phone}</p>
-                {contacts.length > 0 && (
-                  <select aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)}
-                    className="w-full mt-2 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                    <option value="">{customerInfo.fullName} (primary)</option>
-                    {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                )}
-              </div>
-            )}
-            {customerInfo && preloadName && !customerInfo.id && (
-              <div className="p-4 rounded-xl mb-4 space-y-1" style={{ background: "var(--color-bg)" }}>
-                <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{customerInfo.fullName}</p>
-                <p className="text-xs font-mono" style={{ color: "var(--color-text-muted)" }}>🏷️ {customerInfo.customerCode}</p>
-              </div>
-            )}
-            {error && <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>{error}</p>}
-            {loading ? (
-              <div className="flex items-center justify-center py-3">
-                <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} />
-                <span className="ml-2 text-sm" style={{ color: "var(--color-text-muted)" }}>Starting…</span>
-              </div>
-            ) : (
-              <button onClick={handleStartSession} disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-medium" style={btnStyle}>
-                Start Session
-              </button>
-            )}
+            <CustomerPicker
+              searchType={searchType}
+              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
+              query={customerQuery} onQueryChange={setCustomerQuery} onSearch={handleSearchCustomer}
+              searching={searching} searchError={searchError}
+              customer={customerInfo} contacts={contacts} contactName={contactName} onContactChange={setContactName}
+              onStart={handleStartSession} starting={loading} startLabel="Start Session" startMode="footer"
+            />
+            {error && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{error}</p>}
           </div>
         </div>
       ) : (

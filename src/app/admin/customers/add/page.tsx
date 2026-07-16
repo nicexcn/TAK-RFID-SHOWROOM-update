@@ -1,5 +1,6 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
+import { Spinner } from "@/components/Spinner";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -115,17 +116,17 @@ export default function AddCustomerPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>Add Customer</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add Customer" }]} />
-        </div>
-        <button onClick={() => router.back()}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
-          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-          ← Back
-        </button>
-      </div>
+      <PageHeader
+        title="Add Customer"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: "Add Customer" }]}
+        actions={
+          <button onClick={() => router.back()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
+            style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+            ← Back
+          </button>
+        }
+      />
 
       <div className="rounded-xl p-8 space-y-8" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         {/* Personal */}
@@ -340,7 +341,7 @@ export default function AddCustomerPage() {
           <button onClick={handleSubmit} disabled={saving}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-50"
             style={{ background: "var(--color-primary)" }}>
-            {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            {saving && <Spinner size="sm" color="#fff" />}
             {saving ? "Saving..." : "Add Customer"}
           </button>
         </div>

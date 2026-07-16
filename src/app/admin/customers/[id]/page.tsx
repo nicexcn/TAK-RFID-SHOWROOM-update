@@ -1,5 +1,5 @@
 "use client";
-import Breadcrumb from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/PageHeader";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -172,12 +172,10 @@ export default function CustomerDetailPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--color-text)" }}>{customer.fullName || customer.customerCode}</h1>
-          <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: customer.customerCode }]} />
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={customer.fullName || customer.customerCode}
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: customer.customerCode }]}
+        actions={<>
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>
           {/* #9: print the 8×5cm sample sticker (opens a standalone print view). */}
           <a href={`/print/sticker?${new URLSearchParams({ company: customer.company || "", contact: customer.fullName || "", phone: customer.phone || "", project: customer.project || "", requester: customer.fullName || "", code: customer.customerCode || "" }).toString()}`}
@@ -193,8 +191,8 @@ export default function CustomerDetailPage() {
           {canDelete && (
             <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 rounded-xl text-sm disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>{deleting ? "Deleting…" : "Delete"}</button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 space-y-4">
