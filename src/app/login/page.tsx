@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex w-1/2 flex-col items-center justify-center" style={{ background: "var(--color-primary)" }}>
-        <Image src="/w-logo.png" alt="Nimitr Lab" width={300} height={180} className="object-contain" priority />
+        <Image src="/w-logo.png" alt="Nimitr Lab" width={300} height={71} className="object-contain" priority />
       </div>
       <div className="w-full md:w-1/2 flex items-center justify-center px-8" style={{ background: "var(--color-bg)" }}>
         <div className="w-full max-w-sm">

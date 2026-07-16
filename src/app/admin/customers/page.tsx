@@ -1,6 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
+import { Skeleton } from "@/components/Skeleton";
 import { DataTable } from "@/components/DataTable";
 import { createColumnHelper, type SortingState, type ColumnFiltersState } from "@tanstack/react-table";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -208,7 +209,19 @@ export default function CustomersPage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm mb-2" style={{ color: "var(--color-text-muted)" }}>Type of Customers</p>
-          {byTitleSorted.length === 0 ? (
+          {loading && byTitleSorted.length === 0 ? (
+            // Reserve the breakdown's height on first load so the card doesn't grow when
+            // the bars arrive and push the table down (was the page's main layout shift).
+            <div className="space-y-1.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-3" style={{ width: "6rem" }} />
+                  <Skeleton className="flex-1 h-1.5 rounded-full" />
+                  <Skeleton className="h-3" style={{ width: "1.5rem" }} />
+                </div>
+              ))}
+            </div>
+          ) : byTitleSorted.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers yet</p>
           ) : (
             <div className="space-y-1.5">

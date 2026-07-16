@@ -404,7 +404,7 @@ export default function DisplayPage() {
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "var(--color-bg)" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
-          <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" priority />
+          <Image src="/b-logo.png" alt="nimitrlab" width={200} height={47} className="object-contain mb-4" priority />
           <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
         </div>
       )}
@@ -424,7 +424,7 @@ export default function DisplayPage() {
       {currentImage && (
         <>
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 45%)" }} />
-          <div className="absolute top-8 left-8"><Image src="/w-logo.png" alt="nimitrlab" width={120} height={40} className="object-contain" /></div>
+          <div className="absolute top-8 left-8"><Image src="/w-logo.png" alt="nimitrlab" width={120} height={28} className="object-contain" /></div>
           <div className="absolute bottom-12 left-12 text-white" style={{ maxWidth: "55%" }}>
             <p className="text-4xl font-semibold drop-shadow truncate">{current?.name}</p>
             <p className="text-lg opacity-90 mt-1 drop-shadow truncate">{[current?.brand, current?.materialType, current?.category].filter(Boolean).join(" · ")}</p>

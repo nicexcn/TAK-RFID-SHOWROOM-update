@@ -48,7 +48,7 @@ export default function SurveyPage() {
   if (done) return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ background: "var(--color-surface)", borderRadius: 20, padding: "40px 28px", textAlign: "center", maxWidth: 420 }}>
-        <Image src="/b-logo.png" alt="nimitrlab" width={150} height={52} className="object-contain mx-auto mb-5" priority />
+        <Image src="/b-logo.png" alt="nimitrlab" width={150} height={36} className="object-contain mx-auto mb-5" priority />
         <p style={{ fontSize: 22, fontWeight: 600, color: "var(--color-text)", marginBottom: 8 }}>ขอบคุณค่ะ 🙏</p>
         <p style={{ fontSize: 14, color: "var(--color-text-muted)" }}>ขอบคุณสำหรับความคิดเห็นของคุณ — Thank you for your feedback!</p>
         <button onClick={() => { setDone(false); setAnswers({}); setError(""); }}
@@ -63,7 +63,7 @@ export default function SurveyPage() {
     <div style={{ minHeight: "100vh", background: "var(--color-bg)", padding: "24px 16px 60px" }}>
       <div style={{ maxWidth: 560, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <Image src="/b-logo.png" alt="nimitrlab" width={150} height={52} className="object-contain mx-auto mb-3" priority />
+          <Image src="/b-logo.png" alt="nimitrlab" width={150} height={36} className="object-contain mx-auto mb-3" priority />
           <h1 style={{ fontSize: 20, fontWeight: 600, color: "var(--color-text)" }}>{SURVEY_TITLE}</h1>
         </div>
 
