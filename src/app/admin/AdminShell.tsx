@@ -191,7 +191,7 @@ export default function AdminShell({
         }`}
         style={{ background: "var(--color-sidebar)", minHeight: "100vh" }}>
         <div className="mb-2 px-2 flex-shrink-0 flex items-center justify-between">
-          <Image src="/b-logo.png" alt="Nimitr Lab" width={160} height={55} className="object-contain" />
+          <Image src="/b-logo.png" alt="Nimitr Lab" width={160} height={55} className="object-contain" priority />
           {/* Explicit close on mobile: the open drawer covers the top-bar hamburger, so
               staff need a visible way to close it besides tapping the dimmed backdrop. */}
           <button onClick={() => setSidebarOpen(false)} aria-label="Close menu"

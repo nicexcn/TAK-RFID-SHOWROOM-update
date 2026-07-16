@@ -65,7 +65,7 @@ export default function RegisterPage() {
       {/* Left Panel */}
       <div className="hidden md:flex w-1/2 flex-col items-center justify-center"
         style={{ background: "var(--color-primary)" }}>
-        <Image src="/w-logo.png" alt="Nimitr Lab" width={280} height={160} className="object-contain" />
+        <Image src="/w-logo.png" alt="Nimitr Lab" width={280} height={160} className="object-contain" priority />
       </div>
 
       {/* Right Panel */}

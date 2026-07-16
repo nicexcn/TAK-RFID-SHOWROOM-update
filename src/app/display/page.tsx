@@ -404,7 +404,7 @@ export default function DisplayPage() {
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "var(--color-bg)" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
-          <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" />
+          <Image src="/b-logo.png" alt="nimitrlab" width={200} height={70} className="object-contain mb-4" priority />
           <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>Place a product on the table, or send a list to the screen…</p>
         </div>
       )}
