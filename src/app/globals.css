@@ -37,19 +37,15 @@
    (1) size-adjust:112% scales the Thai body up (84→~94 at 200px) toward Archer's
        cap height so it reads the same visual size — must be identical on every
        face or weights would render at different sizes;
-   (2) each font-weight maps DOWN one file (400→Light, 500→Regular, 600→Medium,
-       700→Bold) so stroke darkness matches. Ink-density: Archer Book 0.36 ≈
-       DB Heavent Light 0.33 (Regular was 0.44 — too heavy). */
+   (2) weights map to files mirroring Archer's OWN steps. Archer has no 500 face,
+       so Latin `font-medium` (500) renders as Archer Book (same as 400) — Thai must
+       match, so 300–500 ALL use Light (else Thai medium looked heavier than the
+       English). 600→Medium, 700→Bold. Measured density Archer/Thai: 400 .33/.33,
+       500 .33/.33, 600 .48/.50, 700 .58/.57. */
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent-Li.ttf') format('truetype');
-  font-weight: 300 400;
-  size-adjust: 112%;
-}
-@font-face {
-  font-family: 'DB Heavent';
-  src: url('/fonts/DB-Heavent.ttf') format('truetype');
-  font-weight: 500;
+  font-weight: 300 500;
   size-adjust: 112%;
 }
 @font-face {
