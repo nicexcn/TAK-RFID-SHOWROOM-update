@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,6 +11,34 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Archer — Latin slab-serif (no Thai glyphs). Weights mirror the app's original @font-face.
+// next/font self-hosts + preloads these and generates a metrics-matched fallback (less CLS).
+const archer = localFont({
+  variable: "--font-archer",
+  display: "swap",
+  src: [
+    { path: "../../public/fonts/Archer Font/Archer Thin.otf", weight: "100", style: "normal" },
+    { path: "../../public/fonts/Archer Font/Archer Light.otf", weight: "300", style: "normal" },
+    { path: "../../public/fonts/Archer Font/Archer Book.otf", weight: "400", style: "normal" },
+    { path: "../../public/fonts/Archer-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../public/fonts/Archer Font/Archer Bold.otf", weight: "700", style: "normal" },
+  ],
+});
+
+// DB Heavent — Thai face. size-adjust:112% + the deliberate weight remap (300–500→Li, 600→Med,
+// 700→Bd) EXACTLY as the original @font-face; adjustFontFallback off since Latin never uses it.
+const dbHeavent = localFont({
+  variable: "--font-heavent",
+  display: "swap",
+  adjustFontFallback: false,
+  declarations: [{ prop: "size-adjust", value: "112%" }],
+  src: [
+    { path: "../../public/fonts/DB-Heavent-Li.ttf", weight: "300 500", style: "normal" },
+    { path: "../../public/fonts/DB-Heavent-Med.ttf", weight: "600", style: "normal" },
+    { path: "../../public/fonts/DB-Heavent-Bd.ttf", weight: "700", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${archer.variable} ${dbHeavent.variable}`}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

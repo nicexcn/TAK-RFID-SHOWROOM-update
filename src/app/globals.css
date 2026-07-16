@@ -1,73 +1,11 @@
 @import "tailwindcss";
 
-@font-face {
-  font-display: swap;
-  font-family: 'Archer';
-  src: url('/fonts/Archer Font/Archer Thin.otf') format('opentype');
-  font-weight: 100;
-}
-
-@font-face {
-  font-display: swap;
-  font-family: 'Archer';
-  src: url('/fonts/Archer Font/Archer Light.otf') format('opentype');
-  font-weight: 300;
-}
-
-@font-face {
-  font-display: swap;
-  font-family: 'Archer';
-  src: url('/fonts/Archer Font/Archer Book.otf') format('opentype');
-  font-weight: 400;
-}
-
-@font-face {
-  font-display: swap;
-  font-family: 'Archer';
-  src: url('/fonts/Archer Font/Archer Bold.otf') format('opentype');
-  font-weight: 700;
-}
-
-/* #9 sticker: Archer Semibold (title) + DB Heavent Light (Thai body) */
-@font-face {
-  font-display: swap;
-  font-family: 'Archer';
-  src: url('/fonts/Archer-Semibold.otf') format('opentype');
-  font-weight: 600;
-}
-
-/* DB Heavent — Thai face (Archer has no Thai glyphs). Measured against Archer it
-   ran ~20% heavier and sat at Archer's x-height, so at a matched font-weight the
-   Thai looked BOLDER and SMALLER than the Latin. Two corrections:
-   (1) size-adjust:112% scales the Thai body up (84→~94 at 200px) toward Archer's
-       cap height so it reads the same visual size — must be identical on every
-       face or weights would render at different sizes;
-   (2) weights map to files mirroring Archer's OWN steps. Archer has no 500 face,
-       so Latin `font-medium` (500) renders as Archer Book (same as 400) — Thai must
-       match, so 300–500 ALL use Light (else Thai medium looked heavier than the
-       English). 600→Medium, 700→Bold. Measured density Archer/Thai: 400 .33/.33,
-       500 .33/.33, 600 .48/.50, 700 .58/.57. */
-@font-face {
-  font-display: swap;
-  font-family: 'DB Heavent';
-  src: url('/fonts/DB-Heavent-Li.ttf') format('truetype');
-  font-weight: 300 500;
-  size-adjust: 112%;
-}
-@font-face {
-  font-display: swap;
-  font-family: 'DB Heavent';
-  src: url('/fonts/DB-Heavent-Med.ttf') format('truetype');
-  font-weight: 600;
-  size-adjust: 112%;
-}
-@font-face {
-  font-display: swap;
-  font-family: 'DB Heavent';
-  src: url('/fonts/DB-Heavent-Bd.ttf') format('truetype');
-  font-weight: 700;
-  size-adjust: 112%;
-}
+/* Fonts are loaded via next/font/local in src/app/layout.tsx (auto self-host + preload +
+   font-display:swap + a metrics-matched fallback for less layout shift). Archer = Latin
+   slab-serif (no Thai glyphs); DB Heavent = Thai face with size-adjust:112% + the deliberate
+   weight remap (300–500→Li so Latin `font-medium` and Thai match, 600→Med, 700→Bd — Archer
+   has no 500 face). Exposed as --font-archer / --font-heavent; the stack below composes them
+   so Latin renders in Archer and Thai falls through to DB Heavent. */
 
 /* ── Design tokens (single source of truth for colour). Change here → whole app.
    All values are WCAG-AA checked for body text on the app's light surfaces. ── */
@@ -93,11 +31,11 @@
   --color-success:       #10b981;  /* success / connected */
   --color-success-soft:  #4a7c59;  /* calmer success text (for on-surface confirmations) */
   --color-info:          #3b82f6;  /* info / in-progress blue */
-  --font-sans: 'Archer', 'DB Heavent', sans-serif;
+  --font-sans: var(--font-archer), var(--font-heavent), sans-serif;
 }
 
 * {
-  font-family: 'Archer', 'DB Heavent', sans-serif;
+  font-family: var(--font-archer), var(--font-heavent), sans-serif;
 }
 
 body {

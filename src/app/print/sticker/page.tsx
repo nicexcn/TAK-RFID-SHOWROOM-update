@@ -23,10 +23,10 @@ export default function StickerPrintPage() {
   }, []);
 
   // Include DB Heavent so the toolbar's Thai (ผู้เบิก label, placeholder) falls back to it —
-  // these inline styles override the app-wide `* { 'Archer','DB Heavent' }` rule, so without
-  // it Archer (Latin-only) would drop Thai to the system font.
-  const archer = { fontFamily: "'Archer', 'DB Heavent', sans-serif" };
-  const heavent = { fontFamily: "'DB Heavent', 'Archer', sans-serif", fontWeight: 300 };
+  // these inline styles override the app-wide font rule, so without it Archer (Latin-only)
+  // would drop Thai to the system font. Fonts are next/font vars (see layout.tsx).
+  const archer = { fontFamily: "var(--font-archer), var(--font-heavent), sans-serif" };
+  const heavent = { fontFamily: "var(--font-heavent), var(--font-archer), sans-serif", fontWeight: 300 };
   // Each row is a SINGLE line (long values truncate with … rather than wrapping) so all four
   // rows — critically the ผู้เบิก row — always fit inside the fixed 5cm height and print.
   const row = (label: string, value: string) => (
