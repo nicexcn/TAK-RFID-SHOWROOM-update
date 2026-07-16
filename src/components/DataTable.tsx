@@ -7,18 +7,38 @@ import {
   useReactTable,
   type Column,
   type ColumnDef,
+  type Header,
   type OnChangeFn,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
+import {
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToHorizontalAxis, restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { SkeletonRows } from "@/components/Skeleton";
 
-// Shared, token-styled admin table built on TanStack Table (headless) in server mode:
-// sorting and pagination are MANUAL — the table only reflects state and reports changes
-// via callbacks; the parent turns them into ?sort=&dir=&page= and refetches. All markup +
-// styling stays here (matching the app's existing tables), so column defs carry only the
-// cell JSX. Handles loading (skeleton rows), error (retry), and empty states. Column
-// show/hide is presentational, owned here, and persisted per-table in localStorage.
+// Shared, token-styled admin table on TanStack Table (headless) in server mode: sorting +
+// pagination are MANUAL (parent turns state into ?sort=&dir=&page= and refetches). Column
+// show/hide AND drag-to-reorder are presentational, owned here, and persisted per-table in
+// localStorage. Reorder works two ways (both @dnd-kit, touch + mouse + keyboard): drag a
+// column header, or drag rows in the "Columns" panel. The Actions column is pinned last.
 export interface DataTableProps<T> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: ColumnDef<T, any>[];
@@ -29,18 +49,15 @@ export interface DataTableProps<T> {
   errorMessage?: string;
   emptyMessage?: string;
   skeletonRows?: number;
-  // Controlled server-side sorting.
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
-  // 1-based pagination (matches the app's APIs); footer hidden when totalPages <= 1.
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
-  // Per-row visual state (e.g. archived rows dimmed).
   rowStyle?: (row: T) => React.CSSProperties | undefined;
   getRowId?: (row: T) => string;
-  // Column show/hide: enabled by default; tableId persists the choice across visits.
   enableColumnHiding?: boolean;
+  enableColumnReorder?: boolean;
   tableId?: string;
 }
 
@@ -67,6 +84,68 @@ function SortIndicator({ dir }: { dir: false | "asc" | "desc" }) {
   );
 }
 
+function GripIcon() {
+  return (
+    <svg aria-hidden width="12" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
+      <circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" />
+      <circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+    </svg>
+  );
+}
+
+// The sort control + label shared by draggable and pinned headers.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function HeaderInner<T>({ header }: { header: Header<T, any> }) {
+  const label = header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext());
+  if (!header.column.getCanSort()) return <>{label}</>;
+  return (
+    <button type="button" onClick={header.column.getToggleSortingHandler()}
+      className="group inline-flex items-center gap-1.5 font-medium select-none hover:text-[var(--color-text)] transition-colors" title="Sort">
+      {label}
+      <SortIndicator dir={header.column.getIsSorted()} />
+    </button>
+  );
+}
+
+// A header cell that can be dragged (by its grip) to reorder its column.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DraggableHeader<T>({ header }: { header: Header<T, any> }) {
+  const { attributes, isDragging, listeners, setNodeRef, setActivatorNodeRef, transform, transition } = useSortable({ id: header.column.id });
+  return (
+    <th ref={setNodeRef} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs"
+      style={{ color: "var(--color-text-muted)", transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.7 : 1, position: "relative", zIndex: isDragging ? 2 : 0 }}>
+      <div className="inline-flex items-center gap-1">
+        <button type="button" ref={setActivatorNodeRef} {...attributes} {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none opacity-40 hover:opacity-80" title="Drag to reorder" aria-label="Drag to reorder column"
+          style={{ color: "var(--color-text-muted)" }}>
+          <GripIcon />
+        </button>
+        <HeaderInner header={header} />
+      </div>
+    </th>
+  );
+}
+
+// A row in the Columns panel: checkbox to show/hide + grip to reorder (vertical).
+function PanelRow<T>({ col }: { col: Column<T, unknown> }) {
+  const { attributes, isDragging, listeners, setNodeRef, setActivatorNodeRef, transform, transition } = useSortable({ id: col.id });
+  return (
+    <div ref={setNodeRef} className="flex items-center gap-2 px-2 py-1.5 text-xs"
+      style={{ color: "var(--color-text)", background: isDragging ? "var(--color-hover)" : undefined, transform: CSS.Translate.toString(transform), transition }}>
+      <button type="button" ref={setActivatorNodeRef} {...attributes} {...listeners}
+        className="cursor-grab active:cursor-grabbing touch-none opacity-40 hover:opacity-80" title="Drag to reorder" aria-label="Drag to reorder column"
+        style={{ color: "var(--color-text-muted)" }}>
+        <GripIcon />
+      </button>
+      <label className="flex items-center gap-2 cursor-pointer flex-1">
+        <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} style={{ accentColor: "var(--color-primary)" }} />
+        {colLabel(col)}
+      </label>
+    </div>
+  );
+}
+
 export function DataTable<T>({
   columns,
   data,
@@ -84,44 +163,98 @@ export function DataTable<T>({
   rowStyle,
   getRowId,
   enableColumnHiding = true,
+  enableColumnReorder = true,
   tableId,
 }: DataTableProps<T>) {
-  const storageKey = tableId ? `tak-cols-${tableId}` : null;
+  const visKey = tableId ? `tak-cols-${tableId}` : null;
+  const orderKey = tableId ? `tak-order-${tableId}` : null;
+
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
-    if (typeof window === "undefined" || !storageKey) return {};
-    try { return JSON.parse(window.localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
+    if (typeof window === "undefined" || !visKey) return {};
+    try { return JSON.parse(window.localStorage.getItem(visKey) || "{}"); } catch { return {}; }
   });
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (typeof window === "undefined" || !orderKey) return [];
+    try { return JSON.parse(window.localStorage.getItem(orderKey) || "[]"); } catch { return []; }
+  });
+
   useEffect(() => {
-    if (storageKey) try { window.localStorage.setItem(storageKey, JSON.stringify(columnVisibility)); } catch { /* ignore */ }
-  }, [columnVisibility, storageKey]);
+    if (visKey) try { window.localStorage.setItem(visKey, JSON.stringify(columnVisibility)); } catch { /* ignore */ }
+  }, [columnVisibility, visKey]);
+  useEffect(() => {
+    if (orderKey && columnOrder.length) try { window.localStorage.setItem(orderKey, JSON.stringify(columnOrder)); } catch { /* ignore */ }
+  }, [columnOrder, orderKey]);
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility },
+    state: { sorting, columnVisibility, columnOrder },
     onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
     manualSorting: true,
     getCoreRowModel: getCoreRowModel(),
     getRowId,
   });
 
+  // Seed/reconcile the persisted order against the real leaf-column ids (once): drop
+  // unknown ids (a column removed in code) and append newly-added ones in natural order.
+  useEffect(() => {
+    const ids = table.getAllLeafColumns().map((c) => c.id);
+    setColumnOrder((prev) => {
+      const valid = prev.filter((id) => ids.includes(id));
+      const merged = [...valid, ...ids.filter((id) => !valid.includes(id))];
+      return merged.length === prev.length && merged.every((v, i) => v === prev[i]) ? prev : merged;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const visibleCols = table.getVisibleLeafColumns().length;
-  const hideableCols = useMemo(() => table.getAllLeafColumns().filter((c) => c.getCanHide()), [table, columnVisibility]);
+
+  // Reorderable = hideable leaf columns (the Actions column is pinned via enableHiding:false).
+  const orderedLeaf = useMemo(() => {
+    const all = table.getAllLeafColumns();
+    if (!columnOrder.length) return all;
+    const byId = new Map(all.map((c) => [c.id, c]));
+    return columnOrder.map((id) => byId.get(id)).filter(Boolean) as Column<T, unknown>[];
+  }, [table, columnOrder]);
+  const panelCols = useMemo(() => orderedLeaf.filter((c) => c.getCanHide()), [orderedLeaf]);
+  const canReorder = enableColumnReorder && panelCols.length > 1;
+
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const onReorder = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setColumnOrder((prev) => {
+      const from = prev.indexOf(active.id as string);
+      const to = prev.indexOf(over.id as string);
+      return from < 0 || to < 0 ? prev : arrayMove(prev, from, to);
+    });
+  };
 
   // Columns dropdown open/close (close on outside click / Esc).
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
-    const onDown = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    const onDown = (ev: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(ev.target as Node)) setMenuOpen(false); };
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") setMenuOpen(false); };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
 
-  const showColMenu = enableColumnHiding && hideableCols.length > 0;
+  const showColMenu = enableColumnHiding && panelCols.length > 0;
+  const reorderableHeaderIds = useMemo(
+    () => table.getVisibleLeafColumns().filter((c) => c.getCanHide()).map((c) => c.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table, columnOrder, columnVisibility],
+  );
+  const panelIds = useMemo(() => panelCols.map((c) => c.id), [panelCols]);
 
   return (
     <div className="rounded-xl overflow-visible" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
@@ -137,72 +270,79 @@ export function DataTable<T>({
             Columns
           </button>
           {menuOpen && (
-            <div className="absolute right-3 top-full mt-1 z-30 w-48 rounded-xl overflow-hidden py-1"
+            <div className="absolute right-3 top-full mt-1 z-30 w-56 rounded-xl overflow-hidden py-1"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-              {hideableCols.map((col) => (
-                <label key={col.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-[var(--color-hover)]" style={{ color: "var(--color-text)" }}>
-                  <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()}
-                    style={{ accentColor: "var(--color-primary)" }} />
-                  {colLabel(col)}
-                </label>
-              ))}
+              {canReorder && (
+                <p className="px-3 pt-1 pb-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--color-text-subtle)" }}>Show / drag to reorder</p>
+              )}
+              {canReorder ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={onReorder}>
+                  <SortableContext items={panelIds} strategy={verticalListSortingStrategy}>
+                    {panelCols.map((col) => <PanelRow key={col.id} col={col} />)}
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                panelCols.map((col) => (
+                  <label key={col.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-[var(--color-hover)]" style={{ color: "var(--color-text)" }}>
+                    <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} style={{ accentColor: "var(--color-primary)" }} />
+                    {colLabel(col)}
+                  </label>
+                ))
+              )}
             </div>
           )}
         </div>
       )}
 
       <div className="overflow-auto">
-        <table className="w-full text-sm min-w-max">
-          <thead>
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
-                {hg.headers.map((header) => {
-                  const canSort = header.column.getCanSort();
-                  const label = header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext());
-                  return (
-                    <th key={header.id} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs" style={{ color: "var(--color-text-muted)" }}>
-                      {canSort ? (
-                        <button type="button" onClick={header.column.getToggleSortingHandler()}
-                          className="group inline-flex items-center gap-1.5 font-medium select-none hover:text-[var(--color-text)] transition-colors"
-                          title="Sort">
-                          {label}
-                          <SortIndicator dir={header.column.getIsSorted()} />
-                        </button>
-                      ) : label}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {loading ? (
-              <SkeletonRows rows={skeletonRows} cols={visibleCols} />
-            ) : error ? (
-              <tr>
-                <td colSpan={visibleCols} className="text-center py-10">
-                  <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>{errorMessage}</p>
-                  {onRetry && (
-                    <button onClick={onRetry} className="px-4 py-2 rounded-xl text-sm font-medium"
-                      style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>Retry</button>
-                  )}
-                </td>
-              </tr>
-            ) : data.length === 0 ? (
-              <tr><td colSpan={visibleCols} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>{emptyMessage}</td></tr>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} style={{ borderBottom: "1px solid var(--color-bg)", ...(rowStyle?.(row.original) ?? {}) }}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 whitespace-nowrap align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToHorizontalAxis]} onDragEnd={onReorder}>
+          <table className="w-full text-sm min-w-max">
+            <thead>
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id} style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
+                  <SortableContext items={reorderableHeaderIds} strategy={horizontalListSortingStrategy}>
+                    {hg.headers.map((header) =>
+                      canReorder && header.column.getCanHide() ? (
+                        <DraggableHeader key={header.id} header={header} />
+                      ) : (
+                        <th key={header.id} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs" style={{ color: "var(--color-text-muted)" }}>
+                          <HeaderInner header={header} />
+                        </th>
+                      ),
+                    )}
+                  </SortableContext>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+            <tbody>
+              {loading ? (
+                <SkeletonRows rows={skeletonRows} cols={visibleCols} />
+              ) : error ? (
+                <tr>
+                  <td colSpan={visibleCols} className="text-center py-10">
+                    <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>{errorMessage}</p>
+                    {onRetry && (
+                      <button onClick={onRetry} className="px-4 py-2 rounded-xl text-sm font-medium"
+                        style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>Retry</button>
+                    )}
+                  </td>
+                </tr>
+              ) : data.length === 0 ? (
+                <tr><td colSpan={visibleCols} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>{emptyMessage}</td></tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} style={{ borderBottom: "1px solid var(--color-bg)", ...(rowStyle?.(row.original) ?? {}) }}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3 whitespace-nowrap align-middle">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </DndContext>
       </div>
 
       {onPageChange && totalPages > 1 && (
