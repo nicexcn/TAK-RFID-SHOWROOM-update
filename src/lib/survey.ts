@@ -15,7 +15,7 @@ export const SURVEY_ITEMS: SurveyItem[] = [
     "Architect / สถาปนิก", "Interior Designer / นักออกแบบภายใน", "Contractor / ผู้รับเหมา",
     "Turnkey Service / รับเหมาแบบครบวงจร", "Developer / ผู้พัฒนาโครงการ", "Homeowner / เจ้าของบ้าน", "Student / นักศึกษา",
   ] },
-  { key: "purpose", type: "checkbox", title: "What brings you to Nimitrlab today? / วันนี้คุณมาเยี่ยมชม Nimitrlab เพื่ออะไร", options: [
+  { key: "purpose", type: "checkbox", title: "What brings you to Nimitrlab today? / วันนี้คุณแวะมา Nimitrlab ด้วยจุดประสงค์ใด", options: [
     "Looking for materials for a project / หา Material สำหรับโปรเจกต์", "Seeking inspiration and ideas / หาแรงบันดาลใจและไอเดียใหม่ ๆ",
     "Learning about new products / ศึกษาสินค้าและวัสดุใหม่", "Attending event or workshop / เข้าร่วมกิจกรรม", "General visit / เยี่ยมชมทั่วไป",
   ] },
