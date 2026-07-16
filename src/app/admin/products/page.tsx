@@ -215,7 +215,7 @@ export default function ProductsPage() {
         )}
       </span>
     ) }),
-    columnHelper.display({ id: "actions", header: "Actions", cell: ({ row }) => {
+    columnHelper.display({ id: "actions", header: "Actions", enableHiding: false, cell: ({ row }) => {
       const product = row.original;
       return (
         <button
@@ -305,6 +305,7 @@ export default function ProductsPage() {
 
       {/* Table (shared DataTable — TanStack headless, server-side sort + pagination) */}
       <DataTable
+        tableId="products"
         columns={columns}
         data={products}
         loading={loading}
