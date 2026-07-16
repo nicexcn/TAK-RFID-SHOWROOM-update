@@ -1,9 +1,10 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
-import { SkeletonRows } from "@/components/Skeleton";
+import { DataTable } from "@/components/DataTable";
+import { createColumnHelper, type SortingState } from "@tanstack/react-table";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import BulkImageImport from "@/components/BulkImageImport";
 import { parseCsv } from "@/lib/csv";
@@ -22,6 +23,8 @@ interface Product {
   _count?: { scans: number };
 }
 
+const columnHelper = createColumnHelper<Product>();
+
 interface ImportResult {
   created: number;
   updated: number;
@@ -36,6 +39,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const confirm = useConfirm();
@@ -57,7 +61,9 @@ export default function ProductsPage() {
     setLoading(true);
     setFetchError(false);
     try {
-      const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}`);
+      const s = sorting[0];
+      const sortQ = s ? `&sort=${s.id}&dir=${s.desc ? "desc" : "asc"}` : "";
+      const res = await fetch(`/api/products?search=${search}&page=${page}&status=${status}${sortQ}`);
       if (!res.ok) throw new Error("Failed to load products");
       const data = await res.json();
       setProducts(data.products || []);
@@ -70,7 +76,7 @@ export default function ProductsPage() {
     }
   }
 
-  useEffect(() => { fetchProducts(); }, [search, page, status]);
+  useEffect(() => { fetchProducts(); }, [search, page, status, sorting]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -193,6 +199,44 @@ export default function ProductsPage() {
   // A scanned product can't be hard-deleted (history is kept) → the action archives instead.
   const menuArchives = (menuProduct?._count?.scans ?? 0) > 0;
 
+  // Column defs (same cell JSX as before, relocated). accessor `id` defaults to the field
+  // name → matches the server's sort allowlist; the Actions column is display-only (no sort).
+  const columns = useMemo(() => [
+    columnHelper.accessor("brand", { header: "Brand", cell: (i) => <span style={{ color: "var(--color-text)" }}>{i.getValue() || "-"}</span> }),
+    columnHelper.accessor("materialType", { header: "Material Type", cell: (i) => <span style={{ color: "var(--color-text-muted)" }}>{i.getValue() || "-"}</span> }),
+    columnHelper.accessor("category", { header: "Category", cell: (i) => <span style={{ color: "var(--color-text-muted)" }}>{i.getValue() || "-"}</span> }),
+    columnHelper.accessor("productCode", { header: "Product Code", cell: (i) => <span style={{ color: "var(--color-text-muted)" }}>{i.getValue() || "-"}</span> }),
+    columnHelper.accessor("name", { header: "Product Name", cell: (i) => (
+      <span className="font-medium" style={{ color: "var(--color-text)" }}>
+        {i.getValue()}
+        {!i.row.original.isActive && (
+          <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
+            style={{ background: "var(--color-border)", color: "var(--color-text-muted)" }}>Archived</span>
+        )}
+      </span>
+    ) }),
+    columnHelper.display({ id: "actions", header: "Actions", cell: ({ row }) => {
+      const product = row.original;
+      return (
+        <button
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const MENU_W = 144, MENU_H = 96;
+            const top = rect.bottom + MENU_H > window.innerHeight ? rect.top - MENU_H : rect.bottom;
+            const left = Math.min(Math.max(8, rect.right - MENU_W), window.innerWidth - MENU_W - 8);
+            setMenuPosition({ top, left });
+            setOpenMenu(openMenu === product.id ? null : product.id);
+          }}
+          className="w-8 h-8 flex items-center justify-center rounded-lg"
+          style={{ background: openMenu === product.id ? "var(--color-bg)" : "transparent" }}>
+          <svg width="16" height="16" fill="var(--color-icon-muted)" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+          </svg>
+        </button>
+      );
+    } }),
+  ], [openMenu]);
+
   return (
     <div>
       <PageHeader
@@ -259,84 +303,23 @@ export default function ProductsPage() {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl overflow-auto" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <table className="w-full text-sm min-w-max">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
-              {["Brand", "Material Type", "Category", "Product Code", "Product Name", "Actions"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <SkeletonRows rows={8} cols={6} />
-            ) : fetchError ? (
-              <tr>
-                <td colSpan={6} className="text-center py-10">
-                  <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>Could not load products. Please check your connection and try again.</p>
-                  <button onClick={fetchProducts}
-                    className="px-4 py-2 rounded-xl text-sm font-medium"
-                    style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                    Retry
-                  </button>
-                </td>
-              </tr>
-            ) : products.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>No products found</td></tr>
-            ) : (
-              products.map((product) => (
-                <tr key={product.id} style={{ borderBottom: "1px solid var(--color-bg)", background: product.isActive ? undefined : "var(--color-hover)", opacity: product.isActive ? 1 : 0.6 }}>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{product.brand || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.materialType || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.category || "-"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{product.productCode || "-"}</td>
-                  <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: "var(--color-text)" }}>
-                    {product.name}
-                    {!product.isActive && (
-                      <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold align-middle"
-                        style={{ background: "var(--color-border)", color: "var(--color-text-muted)" }}>Archived</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        // The menu is position:fixed → use VIEWPORT coords (no scrollY).
-                        const MENU_W = 144, MENU_H = 96; // w-36, two items
-                        // Flip up when there isn't room below, so it never runs off the bottom.
-                        const top = rect.bottom + MENU_H > window.innerHeight ? rect.top - MENU_H : rect.bottom;
-                        // Right-align to the trigger, clamped on-screen (mobile-safe).
-                        const left = Math.min(Math.max(8, rect.right - MENU_W), window.innerWidth - MENU_W - 8);
-                        setMenuPosition({ top, left });
-                        setOpenMenu(openMenu === product.id ? null : product.id);
-                      }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg"
-                      style={{ background: openMenu === product.id ? "var(--color-bg)" : "transparent" }}>
-                      <svg width="16" height="16" fill="var(--color-icon-muted)" viewBox="0 0 24 24">
-                        <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--color-border)" }}>
-            <button onClick={() => setPage(page - 1)} disabled={page === 1}
-              className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "var(--color-bg)", color: page === 1 ? "var(--color-text-subtle)" : "var(--color-primary)" }}>Previous</button>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Page {page} of {totalPages}</p>
-            <button onClick={() => setPage(page + 1)} disabled={page === totalPages}
-              className="px-3 py-1 rounded-lg text-xs"
-              style={{ background: "var(--color-bg)", color: page === totalPages ? "var(--color-text-subtle)" : "var(--color-primary)" }}>Next</button>
-          </div>
-        )}
-      </div>
+      {/* Table (shared DataTable — TanStack headless, server-side sort + pagination) */}
+      <DataTable
+        columns={columns}
+        data={products}
+        loading={loading}
+        error={fetchError}
+        onRetry={fetchProducts}
+        errorMessage="Could not load products. Please check your connection and try again."
+        emptyMessage="No products found"
+        sorting={sorting}
+        onSortingChange={(updater) => { setSorting(updater); setPage(1); }}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        getRowId={(p) => p.id}
+        rowStyle={(p) => (p.isActive ? undefined : { background: "var(--color-hover)", opacity: 0.6 })}
+      />
 
       {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}
       {openMenu && menuProduct && (

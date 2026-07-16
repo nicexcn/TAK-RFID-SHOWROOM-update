@@ -14,6 +14,11 @@ export async function GET(req: NextRequest) {
     const limit = all ? 10000 : 10;
     // status: active (default — hides archived from catalog + scan lookup) | archived | all
     const status = (searchParams.get("status") || "active").toLowerCase();
+    // Sorting: only allow real, indexable columns (never interpolate arbitrary input into orderBy).
+    const SORTABLE = new Set(["name", "brand", "materialType", "category", "productCode", "createdAt"]);
+    const sortField = searchParams.get("sort") || "";
+    const sortDir = searchParams.get("dir") === "asc" ? "asc" : "desc";
+    const orderBy = SORTABLE.has(sortField) ? { [sortField]: sortDir } : { createdAt: "desc" as const };
 
     const where: any = {
       ...(status === "archived" ? { isActive: false } : status === "all" ? {} : { isActive: true }),
@@ -31,7 +36,7 @@ export async function GET(req: NextRequest) {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         // Catalog view needs each product's scan count (to label Delete vs Archive); the
         // scan-lookup map (all=true) doesn't, so keep that path lean.
         ...(all ? {} : { include: { _count: { select: { scans: true } } } }),
