@@ -111,7 +111,18 @@ export default function EditProductPage() {
 
   if (fetching) return (
     <div>
-      <Skeleton className="h-7 mb-6" style={{ width: "12rem" }} />
+      {/* Static header renders immediately; only the form (product data) is skeletoned. */}
+      <PageHeader
+        title="Edit Product"
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Product Management", href: "/admin/products" }, { label: "Edit Product" }]}
+        actions={
+          <button onClick={() => router.push("/admin/products")}
+            className="px-5 py-2 rounded-xl text-sm"
+            style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+            ← Back
+          </button>
+        }
+      />
       <div className="rounded-2xl p-6" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
