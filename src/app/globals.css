@@ -31,27 +31,38 @@
   font-weight: 600;
 }
 
-/* DB Heavent — Thai face (Archer has no Thai glyphs). Loaded at weights that
-   pair with Archer's Book/Semibold/Bold so bilingual text matches. */
+/* DB Heavent — Thai face (Archer has no Thai glyphs). Measured against Archer it
+   ran ~20% heavier and sat at Archer's x-height, so at a matched font-weight the
+   Thai looked BOLDER and SMALLER than the Latin. Two corrections:
+   (1) size-adjust:112% scales the Thai body up (84→~94 at 200px) toward Archer's
+       cap height so it reads the same visual size — must be identical on every
+       face or weights would render at different sizes;
+   (2) each font-weight maps DOWN one file (400→Light, 500→Regular, 600→Medium,
+       700→Bold) so stroke darkness matches. Ink-density: Archer Book 0.36 ≈
+       DB Heavent Light 0.33 (Regular was 0.44 — too heavy). */
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent-Li.ttf') format('truetype');
-  font-weight: 300;
+  font-weight: 300 400;
+  size-adjust: 112%;
 }
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent.ttf') format('truetype');
-  font-weight: 400;
+  font-weight: 500;
+  size-adjust: 112%;
 }
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent-Med.ttf') format('truetype');
-  font-weight: 500;
+  font-weight: 600;
+  size-adjust: 112%;
 }
 @font-face {
   font-family: 'DB Heavent';
   src: url('/fonts/DB-Heavent-Bd.ttf') format('truetype');
-  font-weight: 600 700;
+  font-weight: 700;
+  size-adjust: 112%;
 }
 
 /* ── Design tokens (single source of truth for colour). Change here → whole app.
