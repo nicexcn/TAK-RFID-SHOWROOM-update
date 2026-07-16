@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
+import { SkeletonRows } from "@/components/Skeleton";
 
 // Borrow / Return ("ยืม / คืน") tracking. A "loan" is a takeaway (Scan.takeawayQty > 0);
 // the return side is tracked on the same Scan. See src/lib/loanStatus.ts and /api/loans.
@@ -139,7 +140,7 @@ export default function LoansPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "var(--color-text-muted)" }}>Loading…</td></tr>
+              <SkeletonRows rows={6} cols={7} />
             ) : loans.length === 0 ? (
               <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "var(--color-text-subtle)" }}>No loans here</td></tr>
             ) : loans.map((l) => {

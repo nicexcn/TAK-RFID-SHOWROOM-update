@@ -7,6 +7,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ProductGallery from "@/components/ProductGallery";
 import RfidTagField from "@/components/RfidTagField";
+import { Skeleton } from "@/components/Skeleton";
 
 interface DropdownOption {
   id: string;
@@ -109,8 +110,19 @@ export default function EditProductPage() {
   }
 
   if (fetching) return (
-    <div className="flex items-center justify-center h-64">
-      <p style={{ color: "var(--color-text-subtle)" }}>Loading...</p>
+    <div>
+      <Skeleton className="h-7 mb-6" style={{ width: "12rem" }} />
+      <div className="rounded-2xl p-6" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="h-3 mb-2" style={{ width: "30%" }} />
+              <Skeleton className="h-10" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-40 mt-6 rounded-xl" />
+      </div>
     </div>
   );
 

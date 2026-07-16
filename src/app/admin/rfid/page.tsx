@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getDeviceId } from "@/lib/deviceId";
 import { CustomerPicker } from "@/components/CustomerPicker";
+import { usePrompt } from "@/components/ConfirmDialog";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
@@ -122,6 +123,8 @@ function RFIDPageInner() {
   const [relayDevices, setRelayDevices] = useState<string[]>([]); // readers currently pushing to the relay
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [simulating, setSimulating] = useState(false);
+  const [productLoadError, setProductLoadError] = useState(false); // /api/products failed → every scan resolves "unknown"
+  const promptDialog = usePrompt();
 
   // Station id (Option C ownership key): a silent, persisted per-device id used to keep
   // concurrent stations' sessions separate (getDeviceId() reads/creates it in localStorage).
@@ -129,6 +132,7 @@ function RFIDPageInner() {
   const loadProductMap = useCallback(async () => {
     try {
       const res = await fetch("/api/products?all=true");
+      if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       const items = data.products || data || [];
       const map = new Map<string, Product>();
@@ -136,7 +140,12 @@ function RFIDPageInner() {
         if (p.rfidTag) map.set(p.rfidTag, p);
       }
       setProductMap(map);
-    } catch { /* silent */ }
+      setProductLoadError(false);
+    } catch {
+      // Don't fail silently — an empty product map makes every scan resolve to "unknown",
+      // so staff must know the catalog didn't load (and be able to retry).
+      setProductLoadError(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -652,8 +661,11 @@ function RFIDPageInner() {
   // Re-reads the authoritative list first so a concurrent edit isn't clobbered.
   async function saveLiveReader(device: string) {
     if (!device) return;
-    const name = window.prompt(`Save reader "${device}" — name it:`, device);
-    if (name === null) return; // cancelled
+    const name = await promptDialog({
+      title: "Save reader", message: `Name reader "${device}" so it shows by name everywhere.`,
+      defaultValue: device, placeholder: "Reader name", confirmLabel: "Save",
+    });
+    if (name === null) return; // cancelled or empty
     try {
       const cur = await fetch("/api/settings").then((r) => r.json()).catch(() => ({}));
       const list = normalizeReaders(cur?.readers);
@@ -918,9 +930,19 @@ function RFIDPageInner() {
                   {simulating ? "Simulating…" : "Demo scan"}
                 </button>
               </div>
-              <span className="text-xs ml-auto" style={{ color: "var(--color-text-subtle)" }}>
-                {productMap.size} products loaded
-              </span>
+              {productLoadError ? (
+                <span className="text-xs ml-auto inline-flex items-center gap-2" style={{ color: "var(--color-danger)" }}>
+                  ⚠ Couldn&apos;t load products — scans won&apos;t be recognized
+                  <button onClick={loadProductMap} className="px-2 py-0.5 rounded-md font-medium"
+                    style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>
+                    Retry
+                  </button>
+                </span>
+              ) : (
+                <span className="text-xs ml-auto" style={{ color: "var(--color-text-subtle)" }}>
+                  {productMap.size} products loaded
+                </span>
+              )}
             </div>
           </div>
 

@@ -3,7 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Spinner } from "@/components/Spinner";
+import { SkeletonCard } from "@/components/Skeleton";
 import { subscribeNotifications } from "@/lib/notifChannel";
 
 interface Notif {
@@ -17,9 +17,9 @@ interface Notif {
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:   { label: "รอดำเนินการ", color: "#f59e0b", bg: "#fef3c7" },
-  PREPARING: { label: "กำลังเตรียม", color: "#3b82f6", bg: "#dbeafe" },
-  COMPLETE:  { label: "เสร็จสิ้น",   color: "var(--color-success)", bg: "#d1fae5" },
+  PENDING:   { label: "Pending",   color: "#f59e0b", bg: "#fef3c7" },
+  PREPARING: { label: "Preparing", color: "var(--color-info)", bg: "#dbeafe" },
+  COMPLETE:  { label: "Complete",  color: "var(--color-success)", bg: "#d1fae5" },
 };
 
 export default function NotificationsPage() {
@@ -145,12 +145,12 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="lg" />
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} lines={2} />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-          <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>ไม่มีการแจ้งเตือน</p>
+          <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No notifications</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                               {n.customer.phone ? ` · 📞 ${n.customer.phone}` : ""}
                             </a>
                           )}
-                          <span>🕐 {new Date(n.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span>🕐 {new Date(n.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -228,14 +228,14 @@ export default function NotificationsPage() {
                         {n.status === "PENDING" && (
                           <button onClick={() => updateStatus(n.id, "PREPARING")}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            style={{ background: "#dbeafe", color: "#3b82f6" }}>
-                            เริ่มเตรียมสินค้า
+                            style={{ background: "#dbeafe", color: "var(--color-info)" }}>
+                            Start preparing
                           </button>
                         )}
                         <button onClick={() => updateStatus(n.id, "COMPLETE")}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                           style={{ background: "#d1fae5", color: "var(--color-success)" }}>
-                          เสร็จสิ้น
+                          Mark done
                         </button>
                       </div>
                     )}

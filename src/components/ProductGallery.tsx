@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { uploadImage } from "@/lib/uploadImage";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 interface ProductImage {
   id: string;
@@ -26,6 +27,7 @@ export default function ProductGallery({
   const [error, setError] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (productId) fetchImages();
@@ -64,7 +66,7 @@ export default function ProductGallery({
   }
 
   async function handleDelete(imageId: string) {
-    if (!confirm("Delete this image?")) return;
+    if (!(await confirm({ title: "Delete image?", message: "This can't be undone.", danger: true }))) return;
     await fetch(`/api/products/${productId}/images`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },

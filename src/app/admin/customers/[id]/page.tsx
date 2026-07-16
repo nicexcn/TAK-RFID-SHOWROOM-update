@@ -7,6 +7,7 @@ import Link from "next/link";
 import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
 import { formatDateTime } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import { toast } from "sonner";
 
 const errorToast = { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } };
@@ -141,7 +142,25 @@ export default function CustomerDetailPage() {
     } catch { setContacts(prev); }
   }
 
-  if (loading) return <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>;
+  if (loading) return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <Skeleton className="h-7" style={{ width: "14rem" }} />
+        <div className="flex gap-2">
+          <Skeleton className="h-9" style={{ width: "5rem" }} />
+          <Skeleton className="h-9" style={{ width: "7rem" }} />
+          <Skeleton className="h-9" style={{ width: "6rem" }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1"><SkeletonCard lines={9} /></div>
+        <div className="lg:col-span-2 space-y-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={5} />
+        </div>
+      </div>
+    </div>
+  );
   if (error || !customer) return (
     <div>
       <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm mb-4" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>

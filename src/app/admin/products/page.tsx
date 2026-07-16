@@ -1,6 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
+import { SkeletonRows } from "@/components/Skeleton";
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -270,7 +271,7 @@ export default function ProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>Loading...</td></tr>
+              <SkeletonRows rows={8} cols={6} />
             ) : fetchError ? (
               <tr>
                 <td colSpan={6} className="text-center py-10">

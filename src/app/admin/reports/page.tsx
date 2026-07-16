@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useState, useEffect, useCallback } from "react";
 import { toCsv } from "@/lib/csv";
 import { formatDate } from "@/lib/formatDate";
+import { SkeletonCard } from "@/components/Skeleton";
 import { toast } from "sonner";
 
 // #4 Report: product activity by period + search by customer code / Project / Sale,
@@ -193,7 +194,9 @@ export default function ReportsPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm py-16 text-center" style={{ color: "var(--color-text-subtle)" }}>Loading…</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} lines={4} />)}
+        </div>
       ) : !data ? (
         <p className="text-sm py-16 text-center" style={{ color: "var(--color-text-subtle)" }}>Failed to load report</p>
       ) : (

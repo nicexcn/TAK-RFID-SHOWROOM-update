@@ -1,6 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
+import { SkeletonRows } from "@/components/Skeleton";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -254,7 +255,7 @@ export default function CustomersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-16"><Spinner size="lg" className="mx-auto" /></td></tr>
+              <SkeletonRows rows={8} cols={9} />
             ) : customers.length === 0 ? (
               <tr><td colSpan={9} className="text-center py-16 text-sm" style={{ color: "var(--color-text-subtle)" }}>No customers found</td></tr>
             ) : customers.map((c, i) => (

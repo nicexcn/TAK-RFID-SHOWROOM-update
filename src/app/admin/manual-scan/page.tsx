@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getDeviceId } from "@/lib/deviceId";
 import { CustomerPicker } from "@/components/CustomerPicker";
+import { Skeleton } from "@/components/Skeleton";
 
 // #5: manual item-selection ("scan without RFID") — for back-office give-outs / souvenirs.
 // Reuses the exact same session + scan APIs as Surface Scan, so records feed the same
@@ -276,7 +277,17 @@ export default function ManualScanPage() {
               <p className="text-[11px] mb-2" style={{ color: "#9a6a2f" }}>Takeaway limit reached (max {takeawayLimit} pieces)</p>
             )}
             {catalogLoading ? (
-              <p className="text-sm py-8 text-center" style={{ color: "var(--color-text-subtle)" }}>Loading products…</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
+                    <Skeleton className="w-12 h-12 rounded-lg" />
+                    <div className="flex-1">
+                      <Skeleton className="h-3.5 mb-2" style={{ width: "70%" }} />
+                      <Skeleton className="h-3" style={{ width: "45%" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : shown.length === 0 ? (
               <p className="text-sm py-8 text-center" style={{ color: "var(--color-text-subtle)" }}>No products found</p>
             ) : (
