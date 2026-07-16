@@ -892,7 +892,6 @@ function RFIDPageInner() {
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                     {readerIdFromUrl(deviceIps[wsDeviceId]) || "LAN (direct)"}
                   </span>
-                  <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>{deviceIps[wsDeviceId]}</span>
                   <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "#fff0f0", color: "var(--color-danger-soft)", border: "1px solid #f5c0c0" }}>
