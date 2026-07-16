@@ -77,15 +77,45 @@ export async function GET(req: NextRequest) {
           .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
     }
 
-    // Overdue first, then out, then returned. Within out/overdue by soonest due; returned by most recent return.
     const rank = (s: string) => (s === "OVERDUE" ? 0 : s === "OUT" ? 1 : 2);
-    loans.sort((a, b) => {
-      if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
-      if (a.status === "RETURNED") return new Date(b.returnedAt || 0).getTime() - new Date(a.returnedAt || 0).getTime();
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
+    // Explicit column sort (from the table header) overrides the smart default below.
+    const SORTABLE = new Set(["item", "customer", "borrowedAt", "dueDate", "status"]);
+    const sortField = url.searchParams.get("sort") || "";
+    const sortDir = url.searchParams.get("dir") === "asc" ? "asc" : "desc";
+    if (SORTABLE.has(sortField)) {
+      const val = (l: (typeof all)[number]): string | number => {
+        switch (sortField) {
+          case "item": return (l.product.name || "").toLowerCase();
+          case "customer": return (l.customerName || "").toLowerCase();
+          case "borrowedAt": return new Date(l.borrowedAt).getTime();
+          case "dueDate": return new Date(l.dueDate).getTime();
+          case "status": return rank(l.status);
+          default: return 0;
+        }
+      };
+      loans.sort((a, b) => {
+        const av = val(a), bv = val(b);
+        const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    } else {
+      // Default: overdue first, then out, then returned. Within out/overdue by soonest due;
+      // returned by most recent return.
+      loans.sort((a, b) => {
+        if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+        if (a.status === "RETURNED") return new Date(b.returnedAt || 0).getTime() - new Date(a.returnedAt || 0).getTime();
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+    }
 
-    return NextResponse.json({ loans, counts });
+    // No ?page → return everything (back-compat). Otherwise paginate the computed list.
+    const pageParam = url.searchParams.get("page");
+    if (pageParam === null) return NextResponse.json({ loans, counts });
+    const page = Math.max(1, parseInt(pageParam, 10) || 1);
+    const limit = 12;
+    const total = loans.length;
+    const paged = loans.slice((page - 1) * limit, page * limit);
+    return NextResponse.json({ loans: paged, counts, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     console.error("LOANS GET ERROR:", error);
     return NextResponse.json({ loans: [], counts: { all: 0, outstanding: 0, overdue: 0, returned: 0 } });

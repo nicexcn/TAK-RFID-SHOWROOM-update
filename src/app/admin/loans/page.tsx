@@ -1,9 +1,11 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
+import { DataTable } from "@/components/DataTable";
+import { createColumnHelper, type SortingState } from "@tanstack/react-table";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
-import { SkeletonRows } from "@/components/Skeleton";
 
 // Borrow / Return ("ยืม / คืน") tracking. A "loan" is a takeaway (Scan.takeawayQty > 0);
 // the return side is tracked on the same Scan. See src/lib/loanStatus.ts and /api/loans.
@@ -28,7 +30,6 @@ interface Loan {
 }
 interface Counts { all: number; outstanding: number; overdue: number; returned: number }
 
-const card = { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 16 };
 const STATUS: Record<Loan["status"], { label: string; bg: string; color: string }> = {
   OUT:      { label: "Out",      bg: "#fef3c7", color: "#b45309" },
   OVERDUE:  { label: "Overdue",  bg: "#fee2e2", color: "var(--color-danger)" },
@@ -44,35 +45,50 @@ const TABS: { key: string; label: string; countKey: keyof Counts }[] = [
 const fmtDate = (d: string | null) => (d ? formatDate(d) : "—");
 const toDateInput = (d: string) => new Date(d).toLocaleDateString("en-CA"); // YYYY-MM-DD (local)
 
+const columnHelper = createColumnHelper<Loan>();
+
 export default function LoansPage() {
-  const [tab, setTab] = useState("outstanding");
-  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState("outstanding"); // status scope (not a column filter)
+  const [searchInput, setSearchInput] = useState("");
+  const globalFilter = useDebouncedValue(searchInput, 300);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [counts, setCounts] = useState<Counts>({ all: 0, outstanding: 0, overdue: 0, returned: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
-  const qRef = useRef(query);
-  qRef.current = query;
+  const reqSeq = useRef(0);
 
   const load = useCallback(async (showSpin = false) => {
-    if (showSpin) setLoading(true);
+    const seq = ++reqSeq.current;
+    if (showSpin) { setLoading(true); setLoadError(false); }
     try {
       const u = new URL("/api/loans", window.location.origin);
       u.searchParams.set("status", tab);
-      if (qRef.current.trim()) u.searchParams.set("q", qRef.current.trim());
-      const d = await fetch(u.toString()).then((r) => r.json());
+      u.searchParams.set("page", String(page));
+      if (globalFilter.trim()) u.searchParams.set("q", globalFilter.trim());
+      const s = sorting[0];
+      if (s) { u.searchParams.set("sort", s.id); u.searchParams.set("dir", s.desc ? "desc" : "asc"); }
+      const res = await fetch(u.toString());
+      if (!res.ok) throw new Error("request failed");
+      const d = await res.json();
+      if (seq !== reqSeq.current) return;
       setLoans(d.loans || []);
       setCounts(d.counts || { all: 0, outstanding: 0, overdue: 0, returned: 0 });
-    } catch { /* keep last good data */ }
-    finally { if (showSpin) setLoading(false); }
-  }, [tab]);
+      setTotalPages(d.totalPages || 1);
+    } catch {
+      if (seq === reqSeq.current && showSpin) setLoadError(true);
+    } finally {
+      if (seq === reqSeq.current && showSpin) setLoading(false);
+    }
+  }, [tab, globalFilter, sorting, page]);
 
-  // Reload on tab change + debounced on search; poll every 15s for cross-station changes.
-  useEffect(() => { load(true); }, [tab, load]);
-  useEffect(() => {
-    const t = setTimeout(() => load(false), 300);
-    return () => clearTimeout(t);
-  }, [query, load]);
+  // Reload whenever tab / search / sort / page change; poll every 15s for cross-station changes.
+  useEffect(() => { load(true); }, [load]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); }, [tab, globalFilter, sorting]);
   useEffect(() => {
     const t = setInterval(() => load(false), 15000);
     return () => clearInterval(t);
@@ -89,10 +105,79 @@ export default function LoansPage() {
       setBusy((b) => ({ ...b, [scanId]: false }));
     }
   }
-
   const returnAll = (l: Loan) => patch(l.scanId, { returnAll: true });
   const setReturned = (l: Loan, qty: number) => patch(l.scanId, { returnedQty: Math.max(0, Math.min(l.borrowedQty, qty)) });
   const setDue = (l: Loan, value: string) => patch(l.scanId, { dueDate: value ? new Date(value).toISOString() : null });
+
+  const columns = useMemo(() => [
+    columnHelper.accessor((l) => l.product.name, { id: "item", header: "Item", cell: ({ row }) => {
+      const l = row.original;
+      const meta = [l.product.brand, l.product.colour, l.product.size].filter(Boolean).join(" · ");
+      return (
+        <div className="flex items-center gap-2.5 min-w-0">
+          {l.product.imageUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={l.product.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+            : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "var(--color-border)" }} />}
+          <div className="min-w-0">
+            <p className="font-medium truncate" style={{ color: "var(--color-text)", maxWidth: 220 }}>{l.product.name}</p>
+            <p className="text-xs truncate" style={{ color: "var(--color-text-muted)", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
+          </div>
+        </div>
+      );
+    } }),
+    columnHelper.accessor((l) => l.customerName, { id: "customer", header: "Customer", cell: ({ row }) => {
+      const l = row.original;
+      return (
+        <div>
+          {l.customerId ? (
+            <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
+              className="font-medium underline underline-offset-2 hover:opacity-80" style={{ color: "var(--color-primary)" }}>{l.customerName}</a>
+          ) : <span className="font-medium" style={{ color: "var(--color-text)" }}>{l.customerName}</span>}
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
+        </div>
+      );
+    } }),
+    columnHelper.accessor("borrowedAt", { header: "Borrowed", cell: (i) => <span style={{ color: "var(--color-text)" }}>{fmtDate(i.getValue())}</span> }),
+    columnHelper.accessor("dueDate", { id: "dueDate", header: "Due", cell: ({ row }) => {
+      const l = row.original;
+      if (l.status === "RETURNED") return <span style={{ color: "var(--color-text-muted)" }}>{fmtDate(l.dueDate)}</span>;
+      return (
+        <div className="flex flex-col gap-0.5">
+          <input type="date" value={toDateInput(l.dueDate)} onChange={(e) => setDue(l, e.target.value)}
+            className="px-1.5 py-1 rounded-md text-xs"
+            style={{ border: "1px solid var(--color-border)", color: l.status === "OVERDUE" ? "var(--color-danger)" : "var(--color-text)", background: "var(--color-surface)" }} />
+          {l.status === "OVERDUE" && <span className="text-[11px] font-medium" style={{ color: "var(--color-danger)" }}>{l.daysOverdue}d overdue</span>}
+        </div>
+      );
+    } }),
+    columnHelper.display({ id: "returned", header: "Returned", cell: ({ row }) => {
+      const l = row.original;
+      return (
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setReturned(l, l.returnedQty - 1)} disabled={busy[l.scanId] || l.returnedQty <= 0}
+            className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>−</button>
+          <span className="tabular-nums text-center" style={{ minWidth: 34, color: "var(--color-text)" }}>{l.returnedQty}<span style={{ color: "var(--color-text-subtle)" }}> / {l.borrowedQty}</span></span>
+          <button onClick={() => setReturned(l, l.returnedQty + 1)} disabled={busy[l.scanId] || l.returnedQty >= l.borrowedQty}
+            className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+</button>
+        </div>
+      );
+    } }),
+    columnHelper.accessor("status", { header: "Status", cell: (i) => {
+      const st = STATUS[i.getValue()];
+      return <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span>;
+    } }),
+    columnHelper.display({ id: "action", header: "Action", enableHiding: false, cell: ({ row }) => {
+      const l = row.original;
+      return l.remaining > 0 ? (
+        <button onClick={() => returnAll(l)} disabled={busy[l.scanId]}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>↩ Return all</button>
+      ) : (
+        <span className="text-xs" style={{ color: "var(--color-success)" }}>{l.returnedAt ? `✓ ${fmtDate(l.returnedAt)}` : "✓"}</span>
+      );
+    } }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [busy]);
 
   return (
     <div>
@@ -102,119 +187,55 @@ export default function LoansPage() {
         <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>Items a customer took (takeaway) and whether they came back</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          const n = counts[t.countKey];
-          const danger = t.key === "overdue" && n > 0;
-          return (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5"
-              style={{
-                background: active ? "var(--color-primary)" : "var(--color-surface)",
-                color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text)",
-                border: `1px solid ${active ? "var(--color-primary)" : "var(--color-border)"}`,
-              }}>
-              <span>{t.label}</span>
-              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "var(--color-bg)", color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text-muted)" }}>{n}</span>
-            </button>
-          );
-        })}
-        <input
-          value={query} onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search customer or item…"
-          className="ml-auto px-3 py-1.5 rounded-lg text-sm w-full sm:w-64"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto" style={card}>
-        <table className="w-full min-w-max text-sm" style={{ borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>
-              {["Item", "Customer", "Borrowed", "Due", "Returned", "Status", ""].map((h, i) => (
-                <th key={i} className="text-left font-medium px-3 py-2.5 whitespace-nowrap" style={{ borderBottom: "1px solid var(--color-border)" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <SkeletonRows rows={6} cols={7} />
-            ) : loans.length === 0 ? (
-              <tr><td colSpan={7} className="px-3 py-10 text-center" style={{ color: "var(--color-text-subtle)" }}>No loans here</td></tr>
-            ) : loans.map((l) => {
-              const st = STATUS[l.status];
-              const returned = l.status === "RETURNED";
-              const meta = [l.product.brand, l.product.colour, l.product.size].filter(Boolean).join(" · ");
-              return (
-                <tr key={l.scanId} style={{ borderBottom: "1px solid #f0eee6", opacity: busy[l.scanId] ? 0.5 : 1 }}>
-                  {/* Item */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {l.product.imageUrl
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={l.product.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                        : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "var(--color-border)" }} />}
-                      <div className="min-w-0">
-                        <p className="font-medium truncate" style={{ color: "var(--color-text)", maxWidth: 220 }}>{l.product.name}</p>
-                        <p className="text-xs truncate" style={{ color: "var(--color-text-muted)", maxWidth: 220 }}>{[l.product.productCode, meta].filter(Boolean).join(" · ") || "—"}</p>
-                      </div>
-                    </div>
-                  </td>
-                  {/* Customer */}
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    {l.customerId ? (
-                      <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
-                        className="font-medium underline underline-offset-2 hover:opacity-80" style={{ color: "var(--color-primary)" }}>{l.customerName}</a>
-                    ) : <span className="font-medium" style={{ color: "var(--color-text)" }}>{l.customerName}</span>}
-                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}</p>
-                  </td>
-                  {/* Borrowed */}
-                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--color-text)" }}>{fmtDate(l.borrowedAt)}</td>
-                  {/* Due */}
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    {returned ? (
-                      <span style={{ color: "var(--color-text-muted)" }}>{fmtDate(l.dueDate)}</span>
-                    ) : (
-                      <div className="flex flex-col gap-0.5">
-                        <input type="date" value={toDateInput(l.dueDate)} onChange={(e) => setDue(l, e.target.value)}
-                          className="px-1.5 py-1 rounded-md text-xs"
-                          style={{ border: "1px solid var(--color-border)", color: l.status === "OVERDUE" ? "var(--color-danger)" : "var(--color-text)", background: "var(--color-surface)" }} />
-                        {l.status === "OVERDUE" && <span className="text-[11px] font-medium" style={{ color: "var(--color-danger)" }}>{l.daysOverdue}d overdue</span>}
-                      </div>
-                    )}
-                  </td>
-                  {/* Returned x/y stepper */}
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => setReturned(l, l.returnedQty - 1)} disabled={busy[l.scanId] || l.returnedQty <= 0}
-                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>−</button>
-                      <span className="tabular-nums text-center" style={{ minWidth: 34, color: "var(--color-text)" }}>{l.returnedQty}<span style={{ color: "var(--color-text-subtle)" }}> / {l.borrowedQty}</span></span>
-                      <button onClick={() => setReturned(l, l.returnedQty + 1)} disabled={busy[l.scanId] || l.returnedQty >= l.borrowedQty}
-                        className="w-6 h-6 rounded-md text-sm leading-none disabled:opacity-30" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+</button>
-                    </div>
-                  </td>
-                  {/* Status */}
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                  </td>
-                  {/* Action */}
-                  <td className="px-3 py-2.5 whitespace-nowrap text-right">
-                    {l.remaining > 0 ? (
-                      <button onClick={() => returnAll(l)} disabled={busy[l.scanId]}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
-                        style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>↩ Return all</button>
-                    ) : (
-                      <span className="text-xs" style={{ color: "var(--color-success)" }}>{l.returnedAt ? `✓ ${fmtDate(l.returnedAt)}` : "✓"}</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        tableId="loans"
+        columns={columns}
+        data={loans}
+        loading={loading}
+        error={loadError}
+        onRetry={() => load(true)}
+        errorMessage="Could not load loans. Please try again."
+        emptyMessage="No loans here"
+        sorting={sorting}
+        onSortingChange={setSorting}
+        globalFilter={globalFilter}
+        onGlobalFilterChange={setSearchInput}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        getRowId={(l) => l.scanId}
+        rowStyle={(l) => (busy[l.scanId] ? { opacity: 0.5 } : undefined)}
+        toolbar={
+          <>
+            {/* Search — fills the row on mobile, fixed on larger screens */}
+            <div className="w-full sm:w-56 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+              <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+              <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search customer or item…"
+                className="outline-none text-sm bg-transparent w-full" style={{ color: "var(--color-text)" }} />
+            </div>
+            {/* Status scope — a horizontal-scroll strip of chips */}
+            <div className="w-full sm:w-auto min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar">
+              {TABS.map((t) => {
+                const active = tab === t.key;
+                const n = counts[t.countKey];
+                const danger = t.key === "overdue" && n > 0;
+                return (
+                  <button key={t.key} onClick={() => setTab(t.key)}
+                    className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 flex-shrink-0"
+                    style={{
+                      background: active ? "var(--color-primary)" : "var(--color-surface)",
+                      color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text)",
+                      border: `1px solid ${active ? "var(--color-primary)" : "var(--color-border)"}`,
+                    }}>
+                    <span>{t.label}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.25)" : danger ? "#fee2e2" : "var(--color-bg)", color: active ? "var(--color-surface)" : danger ? "var(--color-danger)" : "var(--color-text-muted)" }}>{n}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        }
+      />
     </div>
   );
 }

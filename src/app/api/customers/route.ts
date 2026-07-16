@@ -15,23 +15,41 @@ export async function GET(req: NextRequest) {
     if (fromP && !isNaN(new Date(fromP).getTime())) createdAt.gte = new Date(fromP);
     if (toP && !isNaN(new Date(toP).getTime())) { const d = new Date(toP); d.setHours(23, 59, 59, 999); createdAt.lte = d; }
   }
-  const customers = await prisma.customer.findMany({
-    where: {
-      AND: [
-        title ? { title } : {},
-        createdAt ? { createdAt } : {},
-        search ? { OR: [
-          { fullName: { contains: search, mode: "insensitive" } },
-          { customerCode: { contains: search, mode: "insensitive" } },
-          { phone: { contains: search } },
-          { company: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-        ]} : {},
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(customers);
+  const where = {
+    AND: [
+      title ? { title } : {},
+      createdAt ? { createdAt } : {},
+      search ? { OR: [
+        { fullName: { contains: search, mode: "insensitive" as const } },
+        { customerCode: { contains: search, mode: "insensitive" as const } },
+        { phone: { contains: search } },
+        { company: { contains: search, mode: "insensitive" as const } },
+        { email: { contains: search, mode: "insensitive" as const } },
+      ] } : {},
+    ],
+  };
+  // Sorting: allow only real, indexable columns.
+  const SORTABLE = new Set(["customerCode", "fullName", "title", "company", "phone", "email", "createdAt"]);
+  const sortField = searchParams.get("sort") || "";
+  const sortDir = searchParams.get("dir") === "asc" ? "asc" : "desc";
+  const orderBy = SORTABLE.has(sortField) ? { [sortField]: sortDir } : { createdAt: "desc" as const };
+
+  // No ?page → return the full array (back-compat: CSV export + any other consumer).
+  const pageParam = searchParams.get("page");
+  if (pageParam === null) {
+    const customers = await prisma.customer.findMany({ where, orderBy });
+    return NextResponse.json(customers);
+  }
+  // Paginated list view: also return the filtered total + per-type counts for the stats card.
+  const page = Math.max(1, parseInt(pageParam, 10) || 1);
+  const limit = 10;
+  const [customers, total, grouped] = await Promise.all([
+    prisma.customer.findMany({ where, orderBy, skip: (page - 1) * limit, take: limit }),
+    prisma.customer.count({ where }),
+    prisma.customer.groupBy({ by: ["title"], where, _count: { _all: true } }),
+  ]);
+  const byTitle = grouped.map((g) => ({ title: g.title, count: g._count._all }));
+  return NextResponse.json({ customers, total, page, totalPages: Math.ceil(total / limit), byTitle });
 }
 
 export async function POST(req: NextRequest) {
