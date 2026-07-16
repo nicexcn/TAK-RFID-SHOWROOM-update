@@ -38,6 +38,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Focus-source flag: mark <html> keyboard vs pointer so the CSS shows the
+            focus ring on form fields ONLY when reached by keyboard (Tab), never on
+            click/tap. Buttons/links stay on :focus-visible (already keyboard-only).
+            Runs before paint; listeners on document need no specific mount order. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var e=document.documentElement;document.addEventListener('keydown',function(v){if(v.key==='Tab')e.classList.add('keyboard-nav')},true);document.addEventListener('pointerdown',function(){e.classList.remove('keyboard-nav')},true)})()",
+          }}
+        />
         {children}
       </body>
     </html>

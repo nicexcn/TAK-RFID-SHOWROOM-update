@@ -102,16 +102,22 @@ input[type="password"]::-ms-clear {
   display: none !important;
 }
 
-/* Keyboard-focus ring. Most form fields use Tailwind `outline-none` (a transparent
-   outline) with nothing to replace it, so keyboard users lost all focus visibility.
-   These element+pseudo selectors are unlayered, so they beat the layered `.outline-none`
-   utility without !important; `:focus-visible` keeps mouse clicks ringless. */
+/* Keyboard-focus ring. Buttons/links/[tabindex] use :focus-visible, which already
+   ignores mouse clicks — so they ring on keyboard only. Form fields are the exception:
+   browsers force :focus-visible on text inputs/selects even on a mouse click, which we
+   do NOT want here — so those are gated behind `.keyboard-nav`, a class a tiny script in
+   the root layout adds on Tab and removes on pointerdown. Net: inputs/selects ring only
+   when reached via keyboard, never on click/tap. Unlayered selectors beat Tailwind's
+   layered `outline-none` without !important. */
 a:focus-visible,
 button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
 [tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+html.keyboard-nav input:focus,
+html.keyboard-nav select:focus,
+html.keyboard-nav textarea:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
