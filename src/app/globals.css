@@ -136,6 +136,11 @@ html.keyboard-nav textarea:focus {
   outline: none;
 }
 
+/* Hide the scrollbar on horizontal filter strips (they scroll on touch/drag) so a chip
+   row that overflows a narrow screen doesn't show an ugly track. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* TV slideshow crossfade — runs on every (re)mount of the incoming layer, so it
    fades even for cached images; the other layer stays opaque underneath. */
 @keyframes takImgFade {

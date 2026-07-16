@@ -313,23 +313,27 @@ export default function ProductsPage() {
         rowStyle={(p) => (p.isActive ? undefined : { background: "var(--color-hover)", opacity: 0.6 })}
         toolbar={
           <>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+            {/* Search — fills the row on mobile, fixed width on larger screens */}
+            <div className="w-full sm:w-56 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
               <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
               <input placeholder="Search products" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-                className="outline-none text-sm bg-transparent w-40 sm:w-56" style={{ color: "var(--color-text)" }} />
+                className="outline-none text-sm bg-transparent w-full" style={{ color: "var(--color-text)" }} />
             </div>
-            {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setStatus(k)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                style={{
-                  background: status === k ? "var(--color-primary)" : "var(--color-surface)",
-                  color: status === k ? "var(--color-surface)" : "var(--color-text)",
-                  border: "1px solid " + (status === k ? "var(--color-primary)" : "var(--color-border)"),
-                }}>
-                {label}
-              </button>
-            ))}
-            <span className="text-xs whitespace-nowrap ml-0.5" style={{ color: "var(--color-text-muted)" }}>{total} products</span>
+            {/* Filters — a horizontal-scroll strip so many tabs never wrap or overflow on narrow screens */}
+            <div className="w-full sm:w-auto min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar">
+              {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
+                <button key={k} onClick={() => setStatus(k)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0"
+                  style={{
+                    background: status === k ? "var(--color-primary)" : "var(--color-surface)",
+                    color: status === k ? "var(--color-surface)" : "var(--color-text)",
+                    border: "1px solid " + (status === k ? "var(--color-primary)" : "var(--color-border)"),
+                  }}>
+                  {label}
+                </button>
+              ))}
+              <span className="text-xs whitespace-nowrap ml-0.5 flex-shrink-0" style={{ color: "var(--color-text-muted)" }}>{total} products</span>
+            </div>
           </>
         }
       />
