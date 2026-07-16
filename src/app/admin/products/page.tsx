@@ -283,41 +283,8 @@ export default function ProductsPage() {
         }
       />
 
-      {/* Search */}
-      <div className="p-4 rounded-xl mb-4 flex items-center gap-3"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1"
-          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-          <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            placeholder="Global Search"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="outline-none text-sm w-full"
-            style={{ background: "transparent", color: "var(--color-text)" }}
-          />
-        </div>
-        <p className="text-sm whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>Total: {total} products</p>
-      </div>
-
-      {/* Status filter: Active (default) / Archived (soft-deleted, kept for history) / All */}
-      <div className="flex gap-2 mb-4">
-        {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
-          <button key={k} onClick={() => { setStatus(k); setPage(1); }}
-            className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
-            style={{
-              background: status === k ? "var(--color-primary)" : "var(--color-surface)",
-              color: status === k ? "var(--color-surface)" : "var(--color-text)",
-              border: "1px solid " + (status === k ? "var(--color-primary)" : "var(--color-border)"),
-            }}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Table (shared DataTable — TanStack headless, server-side sort + pagination) */}
+      {/* Table (shared DataTable — TanStack headless, server-side sort + pagination).
+          Page filters (search + status tabs + count) live in the table's unified toolbar. */}
       <DataTable
         tableId="products"
         columns={columns}
@@ -334,6 +301,27 @@ export default function ProductsPage() {
         onPageChange={setPage}
         getRowId={(p) => p.id}
         rowStyle={(p) => (p.isActive ? undefined : { background: "var(--color-hover)", opacity: 0.6 })}
+        toolbar={
+          <>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+              <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+              <input placeholder="Search products" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                className="outline-none text-sm bg-transparent w-40 sm:w-56" style={{ color: "var(--color-text)" }} />
+            </div>
+            {([["active", "Active"], ["archived", "Archived"], ["all", "All"]] as const).map(([k, label]) => (
+              <button key={k} onClick={() => { setStatus(k); setPage(1); }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                style={{
+                  background: status === k ? "var(--color-primary)" : "var(--color-surface)",
+                  color: status === k ? "var(--color-surface)" : "var(--color-text)",
+                  border: "1px solid " + (status === k ? "var(--color-primary)" : "var(--color-border)"),
+                }}>
+                {label}
+              </button>
+            ))}
+            <span className="text-xs whitespace-nowrap ml-0.5" style={{ color: "var(--color-text-muted)" }}>{total} products</span>
+          </>
+        }
       />
 
       {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}

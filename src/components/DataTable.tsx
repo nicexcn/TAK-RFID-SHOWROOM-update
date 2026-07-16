@@ -59,6 +59,9 @@ export interface DataTableProps<T> {
   enableColumnHiding?: boolean;
   enableColumnReorder?: boolean;
   tableId?: string;
+  // Page-owned filters (search, tabs, selects) rendered on the LEFT of the table's single
+  // toolbar row; the Columns control sits on the right. Unifies page + table controls.
+  toolbar?: React.ReactNode;
 }
 
 function colLabel<T>(col: Column<T, unknown>): string {
@@ -165,6 +168,7 @@ export function DataTable<T>({
   enableColumnHiding = true,
   enableColumnReorder = true,
   tableId,
+  toolbar,
 }: DataTableProps<T>) {
   const visKey = tableId ? `tak-cols-${tableId}` : null;
   const orderKey = tableId ? `tak-order-${tableId}` : null;
@@ -258,36 +262,41 @@ export function DataTable<T>({
 
   return (
     <div className="rounded-xl overflow-visible" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-      {showColMenu && (
-        <div ref={menuRef} className="relative flex justify-end px-3 py-2" style={{ borderBottom: "1px solid var(--color-border)" }}>
-          <button type="button" onClick={() => setMenuOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-            style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-              <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-            </svg>
-            Columns
-          </button>
-          {menuOpen && (
-            <div className="absolute right-3 top-full mt-1 z-30 w-56 rounded-xl overflow-hidden py-1"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-              {canReorder && (
-                <p className="px-3 pt-1 pb-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--color-text-subtle)" }}>Show / drag to reorder</p>
-              )}
-              {canReorder ? (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={onReorder}>
-                  <SortableContext items={panelIds} strategy={verticalListSortingStrategy}>
-                    {panelCols.map((col) => <PanelRow key={col.id} col={col} />)}
-                  </SortableContext>
-                </DndContext>
-              ) : (
-                panelCols.map((col) => (
-                  <label key={col.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-[var(--color-hover)]" style={{ color: "var(--color-text)" }}>
-                    <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} style={{ accentColor: "var(--color-primary)" }} />
-                    {colLabel(col)}
-                  </label>
-                ))
+      {(toolbar || showColMenu) && (
+        <div className="flex flex-wrap items-center gap-3 px-3 py-2" style={{ borderBottom: "1px solid var(--color-border)" }}>
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">{toolbar}</div>
+          {showColMenu && (
+            <div ref={menuRef} className="relative flex-shrink-0">
+              <button type="button" onClick={() => setMenuOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                Columns
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-30 w-56 rounded-xl overflow-hidden py-1"
+                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+                  {canReorder && (
+                    <p className="px-3 pt-1 pb-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--color-text-subtle)" }}>Show / drag to reorder</p>
+                  )}
+                  {canReorder ? (
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={onReorder}>
+                      <SortableContext items={panelIds} strategy={verticalListSortingStrategy}>
+                        {panelCols.map((col) => <PanelRow key={col.id} col={col} />)}
+                      </SortableContext>
+                    </DndContext>
+                  ) : (
+                    panelCols.map((col) => (
+                      <label key={col.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-[var(--color-hover)]" style={{ color: "var(--color-text)" }}>
+                        <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} style={{ accentColor: "var(--color-primary)" }} />
+                        {colLabel(col)}
+                      </label>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )}
