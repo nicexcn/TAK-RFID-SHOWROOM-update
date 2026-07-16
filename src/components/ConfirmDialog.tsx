@@ -92,7 +92,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 className="px-4 py-2 rounded-xl text-sm font-medium"
                 style={
                   opts.danger
-                    ? { background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }
+                    ? { background: "var(--color-danger)", color: "#ffffff", border: "1px solid var(--color-danger)" }
                     : { background: "var(--color-primary)", color: "var(--color-surface)", border: "1px solid var(--color-primary)" }
                 }
               >

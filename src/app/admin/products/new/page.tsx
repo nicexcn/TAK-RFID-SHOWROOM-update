@@ -123,8 +123,8 @@ export default function NewProductPage() {
 
           {/* Product Code */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
-            <input name="productCode" value={form.productCode} onChange={handleChange}
+            <label htmlFor="productCode" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
+            <input id="productCode" name="productCode" value={form.productCode} onChange={handleChange}
               placeholder="e.g. WY7204X"
               className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
           </div>
@@ -179,25 +179,25 @@ export default function NewProductPage() {
           {/* Location + physical attributes (customer req #2: track product location) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Location (ตำแหน่งในโชว์รูม)</label>
-              <input name="location" value={form.location} onChange={handleChange} placeholder="เช่น โซน A ชั้น 2"
+              <label htmlFor="location" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Location (in showroom)</label>
+              <input id="location" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Zone A, Floor 2"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Size</label>
-              <input name="size" value={form.size} onChange={handleChange} placeholder="เช่น 60x60 cm"
+              <label htmlFor="size" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Size</label>
+              <input id="size" name="size" value={form.size} onChange={handleChange} placeholder="e.g. 60x60 cm"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Colour</label>
-              <input name="colour" value={form.colour} onChange={handleChange} placeholder="เช่น Walnut"
+              <label htmlFor="colour" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Colour</label>
+              <input id="colour" name="colour" value={form.colour} onChange={handleChange} placeholder="e.g. Walnut"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Description</label>
-              <input name="description" value={form.description} onChange={handleChange} placeholder="รายละเอียดสั้นๆ"
+              <label htmlFor="description" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Description</label>
+              <input id="description" name="description" value={form.description} onChange={handleChange} placeholder="Short description…"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
@@ -205,12 +205,12 @@ export default function NewProductPage() {
 
           {/* image3: give-away vs must-return */}
           <div>
-            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Return policy / นโยบายการคืน</label>
+            <label className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Return policy</label>
             <label className="flex items-start gap-3 px-4 py-3 rounded-xl cursor-pointer" style={inputStyle}>
               <input type="checkbox" name="returnable" checked={form.returnable} onChange={handleChange} className="w-4 h-4 mt-0.5" />
               <span className="text-sm" style={{ color: "var(--color-text)" }}>
-                <strong>ต้องคืน</strong> (Must be returned) — มีแจ้งเตือนเตรียมของ + ติดตามการคืน<br />
-                <span style={{ color: "var(--color-text-muted)" }}>เอาเครื่องหมายออก = <strong>ให้ไปเลย</strong> (give-away) — ไม่มีแจ้งเตือน ไม่ติดตามการคืน</span>
+                <strong>Must be returned</strong> — sends a prepare alert + tracks the return<br />
+                <span style={{ color: "var(--color-text-muted)" }}>Unchecked = <strong>give-away</strong> — no alert, no return tracking</span>
               </span>
             </label>
           </div>
