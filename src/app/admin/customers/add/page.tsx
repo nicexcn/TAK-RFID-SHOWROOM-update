@@ -342,7 +342,7 @@ export default function AddCustomerPage() {
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-50"
             style={{ background: "var(--color-primary)" }}>
             {saving && <Spinner size="sm" color="#fff" />}
-            {saving ? "Saving..." : "Add Customer"}
+            {saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Add Customer"}
           </button>
         </div>
       </div>

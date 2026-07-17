@@ -9,6 +9,7 @@ import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
 import { formatDateTime } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 import { toast } from "sonner";
 
 const errorToast = { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } };
@@ -260,7 +261,7 @@ export default function CustomerDetailPage() {
                 </select>
               </label>
               <div className="flex gap-2 pt-1">
-                <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? "Saving…" : "Save"}</button>
+                <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
               </div>
             </div>

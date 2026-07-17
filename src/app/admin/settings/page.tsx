@@ -583,7 +583,7 @@ export default function SettingsPage() {
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                         style={{ background: "var(--color-primary)" }}>
                         {createLoading && <Spinner size="xs" color="#fff" />}
-                        {createLoading ? "Saving..." : "Create User"}
+                        {createLoading ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Create User"}
                       </button>
                     </div>
                   </div>
@@ -684,7 +684,7 @@ export default function SettingsPage() {
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                                 style={{ background: "var(--color-primary)" }}>
                                 {editLoading && <Spinner size="xs" color="#fff" />}
-                                {editLoading ? "Saving..." : "Save"}
+                                {editLoading ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save"}
                               </button>
                             </div>
                           </div>
@@ -943,7 +943,7 @@ export default function SettingsPage() {
                     setSavingDisplay(false);
                   }}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                  {savingDisplay ? "Saving..." : "Save"}
+                  {savingDisplay ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save"}
                 </button>
               </div>
 

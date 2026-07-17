@@ -8,6 +8,7 @@ import AutocompleteInput from "@/components/AutocompleteInput";
 import ProductGallery from "@/components/ProductGallery";
 import RfidTagField from "@/components/RfidTagField";
 import { Skeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 
 interface DropdownOption {
   id: string;
@@ -251,7 +252,7 @@ export default function EditProductPage() {
             <button onClick={handleSubmit} disabled={loading}
               className="px-6 py-3 rounded-xl text-sm font-medium"
               style={{ background: "var(--color-primary)", color: "var(--color-surface)", opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save Changes"}
             </button>
             <button onClick={() => router.push("/admin/products")}
               className="px-6 py-3 rounded-xl text-sm"
