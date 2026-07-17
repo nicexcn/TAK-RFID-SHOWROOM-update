@@ -82,12 +82,17 @@ html.keyboard-nav textarea:focus {
   outline: none;
 }
 
-/* Menu/popover items are full-width and sit flush inside an overflow-hidden container,
-   so the 2px OUTSET ring above gets clipped at the edges. Inset it for these so the
-   keyboard-focus ring reads as a clean rectangle inside the item. */
-[data-menuitem]:focus-visible {
-  outline-offset: -2px;
-}
+/* Menu/popover items: hover and keyboard-focus share ONE "highlighted" look (the standard
+   menu pattern) — a background tint, per-item via --mi-hover (defaults to the neutral
+   surface; Restore/Delete set their own themed tint). Driving hover from CSS (not JS
+   onMouseEnter/Leave) also avoids a stale background sticking when the row re-renders.
+   Items are full-width and sit flush inside an overflow-hidden container, so the 2px
+   OUTSET ring above gets clipped — inset it here so the focus ring reads as a clean
+   rectangle inside the highlighted item. */
+[data-menuitem] { background: transparent; transition: background 0.12s ease; }
+[data-menuitem]:hover,
+[data-menuitem]:focus-visible { background: var(--mi-hover, var(--color-bg)); }
+[data-menuitem]:focus-visible { outline-offset: -2px; }
 
 /* Hide the scrollbar on horizontal filter strips (they scroll on touch/drag) so a chip
    row that overflows a narrow screen doesn't show an ugly track. */
