@@ -136,6 +136,8 @@ export default function SettingsPage() {
   const [displayRotation, setDisplayRotation] = useState(0); // /display screen rotation (deg)
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
   const [savingDisplay, setSavingDisplay] = useState(false); // Display Settings Save in-flight
+  const [savingDashboard, setSavingDashboard] = useState(false); // Dashboard Settings Save in-flight
+  const [savingTakeaway, setSavingTakeaway] = useState(false); // Takeaway Settings Save in-flight
 
   // Takeaway
   const [takeawayLimit, setTakeawayLimit] = useState(3);
@@ -477,22 +479,25 @@ export default function SettingsPage() {
               </div>
 
               {dashboardSuccess && <p className="text-sm mb-3" style={{ color: "var(--color-success)" }}>{dashboardSuccess}</p>}
-              <button
+              <button disabled={savingDashboard}
                 onClick={async () => {
-                  await fetch("/api/settings", {
-                    method: "PUT", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      defaultFilter: dashboardSettings.defaultFilter,
-                      graphColor: dashboardSettings.graphColor,
-                      visibleWidgets: dashboardSettings.visibleWidgets,
-                    }),
-                  });
-                  setDashboardSuccess("✓ Dashboard settings saved");
-                  setTimeout(() => setDashboardSuccess(""), 2000);
+                  setSavingDashboard(true);
+                  try {
+                    await fetch("/api/settings", {
+                      method: "PUT", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        defaultFilter: dashboardSettings.defaultFilter,
+                        graphColor: dashboardSettings.graphColor,
+                        visibleWidgets: dashboardSettings.visibleWidgets,
+                      }),
+                    });
+                    setDashboardSuccess("✓ Dashboard settings saved");
+                    setTimeout(() => setDashboardSuccess(""), 2000);
+                  } finally { setSavingDashboard(false); }
                 }}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium"
+                className="px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
                 style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                Save Settings
+                {savingDashboard ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save Settings"}
               </button>
             </div>
           )}
@@ -582,7 +587,6 @@ export default function SettingsPage() {
                       <button onClick={handleCreateUser} disabled={createLoading}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                         style={{ background: "var(--color-primary)" }}>
-                        {createLoading && <Spinner size="xs" color="#fff" />}
                         {createLoading ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Create User"}
                       </button>
                     </div>
@@ -683,7 +687,6 @@ export default function SettingsPage() {
                               <button onClick={handleSaveEdit} disabled={editLoading}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60"
                                 style={{ background: "var(--color-primary)" }}>
-                                {editLoading && <Spinner size="xs" color="#fff" />}
                                 {editLoading ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save"}
                               </button>
                             </div>
@@ -1081,18 +1084,21 @@ export default function SettingsPage() {
                 </div>
 
                 {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "var(--color-success)" }}>{takeawaySuccess}</p>}
-                <button
+                <button disabled={savingTakeaway}
                   onClick={async () => {
-                    await fetch("/api/settings", {
-                      method: "PUT", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ takeawayLimit, takeawayEnabled, borrowDays }),
-                    });
-                    setTakeawaySuccess("✓ Takeaway settings saved");
-                    setTimeout(() => setTakeawaySuccess(""), 2000);
+                    setSavingTakeaway(true);
+                    try {
+                      await fetch("/api/settings", {
+                        method: "PUT", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ takeawayLimit, takeawayEnabled, borrowDays }),
+                      });
+                      setTakeawaySuccess("✓ Takeaway settings saved");
+                      setTimeout(() => setTakeawaySuccess(""), 2000);
+                    } finally { setSavingTakeaway(false); }
                   }}
-                  className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium"
+                  className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
                   style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                  Save Settings
+                  {savingTakeaway ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save Settings"}
                 </button>
               </div>
             </div>
