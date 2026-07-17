@@ -82,6 +82,13 @@ html.keyboard-nav textarea:focus {
   outline: none;
 }
 
+/* Menu/popover items are full-width and sit flush inside an overflow-hidden container,
+   so the 2px OUTSET ring above gets clipped at the edges. Inset it for these so the
+   keyboard-focus ring reads as a clean rectangle inside the item. */
+[data-menuitem]:focus-visible {
+  outline-offset: -2px;
+}
+
 /* Hide the scrollbar on horizontal filter strips (they scroll on touch/drag) so a chip
    row that overflows a narrow screen doesn't show an ugly track. */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
