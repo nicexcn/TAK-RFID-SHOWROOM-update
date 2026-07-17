@@ -24,7 +24,7 @@ export function normalizeWsUrl(input: string): string {
 export function wsMixedContentWarning(wsUrl: string): string | null {
   if (typeof window === "undefined") return null;
   if (window.location.protocol === "https:" && wsUrl.startsWith("ws://")) {
-    return "หน้านี้เป็น HTTPS — เชื่อม ws:// ไม่ได้ ใช้ wss:// (เช่น ngrok) แทน";
+    return "This page is served over HTTPS — a plain ws:// connection is blocked. Use wss:// (e.g. via ngrok) instead.";
   }
   return null;
 }

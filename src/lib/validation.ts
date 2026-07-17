@@ -11,8 +11,8 @@ export function isValidRole(role: unknown): boolean {
 // message, or null when acceptable.
 export function passwordError(pw: unknown): string | null {
   if (typeof pw !== "string" || pw.length < 8) {
-    return "รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร";
+    return "Password must be at least 8 characters";
   }
-  if (!pw.trim()) return "รหัสผ่านไม่ถูกต้อง";
+  if (!pw.trim()) return "Password cannot be blank";
   return null;
 }

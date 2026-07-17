@@ -125,7 +125,7 @@ export function useWebSocket({
       };
 
       ws.onerror = () => {
-        setError("ไม่สามารถเชื่อมต่อได้");
+        setError("Unable to connect");
       };
 
       socketRef.current = ws;

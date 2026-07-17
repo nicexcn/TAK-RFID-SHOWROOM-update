@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const pwErr = passwordError(newPassword);
     if (pwErr) return NextResponse.json({ error: pwErr }, { status: 400 });
     if (newPassword === currentPassword) {
-      return NextResponse.json({ error: "รหัสผ่านใหม่ต้องต่างจากเดิม" }, { status: 400 });
+      return NextResponse.json({ error: "New password must be different from the current one" }, { status: 400 });
     }
 
     const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
