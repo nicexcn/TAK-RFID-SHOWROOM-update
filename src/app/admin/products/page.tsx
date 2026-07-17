@@ -52,10 +52,18 @@ export default function ProductsPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const menuTriggerRef = useRef<HTMLButtonElement | null>(null); // the ⋯ button that opened the menu, so Esc/close can restore focus
 
   // Close the actions menu and (for keyboard users) return focus to the ⋯ button that opened it.
-  function closeMenu() { setOpenMenu(null); menuTriggerRef.current?.focus(); }
+  // Focusing synchronously here loses the focus to <body>: setOpenMenu unmounts the menu on the
+  // next commit, and the trigger node may also have been re-created by the row re-render (stale
+  // ref). So defer to after the DOM settles and re-query the LIVE trigger by its product id.
+  function closeMenu() {
+    const id = openMenu;
+    setOpenMenu(null);
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-menu-trigger="${id}"]`)?.focus()
+    );
+  }
   // Move focus into the menu when it opens so a keyboard user lands on the first item.
   useEffect(() => {
     if (openMenu && menuRef.current) menuRef.current.querySelector<HTMLElement>("[data-menuitem]")?.focus();
@@ -259,6 +267,7 @@ export default function ProductsPage() {
       const product = row.original;
       return (
         <button
+          data-menu-trigger={product.id}
           aria-label={`Actions for ${product.name}`}
           aria-haspopup="true"
           aria-expanded={openMenu === product.id}
@@ -268,7 +277,6 @@ export default function ProductsPage() {
             const top = rect.bottom + MENU_H > window.innerHeight ? rect.top - MENU_H : rect.bottom;
             const left = Math.min(Math.max(8, rect.right - MENU_W), window.innerWidth - MENU_W - 8);
             setMenuPosition({ top, left });
-            menuTriggerRef.current = e.currentTarget;
             setOpenMenu(openMenu === product.id ? null : product.id);
           }}
           className="w-8 h-8 flex items-center justify-center rounded-lg"
