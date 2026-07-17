@@ -52,6 +52,14 @@ export default function ProductsPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement | null>(null); // the ⋯ button that opened the menu, so Esc/close can restore focus
+
+  // Close the actions menu and (for keyboard users) return focus to the ⋯ button that opened it.
+  function closeMenu() { setOpenMenu(null); menuTriggerRef.current?.focus(); }
+  // Move focus into the menu when it opens so a keyboard user lands on the first item.
+  useEffect(() => {
+    if (openMenu && menuRef.current) menuRef.current.querySelector<HTMLElement>("[data-menuitem]")?.focus();
+  }, [openMenu]);
 
   // Import state
   const [showImport, setShowImport] = useState(false);
@@ -251,17 +259,21 @@ export default function ProductsPage() {
       const product = row.original;
       return (
         <button
+          aria-label={`Actions for ${product.name}`}
+          aria-haspopup="true"
+          aria-expanded={openMenu === product.id}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const MENU_W = 144, MENU_H = 96;
             const top = rect.bottom + MENU_H > window.innerHeight ? rect.top - MENU_H : rect.bottom;
             const left = Math.min(Math.max(8, rect.right - MENU_W), window.innerWidth - MENU_W - 8);
             setMenuPosition({ top, left });
+            menuTriggerRef.current = e.currentTarget;
             setOpenMenu(openMenu === product.id ? null : product.id);
           }}
           className="w-8 h-8 flex items-center justify-center rounded-lg"
           style={{ background: openMenu === product.id ? "var(--color-bg)" : "transparent" }}>
-          <svg width="16" height="16" fill="var(--color-icon-muted)" viewBox="0 0 24 24">
+          <svg aria-hidden="true" width="16" height="16" fill="var(--color-icon-muted)" viewBox="0 0 24 24">
             <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
           </svg>
         </button>
@@ -353,11 +365,21 @@ export default function ProductsPage() {
 
       {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}
       {openMenu && menuProduct && (
-        <div ref={menuRef} className="fixed z-50 w-40 rounded-xl overflow-hidden"
+        <div ref={menuRef} aria-label="Product actions" className="fixed z-50 w-40 rounded-xl overflow-hidden"
+          onKeyDown={(e) => {
+            const items = menuRef.current ? Array.from(menuRef.current.querySelectorAll<HTMLElement>("[data-menuitem]")) : [];
+            if (!items.length) return;
+            const i = items.indexOf(document.activeElement as HTMLElement);
+            if (e.key === "Escape") { e.preventDefault(); closeMenu(); }
+            else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+            else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
+            else if (e.key === "End") { e.preventDefault(); items[items.length - 1].focus(); }
+          }}
           style={{ top: menuPosition.top, left: menuPosition.left, background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
           {menuProduct.isActive === false ? (
             <>
-              <button onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
+              <button data-menuitem onClick={() => { handleRestore(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                 style={{ color: "var(--color-success-soft)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#eef6f0")}
@@ -367,7 +389,7 @@ export default function ProductsPage() {
                 </svg>
                 Restore
               </button>
-              <button onClick={() => { handlePurge(openMenu); setOpenMenu(null); }}
+              <button data-menuitem onClick={() => { handlePurge(openMenu); setOpenMenu(null); }}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                 style={{ color: "var(--color-danger-soft)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger-bg)")}
@@ -383,7 +405,7 @@ export default function ProductsPage() {
             </>
           ) : (
             <>
-              <Link href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
+              <Link data-menuitem href={`/admin/products/${openMenu}/edit`} onClick={() => setOpenMenu(null)}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                 style={{ color: "var(--color-text)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
@@ -395,7 +417,7 @@ export default function ProductsPage() {
                 Edit
               </Link>
               {menuArchives ? (
-                <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
+                <button data-menuitem onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                   style={{ color: "var(--color-text-muted)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg)")}
@@ -406,7 +428,7 @@ export default function ProductsPage() {
                   Archive
                 </button>
               ) : (
-                <button onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
+                <button data-menuitem onClick={() => { handleDelete(openMenu); setOpenMenu(null); }}
                   className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
                   style={{ color: "var(--color-danger-soft)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger-bg)")}
