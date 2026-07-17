@@ -45,6 +45,7 @@ export default function ProductsPage() {
   const [total, setTotal] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null); // row with a delete/archive/restore/purge in flight
   const [fetchError, setFetchError] = useState(false);
   const reqSeq = useRef(0); // drop out-of-order responses (a slow early request landing late)
   const confirm = useConfirm();
@@ -113,25 +114,34 @@ export default function ProductsPage() {
       ? "This product has scan history, so it will be ARCHIVED (hidden but kept — its RFID tag is freed for reuse). You can permanently delete it later from the Archived tab. Continue?"
       : "Delete this product? This permanently removes it.";
     if (!(await confirm({ title: hasHistory ? "Archive product" : "Delete product", message, danger: true }))) return;
-    await fetch(`/api/products/${id}`, { method: "DELETE" });
-    fetchProducts();
+    setBusyId(id); // dim the row while the delete/archive is in flight
+    try {
+      await fetch(`/api/products/${id}`, { method: "DELETE" });
+      await fetchProducts();
+    } finally { setBusyId(null); }
   }
 
   async function handleRestore(id: string) {
-    const res = await fetch(`/api/products/${id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }),
-    });
-    const body = await res.json().catch(() => ({} as { tagRecovered?: boolean; rfidTag?: string }));
-    if (res.ok && body.tagRecovered === false) {
-      toast(`Restored — but its original RFID tag was already taken, so it kept a placeholder tag (${body.rfidTag}). Edit the product to set a new tag.`);
-    }
-    fetchProducts();
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }),
+      });
+      const body = await res.json().catch(() => ({} as { tagRecovered?: boolean; rfidTag?: string }));
+      if (res.ok && body.tagRecovered === false) {
+        toast(`Restored — but its original RFID tag was already taken, so it kept a placeholder tag (${body.rfidTag}). Edit the product to set a new tag.`);
+      }
+      await fetchProducts();
+    } finally { setBusyId(null); }
   }
 
   async function handlePurge(id: string) {
     if (!(await confirm({ title: "Delete forever", message: "Permanently delete this product AND its scan history? This cannot be undone.", danger: true }))) return;
-    await fetch(`/api/products/${id}?purge=true`, { method: "DELETE" });
-    fetchProducts();
+    setBusyId(id);
+    try {
+      await fetch(`/api/products/${id}?purge=true`, { method: "DELETE" });
+      await fetchProducts();
+    } finally { setBusyId(null); }
   }
 
   // ── Import handlers ────────────────────────────────────────────────────────
@@ -310,7 +320,10 @@ export default function ProductsPage() {
         totalPages={totalPages}
         onPageChange={setPage}
         getRowId={(p) => p.id}
-        rowStyle={(p) => (p.isActive ? undefined : { background: "var(--color-hover)", opacity: 0.6 })}
+        rowStyle={(p) => {
+          const base = p.isActive ? undefined : { background: "var(--color-hover)", opacity: 0.6 };
+          return busyId === p.id ? { ...base, opacity: 0.4, pointerEvents: "none" as const } : base;
+        }}
         toolbar={
           <>
             {/* Search — fills the row on mobile, fixed width on larger screens */}
