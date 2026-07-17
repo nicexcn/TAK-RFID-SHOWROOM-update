@@ -135,6 +135,7 @@ export default function SettingsPage() {
   const [videoErr, setVideoErr] = useState("");
   const [displayRotation, setDisplayRotation] = useState(0); // /display screen rotation (deg)
   const [displaySettingsSuccess, setDisplaySettingsSuccess] = useState("");
+  const [savingDisplay, setSavingDisplay] = useState(false); // Display Settings Save in-flight
 
   // Takeaway
   const [takeawayLimit, setTakeawayLimit] = useState(3);
@@ -935,9 +936,14 @@ export default function SettingsPage() {
                 </div>
 
                 {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "var(--color-success)" }}>{displaySettingsSuccess}</p>}
-                <button onClick={() => saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); })}
-                  className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                  Save
+                <button disabled={savingDisplay}
+                  onClick={async () => {
+                    setSavingDisplay(true);
+                    await saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); });
+                    setSavingDisplay(false);
+                  }}
+                  className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+                  {savingDisplay ? "Saving..." : "Save"}
                 </button>
               </div>
 

@@ -49,6 +49,8 @@ export default function DisplayPage() {
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else this display, else Settings)
+  const [baseRotation, setBaseRotation] = useState(0); // the Settings/registry rotation — the fallback when the local override is cleared
+  const [rotationOverride, setRotationOverride] = useState(false); // true = this device has a manual ⚙ rotation (localStorage)
   const [displayName, setDisplayName] = useState(""); // this screen's registry name (?display=<id>), shown in the status bar
   const [displays, setDisplays] = useState<SavedDisplay[]>([]); // full screen registry, for the ⚙ screen picker
   const [displayId, setDisplayId] = useState(""); // the current screen id (from the URL) — highlighted in the picker
@@ -118,7 +120,10 @@ export default function DisplayPage() {
       const rotRaw = window.localStorage.getItem(ROTATION_KEY);
       const fromStorage = rotRaw !== null && [0, 90, 180, 270].includes(Number(rotRaw)) ? Number(rotRaw) : null;
       const fromCfg = [0, 90, 180, 270].includes(Number(c?.displayRotation)) ? Number(c.displayRotation) : 0;
-      setRotation(fromQuery ?? fromStorage ?? (disp ? disp.rotation : fromCfg));
+      const base = disp ? disp.rotation : fromCfg; // the central (registry/global) rotation for this screen
+      setBaseRotation(base);
+      setRotationOverride(fromStorage !== null);
+      setRotation(fromQuery ?? fromStorage ?? base);
       // Auto-connect the bound reader (unless a manual ⚙ URL is already saved for this screen).
       // Guard: a display pointing at a since-deleted reader connects to nothing, not all readers.
       const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
@@ -372,7 +377,15 @@ export default function DisplayPage() {
   // mounted TV keeps its orientation. An explicit ?rotate= URL still overrides on load.
   function applyRotation(deg: number) {
     setRotation(deg);
+    setRotationOverride(true);
     try { window.localStorage.setItem(ROTATION_KEY, String(deg)); } catch { /* storage unavailable */ }
+  }
+
+  // "Auto" — drop this device's manual override so the screen follows its Settings/registry rotation again.
+  function unsetRotation() {
+    setRotation(baseRotation);
+    setRotationOverride(false);
+    try { window.localStorage.removeItem(ROTATION_KEY); } catch { /* storage unavailable */ }
   }
 
   // Rotate the whole screen for portrait-mounted TVs etc. For 90/270 the box is sized to the
@@ -513,22 +526,35 @@ export default function DisplayPage() {
               </select>
             </div>
           )}
-          {/* Screen rotation — live per-screen override, sticky on this device (?rotate= URL still wins) */}
+          {/* Screen rotation — live per-screen override, sticky on this device (?rotate= URL still wins).
+              "Auto" clears the override so the screen follows its Settings/registry rotation. */}
           <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
             <p className="text-white/60 text-[11px] mb-1">Rotation</p>
             <div className="flex gap-1.5">
-              {[0, 90, 180, 270].map((deg) => (
-                <button key={deg} onClick={() => applyRotation(deg)}
-                  aria-label={`Rotate ${deg} degrees`} aria-pressed={rotation === deg}
-                  className="flex-1 px-2 py-1.5 rounded text-xs"
-                  style={{
-                    background: rotation === deg ? "var(--color-primary)" : "#333",
-                    color: "var(--color-surface)",
-                    border: "1px solid " + (rotation === deg ? "var(--color-primary)" : "#444"),
-                  }}>
-                  {deg}°
-                </button>
-              ))}
+              <button onClick={unsetRotation} aria-label="Auto rotation (use Settings default)" aria-pressed={!rotationOverride}
+                className="px-2 py-1.5 rounded text-xs"
+                style={{
+                  background: !rotationOverride ? "var(--color-primary)" : "#333",
+                  color: "var(--color-surface)",
+                  border: "1px solid " + (!rotationOverride ? "var(--color-primary)" : "#444"),
+                }}>
+                Auto
+              </button>
+              {[0, 90, 180, 270].map((deg) => {
+                const on = rotationOverride && rotation === deg;
+                return (
+                  <button key={deg} onClick={() => applyRotation(deg)}
+                    aria-label={`Rotate ${deg} degrees`} aria-pressed={on}
+                    className="flex-1 px-2 py-1.5 rounded text-xs"
+                    style={{
+                      background: on ? "var(--color-primary)" : "#333",
+                      color: "var(--color-surface)",
+                      border: "1px solid " + (on ? "var(--color-primary)" : "#444"),
+                    }}>
+                    {deg}°
+                  </button>
+                );
+              })}
             </div>
           </div>
           {savedReaders.length > 0 && (
