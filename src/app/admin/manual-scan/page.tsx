@@ -1,5 +1,6 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
+import Image from "next/image";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getDeviceId } from "@/lib/deviceId";
@@ -300,8 +301,7 @@ export default function ManualScanPage() {
                       className="flex items-center gap-3 p-2.5 rounded-xl border text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ borderColor: added ? "#cfe6d8" : "var(--color-border)", background: added ? "#f0f7f2" : "var(--color-surface)" }}>
                       <div className="w-11 h-11 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "var(--color-bg)" }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : null}
+                        {p.imageUrl ? <Image src={p.imageUrl} alt="" width={44} height={44} className="w-full h-full object-cover" /> : null}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm truncate" style={{ color: "var(--color-text)" }}>{p.name}</p>
