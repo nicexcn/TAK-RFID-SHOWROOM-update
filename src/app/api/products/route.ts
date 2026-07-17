@@ -22,11 +22,11 @@ export async function GET(req: NextRequest) {
 
     const where: any = {
       ...(status === "archived" ? { isActive: false } : status === "all" ? {} : { isActive: true }),
+      // Search spans every text column shown in the table (plus a few product attributes),
+      // so a query for a brand / material / category / code / colour matches — not just name.
       ...(search && {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { rfidTag: { contains: search, mode: "insensitive" } },
-        ],
+        OR: ["name", "productCode", "brand", "materialType", "category", "colour", "size", "location", "rfidTag"]
+          .map((f) => ({ [f]: { contains: search, mode: "insensitive" as const } })),
       }),
       ...(category && { category }),
     };
