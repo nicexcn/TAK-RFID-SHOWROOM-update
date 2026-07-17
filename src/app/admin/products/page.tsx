@@ -365,7 +365,7 @@ export default function ProductsPage() {
 
       {/* Dropdown Menu — Edit + Delete/Archive for active products; Restore/Delete-forever for archived */}
       {openMenu && menuProduct && (
-        <div ref={menuRef} aria-label="Product actions" className="fixed z-50 w-40 rounded-xl overflow-hidden"
+        <div ref={menuRef} aria-label="Product actions" className="fixed z-50 w-40 rounded-xl p-1"
           onKeyDown={(e) => {
             const items = menuRef.current ? Array.from(menuRef.current.querySelectorAll<HTMLElement>("[data-menuitem]")) : [];
             if (!items.length) return;

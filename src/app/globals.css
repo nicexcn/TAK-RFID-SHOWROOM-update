@@ -89,9 +89,11 @@ html.keyboard-nav textarea:focus {
    Items are full-width and sit flush inside an overflow-hidden container, so the 2px
    OUTSET ring above gets clipped — inset it here so the focus ring reads as a clean
    rectangle inside the highlighted item. */
-[data-menuitem] { background: transparent; transition: background 0.12s ease; }
+[data-menuitem] { background: transparent; border-radius: 0.625rem; transition: background 0.12s ease; }
 [data-menuitem]:hover,
 [data-menuitem]:focus-visible { background: var(--mi-hover, var(--color-bg)); }
+/* Inset the ring so it sits just inside the item's rounded edge; the outline follows
+   border-radius in modern browsers, so it rounds to match the highlight (and the menu). */
 [data-menuitem]:focus-visible { outline-offset: -2px; }
 
 /* Hide the scrollbar on horizontal filter strips (they scroll on touch/drag) so a chip
