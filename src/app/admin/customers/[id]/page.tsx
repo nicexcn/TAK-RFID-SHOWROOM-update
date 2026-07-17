@@ -4,7 +4,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
 import { formatDateTime } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -320,7 +319,8 @@ export default function CustomerDetailPage() {
                 return (
                   <div key={scan.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                     {scan.product.imageUrl ? (
-                      <Image src={scan.product.imageUrl} alt="" width={48} height={48} className="w-12 h-12 rounded-lg object-cover" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={scan.product.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" />
                     ) : <div className="w-12 h-12 rounded-lg" style={{ background: "var(--color-border)" }} />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{scan.product.name}</p>

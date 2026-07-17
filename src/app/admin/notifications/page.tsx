@@ -3,7 +3,6 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { SkeletonCard } from "@/components/Skeleton";
 import { subscribeNotifications } from "@/lib/notifChannel";
 
@@ -169,7 +168,8 @@ export default function NotificationsPage() {
                   <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
                     style={{ background: "var(--color-bg)" }}>
                     {n.product.imageUrl ? (
-                      <Image src={n.product.imageUrl} alt={n.product.name} width={48} height={48} className="w-full h-full object-cover" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={n.product.imageUrl} alt={n.product.name} className="w-full h-full object-cover" />
                     ) : (
                       <svg width="18" height="18" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2"/>
