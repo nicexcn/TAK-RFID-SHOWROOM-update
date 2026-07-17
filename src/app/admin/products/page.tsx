@@ -7,6 +7,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import BulkImageImport from "@/components/BulkImageImport";
 import { parseCsv } from "@/lib/csv";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -214,8 +215,7 @@ export default function ProductsPage() {
     columnHelper.display({ id: "image", header: "Image", cell: ({ row }) => {
       const p = row.original;
       return p.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.imageUrl} alt={p.name} className="w-12 h-10 object-cover rounded-lg" style={{ border: "1px solid var(--color-border)" }} />
+        <Image src={p.imageUrl} alt={p.name} width={48} height={40} className="w-12 h-10 object-cover rounded-lg" style={{ border: "1px solid var(--color-border)" }} />
       ) : (
         <div className="w-12 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="1.5" viewBox="0 0 24 24">

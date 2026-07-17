@@ -1,5 +1,6 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
+import Image from "next/image";
 import { Spinner } from "@/components/Spinner";
 import { Toggle } from "@/components/Toggle";
 import { Stepper } from "@/components/Stepper";
@@ -978,7 +979,7 @@ export default function SettingsPage() {
                       <div key={file.id} className="grid grid-cols-12 items-center px-3 py-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
                         <div className="col-span-1">
                           <div className="w-8 h-10 rounded overflow-hidden" style={{ background: "var(--color-border)" }}>
-                            <img src={file.url} alt="" className="w-full h-full object-cover" />
+                            <Image src={file.url} alt="" width={32} height={40} className="w-full h-full object-cover" />
                           </div>
                         </div>
                         <div className="col-span-5 text-sm truncate pr-2" style={{ color: "var(--color-text)" }}>{file.product?.name ?? "–"}</div>

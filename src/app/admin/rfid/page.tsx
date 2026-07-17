@@ -1,5 +1,6 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
+import Image from "next/image";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -1054,7 +1055,8 @@ function RFIDPageInner() {
                         <tr key={scan.id} style={{ borderBottom: "1px solid var(--color-bg)" }}>
                           <td className="px-4 py-3">
                             {scan.product.imageUrl ? (
-                              <img src={scan.product.imageUrl} alt={scan.product.name}
+                              <Image src={scan.product.imageUrl} alt={scan.product.name}
+                                width={56} height={44}
                                 className="w-14 h-11 object-cover rounded-lg"
                                 style={{ border: "1px solid var(--color-border)" }} />
                             ) : (

@@ -1,5 +1,6 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumb";
+import Image from "next/image";
 import { DataTable } from "@/components/DataTable";
 import { createColumnHelper, type SortingState } from "@tanstack/react-table";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -116,8 +117,7 @@ export default function LoansPage() {
       return (
         <div className="flex items-center gap-2.5 min-w-0">
           {l.product.imageUrl
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={l.product.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+            ? <Image src={l.product.imageUrl} alt="" width={40} height={40} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
             : <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "var(--color-border)" }} />}
           <div className="min-w-0">
             <p className="font-medium truncate" style={{ color: "var(--color-text)", maxWidth: 220 }}>{l.product.name}</p>
