@@ -25,6 +25,7 @@ const IMAGE_MS = 5000;
 const POLL_MS = 3000;
 const READER_KEY = "tak-table-reader-ip";
 const DISPLAY_KEY = "tak-display-id"; // this device's chosen screen (zone), so a bare /display restores it
+const ROTATION_KEY = "tak-display-rotation"; // this device's manual ⚙ rotation override (sticky per screen)
 
 interface ImgRef { url: string }
 interface DProduct {
@@ -112,8 +113,12 @@ export default function DisplayPage() {
       const raw = new URLSearchParams(window.location.search).get("rotate");
       const q = raw === null ? NaN : Number(raw); // null (absent) must NOT coerce to 0
       const fromQuery = [0, 90, 180, 270].includes(q) ? q : null;
+      // A rotation set live from the ⚙ panel is sticky on THIS device (like the manual reader),
+      // so it wins over the registry/global default — but an explicit ?rotate= URL still wins.
+      const rotRaw = window.localStorage.getItem(ROTATION_KEY);
+      const fromStorage = rotRaw !== null && [0, 90, 180, 270].includes(Number(rotRaw)) ? Number(rotRaw) : null;
       const fromCfg = [0, 90, 180, 270].includes(Number(c?.displayRotation)) ? Number(c.displayRotation) : 0;
-      setRotation(fromQuery ?? (disp ? disp.rotation : fromCfg));
+      setRotation(fromQuery ?? fromStorage ?? (disp ? disp.rotation : fromCfg));
       // Auto-connect the bound reader (unless a manual ⚙ URL is already saved for this screen).
       // Guard: a display pointing at a since-deleted reader connects to nothing, not all readers.
       const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
@@ -363,6 +368,13 @@ export default function DisplayPage() {
     window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
 
+  // Rotate the screen live from the ⚙ panel. Sticky on this device (survives reload) so a
+  // mounted TV keeps its orientation. An explicit ?rotate= URL still overrides on load.
+  function applyRotation(deg: number) {
+    setRotation(deg);
+    try { window.localStorage.setItem(ROTATION_KEY, String(deg)); } catch { /* storage unavailable */ }
+  }
+
   // Rotate the whole screen for portrait-mounted TVs etc. For 90/270 the box is sized to the
   // swapped viewport (100vh × 100vw) and centered so it fills the physical screen after rotating.
   const portrait = rotation === 90 || rotation === 270;
@@ -501,6 +513,24 @@ export default function DisplayPage() {
               </select>
             </div>
           )}
+          {/* Screen rotation — live per-screen override, sticky on this device (?rotate= URL still wins) */}
+          <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
+            <p className="text-white/60 text-[11px] mb-1">Rotation</p>
+            <div className="flex gap-1.5">
+              {[0, 90, 180, 270].map((deg) => (
+                <button key={deg} onClick={() => applyRotation(deg)}
+                  aria-label={`Rotate ${deg} degrees`} aria-pressed={rotation === deg}
+                  className="flex-1 px-2 py-1.5 rounded text-xs"
+                  style={{
+                    background: rotation === deg ? "var(--color-primary)" : "#333",
+                    color: "var(--color-surface)",
+                    border: "1px solid " + (rotation === deg ? "var(--color-primary)" : "#444"),
+                  }}>
+                  {deg}°
+                </button>
+              ))}
+            </div>
+          </div>
           {savedReaders.length > 0 && (
             <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
               <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
