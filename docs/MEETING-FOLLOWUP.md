@@ -72,7 +72,7 @@ All **11 code items** from *"สรุปสิ่งที่ต้องดำ
 | **Super Admin** | Everything |
 | **Management** (Sales Director) | Dashboard, Reports, Survey Results, Customers, Notifications, Borrow/Return |
 | **Admin** (Showroom Manager) | Everything |
-| **Basic** (Presenter / Sales) | Dashboard, Customers, Surface Scan, Manual Scan, Notifications, Borrow/Return |
+| **Basic** (Presenter) | Customers, Surface Scan, Manual Scan, Notifications, Borrow/Return — **no Dashboard** (client spec: Basic cannot view analytics) |
 | **Prep** (takeaway-prep staff) | Notifications + Borrow/Return only (a focused prep menu) |
 
 - Assign roles at **Settings → Account** (Super Admin only). Basic/Prep can't open Reports or Survey Results, even by direct link.
@@ -93,4 +93,4 @@ A compliance audit against the meeting doc + Excel found four items partially co
 
 ## Notes
 - Schema changes are on the **shared Supabase DB** (via `prisma db push`) and the app is deployed to Vercel production.
-- The survey's "Sales" gating currently maps to the **Basic** role; role definitions live in `src/lib/roles.ts`.
+- **Survey Results** are restricted to **Super Admin, Admin, and Management** only. **Basic (Presenter) and Prep staff cannot see results** — enforced server-side (`/api/survey` GET returns 403; `/admin/survey` not in their allowed paths). Role definitions live in `src/lib/roles.ts`.
