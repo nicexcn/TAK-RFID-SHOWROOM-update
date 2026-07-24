@@ -5,10 +5,12 @@ const nextConfig: NextConfig = {
   // with just Node + the built output — no `npm install` on the target. Harmless on Vercel.
   output: "standalone",
   images: {
-    // Allow next/image to render Supabase Storage public URLs (used when
-    // SUPABASE_URL/SUPABASE_SERVICE_KEY are set; harmless otherwise).
+    // Allow next/image to render Supabase Storage public URLs. Cloud (*.supabase.co)
+    // for the Vercel deploy; the self-hosted gateway (supabase.nimitrlog.com) for the
+    // on-prem deploy — both point at Supabase Storage's public object path.
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      { protocol: "https", hostname: "supabase.nimitrlog.com", pathname: "/storage/v1/object/public/**" },
     ],
   },
   async headers() {
