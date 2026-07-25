@@ -118,9 +118,6 @@ export default function NewProductPage() {
       <div className="rounded-xl p-6 " style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="space-y-4">
 
-          {/* RFID Tag — scan with a reader, or type it */}
-          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} />
-
           {/* Product Code */}
           <div>
             <label htmlFor="productCode" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
@@ -201,6 +198,9 @@ export default function NewProductPage() {
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>
+
+          {/* RFID Tag — scan with a reader, or type it (moved below the descriptive fields) */}
+          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} />
           </div>
 
           {/* image3: give-away vs must-return */}
