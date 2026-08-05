@@ -7,7 +7,7 @@ export const notifInclude = {
     select: { id: true, name: true, productCode: true, location: true, imageUrl: true, brand: true, colour: true, size: true },
   },
   customer: {
-    select: { id: true, customerCode: true, fullName: true, company: true, phone: true },
+    select: { id: true, customerCode: true, fullName: true, company: true, phone: true, project: true },
   },
 } as const;
 

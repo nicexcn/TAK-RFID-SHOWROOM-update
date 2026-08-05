@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import type { SavedReader } from "@/lib/readers";
 import { displayUrl, type SavedDisplay } from "@/lib/displays";
 import { uploadFile } from "@/lib/uploadImage";
-import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_VIDEO_MIME } from "@/lib/storage";
+import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_UPLOAD_MIME, isImageUrl } from "@/lib/storage";
 import { ROLES } from "@/lib/roles";
 import { formatDate } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -319,7 +319,7 @@ export default function SettingsPage() {
     if (!file) return;
     setVideoErr("");
     // Fast client-side guard so violations don't cost an upload round-trip (server enforces too).
-    if (!ALLOWED_VIDEO_MIME.includes(file.type)) { setVideoErr("Use an MP4 or WEBM video."); return; }
+    if (!ALLOWED_UPLOAD_MIME.includes(file.type)) { setVideoErr("Use an image (PNG/JPG/WEBP/GIF) or video (MP4/WEBM)."); return; }
     if (file.size > MAX_UPLOAD_BYTES) { setVideoErr(`File too large — max ${MAX_UPLOAD_MB} MB.`); return; }
     setVideoUploading(true);
     try {
@@ -873,23 +873,23 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Idle video — loops full-screen on /display when no product is showing */}
+                {/* Idle media — a video (loops) or a still image, full-screen on /display when no product is showing */}
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
-                  <label htmlFor="idle-video-url" className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle video (/display)</label>
+                  <label htmlFor="idle-video-url" className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle media — video or image (/display)</label>
                   <p className="text-xs mb-1" style={{ color: "var(--color-text-subtle)" }}>
-                    Loops muted, full-screen on the TV when idle (no product). Paste a URL, or upload a file. Empty = the logo screen.
+                    Shows full-screen on the TV when idle (no product): a video loops muted, or a still image is displayed. Paste a URL, or upload a file. Empty = the logo screen.
                   </p>
                   <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>
-                    Upload limits: <b>MP4 or WEBM</b> only · max <b>{MAX_UPLOAD_MB} MB</b> · plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps the file small.
+                    Upload limits: <b>image</b> (PNG/JPG/WEBP/GIF) or <b>video</b> (MP4/WEBM) · max <b>{MAX_UPLOAD_MB} MB</b> · video plays <b>muted</b> (browser autoplay). Tip: a short 10–30s loop keeps a video small.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <input id="idle-video-url" type="text" value={idleVideoUrl} onChange={(e) => setIdleVideoUrl(e.target.value)}
-                      placeholder="https://… .mp4   (or Upload →)"
+                      placeholder="https://… .mp4 or .png   (or Upload →)"
                       className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                     <label className={`px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer whitespace-nowrap ${videoUploading ? "opacity-60 pointer-events-none" : ""}`}
                       style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                       {videoUploading ? "Uploading…" : "Upload"}
-                      <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleVideoUpload} disabled={videoUploading} />
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" className="hidden" onChange={handleVideoUpload} disabled={videoUploading} />
                     </label>
                     {idleVideoUrl && (
                       <button onClick={() => setIdleVideoUrl("")} className="px-3 py-2.5 rounded-xl text-sm"
@@ -900,7 +900,7 @@ export default function SettingsPage() {
                   {idleVideoUrl && (
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                       <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>On screen:</span>
-                      {([["contain", "Fit (whole video)"], ["cover", "Fill (crop to screen)"]] as const).map(([v, label]) => (
+                      {([["contain", "Fit (whole media)"], ["cover", "Fill (crop to screen)"]] as const).map(([v, label]) => (
                         <button key={v} onClick={() => setIdleVideoFit(v)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium"
                           style={{
@@ -914,8 +914,13 @@ export default function SettingsPage() {
                     </div>
                   )}
                   {idleVideoUrl && (
-                    // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} muted loop playsInline controls />
+                    isImageUrl(idleVideoUrl) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={idleVideoUrl} alt="Idle preview" className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} />
+                    ) : (
+                      // eslint-disable-next-line jsx-a11y/media-has-caption
+                      <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} muted loop playsInline controls />
+                    )
                   )}
                 </div>
 

@@ -23,3 +23,11 @@ export const ALLOWED_UPLOAD_MIME = [...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME
 // (and the bucket keeps its old mime/size limits). This project's global cap is 50 MB.
 export const MAX_UPLOAD_MB = 50;
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
+// True if a media URL points at an image (by extension) rather than a video. Used by the
+// idle-media feature so /display and the settings preview render <img> vs <video>.
+// Strips any query string first (e.g. Supabase signed-URL params).
+export function isImageUrl(url: string): boolean {
+  const clean = url.split("?")[0].toLowerCase();
+  return ["png", "jpg", "jpeg", "webp", "gif"].some((e) => clean.endsWith("." + e));
+}

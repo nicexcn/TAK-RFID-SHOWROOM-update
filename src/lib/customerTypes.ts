@@ -1,13 +1,16 @@
 // Customer types (occupation) + their code prefixes.
 // The stored `Customer.title` keeps the short `value` (no data migration needed);
 // `label`/`labelTh` are display-only, `prefix` drives the customerCode (e.g. "Ar00001").
+// Order here is the display/selection order (contractor's intake form). "Developer" was
+// removed — not on the form — and there are zero Developer records in either DB, so it's
+// dropped outright rather than kept as a retired type. Any stray legacy value still resolves
+// via the `?? value` / `?? "Ot"` fallbacks below and falls last in ordered views.
 export const CUSTOMER_TYPES = [
   { value: "Architect",  prefix: "Ar", label: "Architect",         labelTh: "สถาปนิก",                color: "#6f5f48" },
   { value: "Interior",   prefix: "ID", label: "Interior Designer", labelTh: "มัณฑนากร",               color: "#6f5f48" },
   { value: "Turnkey",    prefix: "TK", label: "Turnkey",           labelTh: "รับเหมาแบบครบวงจร",       color: "#4a6fa5" },
   { value: "Contractor", prefix: "Ct", label: "Contractor",        labelTh: "ผู้รับเหมา",              color: "#4c4847" },
   { value: "Homeowner",  prefix: "Ho", label: "Home Owner",        labelTh: "เจ้าของบ้านหรือโครงการ", color: "#4a7c59" },
-  { value: "Developer",  prefix: "DP", label: "Developer",         labelTh: "ผู้พัฒนาโครงการ",         color: "#b26a00" },
   { value: "Other",      prefix: "Ot", label: "Other",             labelTh: "อื่นๆ",                  color: "#6b6560" },
 ] as const;
 

@@ -14,7 +14,7 @@ interface Notif {
     id: string; name: string; productCode: string | null; location: string | null;
     imageUrl: string | null; brand: string | null; colour: string | null; size: string | null;
   };
-  customer: { id: string; customerCode: string; fullName: string; company: string; phone: string } | null;
+  customer: { id: string; customerCode: string; fullName: string; company: string; phone: string; project: string | null } | null;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -222,9 +222,11 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    {n.status !== "COMPLETE" && (
-                      <div className="flex gap-2 mt-3">
+                    {/* Action Buttons — Start/Done gate on status; Print Sticker shows for any
+                        status whenever a customer is attached (prep staff prints the envelope
+                        label from here, and can reprint after COMPLETE). */}
+                    {(n.status !== "COMPLETE" || n.customer) && (
+                      <div className="flex flex-wrap gap-2 mt-3">
                         {n.status === "PENDING" && (
                           <button onClick={() => updateStatus(n.id, "PREPARING")}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -232,11 +234,21 @@ export default function NotificationsPage() {
                             Start preparing
                           </button>
                         )}
-                        <button onClick={() => updateStatus(n.id, "COMPLETE")}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                          style={{ background: "#d1fae5", color: "var(--color-success)" }}>
-                          Mark done
-                        </button>
+                        {n.status !== "COMPLETE" && (
+                          <button onClick={() => updateStatus(n.id, "COMPLETE")}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            style={{ background: "#d1fae5", color: "var(--color-success)" }}>
+                            Mark done
+                          </button>
+                        )}
+                        {n.customer && (
+                          <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", project: n.customer.project || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                            🖨 Print Sticker
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>

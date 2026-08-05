@@ -242,6 +242,11 @@ export default function CustomerDetailPage() {
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Occupation</span>
                 <select aria-label="Occupation" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+                  {/* Guard: if this customer holds a legacy value not in the list, keep it as an
+                      option so opening + saving doesn't silently rewrite their occupation. */}
+                  {form.title && !CUSTOMER_TYPES.some((t) => t.value === form.title) && (
+                    <option value={form.title}>{customerTypeLabel(form.title)}</option>
+                  )}
                   {CUSTOMER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </label>

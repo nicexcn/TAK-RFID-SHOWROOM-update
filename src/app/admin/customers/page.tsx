@@ -17,6 +17,8 @@ import { toast } from "sonner";
 const errorToast = { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } };
 
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => t.value);
+// Fixed display order for the breakdown card (index by CUSTOMER_TYPES; unknowns last).
+const TITLE_ORDER = new Map<string, number>(CUSTOMER_TYPES.map((t, i) => [t.value, i]));
 
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string;
@@ -122,7 +124,11 @@ export default function CustomersPage() {
 
   const hasSearch = globalFilter.trim().length > 0 || filterTitle !== "all";
   // Occupation breakdown for the stats card — aggregate from the API (over the filtered set).
-  const byTitleSorted = [...byTitle].sort((a, b) => b.count - a.count);
+  // Customer Management card shows types in the fixed CUSTOMER_TYPES order (contractor's
+  // request), not by count. Unknown titles (shouldn't occur post-fold) sort last.
+  const byTitleSorted = [...byTitle].sort(
+    (a, b) => (TITLE_ORDER.get(a.title) ?? 99) - (TITLE_ORDER.get(b.title) ?? 99),
+  );
 
   const columns = useMemo(() => [
     columnHelper.accessor("customerCode", { header: "Code", cell: (i) => <code className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</code> }),

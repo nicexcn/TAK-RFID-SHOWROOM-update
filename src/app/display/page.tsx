@@ -6,6 +6,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
 import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
+import { isImageUrl } from "@/lib/storage";
 
 /**
  * Unified TV display (one physical screen / zone).
@@ -421,11 +422,20 @@ export default function DisplayPage() {
           )}
         </div>
       ) : idleVideoUrl ? (
-        // Idle with a configured video → loop it (muted; autoplay needs muted). Fit (object-contain)
-        // shows the WHOLE video (letterboxed); Fill (object-cover) crops to fill the screen.
-        <video key={idleVideoUrl + idleVideoFit} src={idleVideoUrl} autoPlay loop muted playsInline
-          className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
-          style={{ background: "#1a1a1a" }} />
+        // Idle with configured media. Fit (object-contain) shows the WHOLE media (letterboxed);
+        // Fill (object-cover) crops to fill the screen. An image is shown still; a video loops
+        // (muted; autoplay needs muted). Plain <img> (not next/image) — the on-prem WAF 403s the
+        // /_next/image optimizer path for off-domain (Supabase) URLs.
+        isImageUrl(idleVideoUrl) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={idleVideoUrl + idleVideoFit} src={idleVideoUrl} alt=""
+            className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
+            style={{ background: "#1a1a1a" }} />
+        ) : (
+          <video key={idleVideoUrl + idleVideoFit} src={idleVideoUrl} autoPlay loop muted playsInline
+            className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
+            style={{ background: "#1a1a1a" }} />
+        )
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "var(--color-bg)" }}>
           {/* Idle screen is light (#f5f2ee) → use the dark logo. (The over-image logo below stays white.) */}
