@@ -21,7 +21,7 @@ export async function GET() {
 const ALLOWED = [
   "defaultFilter", "graphColor", "takeawayLimit", "takeawayEnabled",
   "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "relaySubscriberKey", "readers", "displays", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit",
+  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "relaySubscriberKey", "readers", "displays", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit", "idleImages", "idleSlideSeconds",
 ];
 
 export async function PUT(req: NextRequest) {
@@ -48,6 +48,17 @@ export async function PUT(req: NextRequest) {
     // Idle video fit must be "contain" (Fit) or "cover" (Fill).
     if ("idleVideoFit" in data) {
       data.idleVideoFit = data.idleVideoFit === "cover" ? "cover" : "contain";
+    }
+    // Idle slideshow images — clean array of non-empty strings (drops junk/blank entries).
+    if ("idleImages" in data) {
+      data.idleImages = Array.isArray(data.idleImages)
+        ? data.idleImages.filter((u): u is string => typeof u === "string" && u.length > 0)
+        : [];
+    }
+    // Seconds per idle slide — positive integer, 1..120, fallback 6.
+    if ("idleSlideSeconds" in data) {
+      const n = Math.floor(Number(data.idleSlideSeconds));
+      data.idleSlideSeconds = Number.isFinite(n) ? Math.max(1, Math.min(120, n)) : 6;
     }
     const settings = await prisma.appSettings.upsert({
       where: { id: "singleton" },

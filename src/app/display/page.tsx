@@ -49,6 +49,9 @@ export default function DisplayPage() {
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
+  const [idleImages, setIdleImages] = useState<string[]>([]); // idle slideshow images (from Settings); takes precedence over idleVideoUrl
+  const [idleSlideSeconds, setIdleSlideSeconds] = useState(6); // seconds per idle slide
+  const [idleIdx, setIdleIdx] = useState(0); // current slide index
   const [rotation, setRotation] = useState(0); // screen rotation deg (?rotate= override, else this display, else Settings)
   const [baseRotation, setBaseRotation] = useState(0); // the Settings/registry rotation — the fallback when the local override is cleared
   const [rotationOverride, setRotationOverride] = useState(false); // true = this device has a manual ⚙ rotation (localStorage)
@@ -108,6 +111,8 @@ export default function DisplayPage() {
       setDisplays(dl);
       setIdleVideoUrl(c?.idleVideoUrl || "");
       setIdleVideoFit(c?.idleVideoFit === "cover" ? "cover" : "contain");
+      setIdleImages(Array.isArray(c?.idleImages) ? c.idleImages.filter((u: unknown): u is string => typeof u === "string" && u.length > 0) : []);
+      setIdleSlideSeconds(Math.max(1, Number(c?.idleSlideSeconds) || 6));
       // Resolve which physical screen (zone) this is: ?display=<id> → its registry entry.
       const disp = urlDisplay ? dl.find((d) => d.id === urlDisplay) : undefined;
       setDisplayName(disp?.name || "");
@@ -232,6 +237,19 @@ export default function DisplayPage() {
   const mode: "table" | "session" | "idle" =
     presenceProducts.length > 0 ? "table" : sessionProducts.length > 0 ? "session" : "idle";
   const products = mode === "table" ? presenceProducts : mode === "session" ? sessionProducts : [];
+
+  // Idle slideshow: advance the slide on a timer only while idle with >1 image. Reset to the
+  // first slide whenever we (re)enter idle or the image set changes, so it always starts clean.
+  useEffect(() => {
+    if (mode !== "idle" || idleImages.length === 0) return;
+    setIdleIdx(0);
+    if (idleImages.length < 2) return; // a single image is static
+    const t = setInterval(
+      () => setIdleIdx((i) => (i + 1) % idleImages.length),
+      Math.max(1, idleSlideSeconds) * 1000,
+    );
+    return () => clearInterval(t);
+  }, [mode, idleImages, idleSlideSeconds]);
 
   // #10: identity of the SET currently shown — changes when a tile is added/removed or a
   // different list is sent, but NOT when the user steps Prev/Next (same set). Auto-clears
@@ -421,6 +439,20 @@ export default function DisplayPage() {
                 : { zIndex: 1, opacity: 1 }} />
           )}
         </div>
+      ) : idleImages.length > 0 ? (
+        // Idle slideshow (takes precedence over idleVideoUrl). Re-keying <img> on the current
+        // URL re-mounts it so the shared takImgFade cross-fade replays on each advance. Plain
+        // <img> (not next/image) — same on-prem WAF reason as the single-image idle branch.
+        // idleIdx is clamped in case a config refetch shrank the list before the reset effect runs.
+        (() => {
+          const src = idleImages[idleIdx % idleImages.length];
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={src + idleVideoFit} src={src} alt=""
+              className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
+              style={{ background: "#1a1a1a", animation: "takImgFade 0.7s ease forwards" }} />
+          );
+        })()
       ) : idleVideoUrl ? (
         // Idle with configured media. Fit (object-contain) shows the WHOLE media (letterboxed);
         // Fill (object-cover) crops to fill the screen. An image is shown still; a video loops

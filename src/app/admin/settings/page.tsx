@@ -13,6 +13,7 @@ import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES, ALLOWED_UPLOAD_MIME, isImageUrl } from
 import { ROLES } from "@/lib/roles";
 import { formatDate } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
+import ProductImagePicker from "@/components/ProductImagePicker";
 import { toast } from "sonner";
 
 const errToast = (msg: string) =>
@@ -131,6 +132,8 @@ export default function SettingsPage() {
   const [displays, setDisplays] = useState<SavedDisplay[]>([]); // central TV screen (zone) registry
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
+  const [idleImages, setIdleImages] = useState<string[]>([]); // idle slideshow (images-only); takes precedence over idleVideoUrl
+  const [idleSlideSeconds, setIdleSlideSeconds] = useState(6); // seconds per idle slide
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoErr, setVideoErr] = useState("");
   const [displayRotation, setDisplayRotation] = useState(0); // /display screen rotation (deg)
@@ -160,6 +163,8 @@ export default function SettingsPage() {
       if (d.relaySubscriberKey !== undefined) setRelaySubscriberKey(d.relaySubscriberKey);
       if (d.idleVideoUrl !== undefined) setIdleVideoUrl(d.idleVideoUrl);
       if (d.idleVideoFit !== undefined) setIdleVideoFit(d.idleVideoFit);
+      if (Array.isArray(d.idleImages)) setIdleImages(d.idleImages);
+      if (d.idleSlideSeconds !== undefined) setIdleSlideSeconds(d.idleSlideSeconds);
       if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
       if (Array.isArray(d.readers)) setReaders(d.readers);
       if (Array.isArray(d.displays)) setDisplays(d.displays);
@@ -922,6 +927,23 @@ export default function SettingsPage() {
                       <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} muted loop playsInline controls />
                     )
                   )}
+
+                  {/* Idle slideshow — multiple images that cross-fade full-screen when idle */}
+                  <div className="mt-5 pt-4" style={{ borderTop: "1px dashed var(--color-border)" }}>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Idle slideshow (images)</label>
+                    <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>
+                      Upload multiple images to cross-fade full-screen on the TV when idle. Drag to reorder. <b>When set, the slideshow takes precedence over the single video/image above.</b> Uses the same Fit/Fill setting. Empty = use the single media (or logo).
+                    </p>
+                    <ProductImagePicker urls={idleImages} onChange={setIdleImages} />
+                    {idleImages.length > 0 && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <label htmlFor="idle-slide-seconds" className="text-sm" style={{ color: "var(--color-text)" }}>Seconds per slide</label>
+                        <input id="idle-slide-seconds" type="number" min={1} max={120} value={idleSlideSeconds}
+                          onChange={(e) => setIdleSlideSeconds(Math.max(1, Math.min(120, Math.floor(Number(e.target.value)) || 6)))}
+                          className="w-20 px-3 py-2 rounded-xl outline-none text-sm" style={iS} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Screen rotation — for portrait-mounted TVs etc. */}
@@ -947,7 +969,7 @@ export default function SettingsPage() {
                 <button disabled={savingDisplay}
                   onClick={async () => {
                     setSavingDisplay(true);
-                    await saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); });
+                    await saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit, idleImages, idleSlideSeconds }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); });
                     setSavingDisplay(false);
                   }}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>

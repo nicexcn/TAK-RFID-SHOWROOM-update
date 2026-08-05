@@ -12,7 +12,7 @@ export async function GET() {
       where: { id: "singleton" },
       select: {
         slideDuration: true, scheduleEnabled: true,
-        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, relaySubscriberKey: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true,
+        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, relaySubscriberKey: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true, idleImages: true, idleSlideSeconds: true,
       },
     });
     return NextResponse.json({
@@ -28,8 +28,10 @@ export async function GET() {
       idleVideoUrl: s?.idleVideoUrl ?? "",
       displayRotation: s?.displayRotation ?? 0,
       idleVideoFit: s?.idleVideoFit === "cover" ? "cover" : "contain",
+      idleImages: s?.idleImages ?? [],
+      idleSlideSeconds: s?.idleSlideSeconds ?? 6,
     });
   } catch {
-    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "", readers: [], displays: [], idleVideoUrl: "", displayRotation: 0, idleVideoFit: "contain" });
+    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "", readers: [], displays: [], idleVideoUrl: "", displayRotation: 0, idleVideoFit: "contain", idleImages: [], idleSlideSeconds: 6 });
   }
 }

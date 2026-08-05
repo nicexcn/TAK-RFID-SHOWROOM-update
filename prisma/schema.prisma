@@ -208,6 +208,12 @@ model AppSettings {
   idleVideoUrl    String   @default("")
   // How the idle video fills the screen: "contain" (Fit — whole video) or "cover" (Fill — crop).
   idleVideoFit    String   @default("contain")
+  // Idle slideshow (images-only): when non-empty, /display cross-fades through these when
+  // idle, taking precedence over idleVideoUrl. Empty = fall back to idleVideoUrl/logo.
+  // Shares idleVideoFit for Fit/Fill. See src/app/display/page.tsx.
+  idleImages       String[] @default([])
+  idleSlideSeconds Int      @default(6)    // seconds each idle slide shows
+
   // /display screen rotation in degrees (0/90/180/270) for portrait-mounted TVs etc.
   // Global default; a per-screen ?rotate= URL param overrides it.
   displayRotation Int      @default(0)
