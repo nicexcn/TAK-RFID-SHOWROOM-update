@@ -836,15 +836,28 @@ export default function SettingsPage() {
                   ) : (
                     <div className="space-y-2">
                       {readers.map((r) => (
-                        <div key={r.id} className="grid grid-cols-12 gap-2 items-center">
-                          <input value={r.name} onChange={(e) => updateReader(r.id, { name: e.target.value })}
-                            placeholder="Name (e.g. Table reader)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
-                          <input value={r.device} onChange={(e) => updateReader(r.id, { device: e.target.value })}
-                            placeholder="Device tag (relay)" className="col-span-3 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
-                          <input value={r.url} onChange={(e) => updateReader(r.id, { url: e.target.value })}
-                            placeholder="or full URL / IP (direct)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
-                          <button onClick={() => removeReader(r.id)} title="Remove"
-                            className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>✕</button>
+                        <div key={r.id} className="rounded-lg" style={{ background: "var(--color-hover)", border: "1px solid var(--color-border)", padding: 8 }}>
+                          <div className="grid grid-cols-12 gap-2 items-center">
+                            <input value={r.name} onChange={(e) => updateReader(r.id, { name: e.target.value })}
+                              placeholder="Name (e.g. Table reader)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                            <input value={r.device} onChange={(e) => updateReader(r.id, { device: e.target.value })}
+                              placeholder="Device tag (relay)" className="col-span-3 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                            <input value={r.url} onChange={(e) => updateReader(r.id, { url: e.target.value })}
+                              placeholder="or full URL / IP (direct)" className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                            <button onClick={() => removeReader(r.id)} title="Remove"
+                              className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>✕</button>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5 pl-1">
+                            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Type:</span>
+                            {([["table", "Table (fixed)"], ["handheld", "Handheld (BLE)"], ["", "Unspecified"]] as const).map(([v, label]) => (
+                              <button key={v || "none"} onClick={() => updateReader(r.id, { kind: v || undefined })}
+                                className="px-2 py-1 rounded-md text-xs"
+                                style={{ background: (r.kind ?? "") === v ? "var(--color-primary)" : "var(--color-surface)", color: (r.kind ?? "") === v ? "var(--color-surface)" : "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                                {label}
+                              </button>
+                            ))}
+                            <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>Bind a <b>Table</b> reader to a screen; use a <b>Handheld</b> at the scan station.</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -880,8 +893,11 @@ export default function SettingsPage() {
                             <select value={d.readerId} onChange={(e) => updateDisplay(d.id, { readerId: e.target.value })}
                               aria-label="Bound reader"
                               className="col-span-4 px-3 py-2 rounded-lg outline-none text-sm" style={iS}>
-                              <option value="">No reader</option>
-                              {readers.map((r) => <option key={r.id} value={r.id}>{r.name || r.device || r.url || "(unnamed reader)"}</option>)}
+                              <option value="">No reader (sent lists only)</option>
+                              {readers.map((r) => {
+                                const k = r.kind === "table" ? " · Table" : r.kind === "handheld" ? " · Handheld" : "";
+                                return <option key={r.id} value={r.id}>{(r.name || r.device || r.url || "(unnamed reader)") + k}</option>;
+                              })}
                             </select>
                             <select value={d.rotation} onChange={(e) => updateDisplay(d.id, { rotation: Number(e.target.value) })}
                               aria-label="Rotation"
@@ -891,6 +907,18 @@ export default function SettingsPage() {
                             <button onClick={() => removeDisplay(d.id)} title="Remove"
                               className="col-span-1 px-2 py-2 rounded-lg text-sm" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>✕</button>
                           </div>
+                          {/* Soft guardrail: a screen's bound reader is its LIVE table-presence source, which
+                              wins over sent lists. A roaming handheld here would clobber sent lists with stray
+                              reads — warn (don't block; setup/testing may need it). */}
+                          {(() => {
+                            const br = d.readerId ? readers.find((r) => r.id === d.readerId) : undefined;
+                            if (br && br.kind !== "table") {
+                              return <p className="text-xs mt-1.5 pl-1" style={{ color: "var(--color-danger-soft)" }}>
+                                ⚠ &ldquo;{br.name || br.device || br.url}&rdquo; isn&apos;t marked a <b>Table</b> reader. Bind a fixed table reader here — a handheld&apos;s roaming reads will hide the sent customer list.
+                              </p>;
+                            }
+                            return null;
+                          })()}
                           {d.name.trim() ? (
                             // Only expose the URL once the row has a name — an unnamed row is dropped on
                             // save, and its id is baked into this URL + any session pinned to it.

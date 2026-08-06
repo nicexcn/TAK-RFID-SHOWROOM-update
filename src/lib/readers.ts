@@ -10,6 +10,12 @@ export interface SavedReader {
   name: string;
   device: string; // relay tag -> ?device=<device> against relayUrl (empty for a direct reader)
   url: string;    // explicit override -> used as-is (empty for a relay reader)
+  // Optional usage hint (UX guardrail only — the transport is identical either way):
+  //  "table"    = a fixed ambient reader → bind to a /display screen for live table presence.
+  //  "handheld" = a roaming BLE reader → use at the scan station (Send to Display), NOT bound to
+  //               a screen (its wandering reads would clobber the sent list via presence-wins).
+  // Absent = unclassified. Drives a soft warning when a non-table reader is bound to a display.
+  kind?: "table" | "handheld";
 }
 
 // Coerce arbitrary JSON (from the DB / a request body) into a clean reader list.
@@ -26,6 +32,7 @@ export function normalizeReaders(input: unknown): SavedReader[] {
       device: String(r.device ?? "").trim(),
       url: String(r.url ?? "").trim(),
     };
+    if (r.kind === "table" || r.kind === "handheld") reader.kind = r.kind; // else leave unset
     if (reader.name || reader.device || reader.url) out.push(reader);
   }
   return out;

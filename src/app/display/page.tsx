@@ -672,12 +672,14 @@ export default function DisplayPage() {
                 {savedReaders.map((r) => {
                   const url = readerUrl(r, relayUrl, relaySubKey);
                   const label = r.name || r.device || r.url;
-                  return <option key={r.id} value={r.id} disabled={!url}>{label}{r.id === activeReaderId ? " • connected" : ""}</option>;
+                  const k = r.kind === "table" ? " · Table" : r.kind === "handheld" ? " · Handheld" : "";
+                  return <option key={r.id} value={r.id} disabled={!url}>{label}{k}{r.id === activeReaderId ? " • connected" : ""}</option>;
                 })}
               </select>
             ) : (
               <p className="text-white/40 text-[11px]">No saved readers — add them in Settings, or use Advanced below.</p>
             )}
+            <p className="text-white/40 text-[10px] mt-1">Pick the <b>Table</b> reader here — this screen shows what&apos;s on it live; sent customer lists show when the table&apos;s clear.</p>
             <button onClick={() => setShowAdvancedReader((s) => !s)} className="text-white/50 text-[11px] mt-1.5">
               {showAdvancedReader ? "▾" : "▸"} Advanced — manual address
             </button>
