@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
 import { normalizeDisplays, resolveDisplaySettings, type SavedDisplay } from "@/lib/displays";
-import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT, DISPLAY_IDENTIFY_EVENT } from "@/lib/supabaseBrowser";
+import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT, DISPLAY_IDENTIFY_EVENT, DISPLAY_CONFIG_EVENT } from "@/lib/supabaseBrowser";
 import { isImageUrl } from "@/lib/storage";
 
 /**
@@ -90,7 +90,59 @@ export default function DisplayPage() {
     identifyTimer.current = setTimeout(() => setIdentifying(false), 5000);
   }, []);
 
-  // Product map (for presence lookup) + this screen's reader / rotation / name.
+  // Apply a /api/display/config payload to this screen's state. Re-reads the URL + localStorage
+  // each call, so the sticky per-device overrides (?rotate=, ⚙ rotation, manual reader) are always
+  // honored. `initial` true only on first mount: that's when we (re)connect the bound reader and
+  // seed the ⚙ draft. On a live "config changed" broadcast we update the CENTRAL values (registry,
+  // name, idle media, slide timing, base rotation) but leave the reader connection + draft alone,
+  // so a settings save never yanks a live table-scan or clobbers text being typed at the TV.
+  const applyConfig = useCallback((c: Record<string, unknown> | null | undefined, initial: boolean) => {
+    if (!c) return;
+    if (c.relayUrl) setRelayUrl(String(c.relayUrl));
+    setRelaySubKey(String(c.relaySubscriberKey || ""));
+    const readers = normalizeReaders(c.readers);
+    setSavedReaders(readers);
+    const dl = normalizeDisplays(c.displays);
+    setDisplays(dl);
+    const urlDisplay = (new URLSearchParams(window.location.search).get("display") || "").trim();
+    const disp = urlDisplay ? dl.find((d) => d.id === urlDisplay) : undefined;
+    setDisplayName(disp?.name || "");
+    // Per-screen idle/slide: this display's override wins, else the global default.
+    const eff = resolveDisplaySettings(disp, {
+      idleVideoUrl: String(c.idleVideoUrl || ""),
+      idleImages: Array.isArray(c.idleImages) ? c.idleImages.filter((u: unknown): u is string => typeof u === "string" && u.length > 0) : [],
+      idleSlideSeconds: Math.max(1, Number(c.idleSlideSeconds) || 6),
+      idleVideoFit: c.idleVideoFit === "cover" ? "cover" : "contain",
+      slideDuration: Math.max(1, Number(c.slideDuration) || 5),
+    });
+    setImageMs(eff.slideDuration * 1000);
+    setIdleVideoUrl(eff.idleVideoUrl);
+    setIdleVideoFit(eff.idleVideoFit);
+    setIdleImages(eff.idleImages);
+    setIdleSlideSeconds(eff.idleSlideSeconds);
+    // Rotation cascade: ?rotate= URL wins, then a sticky ⚙ override (localStorage), then the
+    // registry/global base. Re-read live each call so a config push never stomps a device override.
+    const raw = new URLSearchParams(window.location.search).get("rotate");
+    const q = raw === null ? NaN : Number(raw);
+    const fromQuery = [0, 90, 180, 270].includes(q) ? q : null;
+    const rotRaw = window.localStorage.getItem(ROTATION_KEY);
+    const fromStorage = rotRaw !== null && [0, 90, 180, 270].includes(Number(rotRaw)) ? Number(rotRaw) : null;
+    const fromCfg = [0, 90, 180, 270].includes(Number(c.displayRotation)) ? Number(c.displayRotation) : 0;
+    const base = disp ? disp.rotation : fromCfg;
+    setBaseRotation(base);
+    setRotationOverride(fromStorage !== null);
+    setRotation(fromQuery ?? fromStorage ?? base);
+    // Reader (re)connect only on first mount — see comment above.
+    if (initial) {
+      const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
+      const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
+      const bound = boundReader ? readerUrl(boundReader, String(c.relayUrl || ""), String(c.relaySubscriberKey || "")) : "";
+      const ip = stored || bound;
+      setReaderIp(ip); setIpDraft(ip);
+    }
+  }, []);
+
+  // Product map (for presence lookup) + this screen's reader / rotation / name (initial load).
   useEffect(() => {
     // No ?display= but this device remembers a chosen screen → restore it (URL stays the source
     // of truth). location.replace so the picked zone survives a reopen without a history entry.
@@ -105,55 +157,10 @@ export default function DisplayPage() {
       for (const p of items || []) if (p.rfidTag) m.set(p.rfidTag, p);
       setProductMap(m);
     }).catch(() => {});
-    // A manually-entered reader (⚙) is sticky per screen and always wins; otherwise this
-    // screen auto-connects to the reader its display-registry entry is bound to.
     const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
-    fetch("/api/display/config").then((r) => r.json()).then((c) => {
-      if (c?.relayUrl) setRelayUrl(c.relayUrl);
-      setRelaySubKey(String(c?.relaySubscriberKey || ""));
-      const readers = normalizeReaders(c?.readers);
-      setSavedReaders(readers);
-      const dl = normalizeDisplays(c?.displays);
-      setDisplays(dl);
-      // Resolve which physical screen (zone) this is: ?display=<id> → its registry entry.
-      const disp = urlDisplay ? dl.find((d) => d.id === urlDisplay) : undefined;
-      setDisplayName(disp?.name || "");
-      // Idle/slide settings resolve per-screen: this display's override wins, else the global
-      // default (resolveDisplaySettings). So two TVs can show different idle media at once.
-      const eff = resolveDisplaySettings(disp, {
-        idleVideoUrl: String(c?.idleVideoUrl || ""),
-        idleImages: Array.isArray(c?.idleImages) ? c.idleImages.filter((u: unknown): u is string => typeof u === "string" && u.length > 0) : [],
-        idleSlideSeconds: Math.max(1, Number(c?.idleSlideSeconds) || 6),
-        idleVideoFit: c?.idleVideoFit === "cover" ? "cover" : "contain",
-        slideDuration: Math.max(1, Number(c?.slideDuration) || 5),
-      });
-      setImageMs(eff.slideDuration * 1000);
-      setIdleVideoUrl(eff.idleVideoUrl);
-      setIdleVideoFit(eff.idleVideoFit);
-      setIdleImages(eff.idleImages);
-      setIdleSlideSeconds(eff.idleSlideSeconds);
-      // ?rotate= per-screen override wins over the display's own rotation, which wins over the
-      // global Settings default. All must be 0/90/180/270.
-      const raw = new URLSearchParams(window.location.search).get("rotate");
-      const q = raw === null ? NaN : Number(raw); // null (absent) must NOT coerce to 0
-      const fromQuery = [0, 90, 180, 270].includes(q) ? q : null;
-      // A rotation set live from the ⚙ panel is sticky on THIS device (like the manual reader),
-      // so it wins over the registry/global default — but an explicit ?rotate= URL still wins.
-      const rotRaw = window.localStorage.getItem(ROTATION_KEY);
-      const fromStorage = rotRaw !== null && [0, 90, 180, 270].includes(Number(rotRaw)) ? Number(rotRaw) : null;
-      const fromCfg = [0, 90, 180, 270].includes(Number(c?.displayRotation)) ? Number(c.displayRotation) : 0;
-      const base = disp ? disp.rotation : fromCfg; // the central (registry/global) rotation for this screen
-      setBaseRotation(base);
-      setRotationOverride(fromStorage !== null);
-      setRotation(fromQuery ?? fromStorage ?? base);
-      // Auto-connect the bound reader (unless a manual ⚙ URL is already saved for this screen).
-      // Guard: a display pointing at a since-deleted reader connects to nothing, not all readers.
-      const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
-      const bound = boundReader ? readerUrl(boundReader, String(c?.relayUrl || ""), String(c?.relaySubscriberKey || "")) : "";
-      const ip = stored || bound;
-      setReaderIp(ip); setIpDraft(ip);
-    }).catch(() => { setReaderIp(stored); setIpDraft(stored); });
-  }, []);
+    fetch("/api/display/config").then((r) => r.json()).then((c) => applyConfig(c, true))
+      .catch(() => { setReaderIp(stored); setIpDraft(stored); });
+  }, [applyConfig]);
 
   // #3: render a QR to the public survey (shown on the idle screen for customers to scan).
   useEffect(() => {
@@ -239,6 +246,11 @@ export default function DisplayPage() {
         .on("broadcast", { event: DISPLAY_EVENT }, refetch)
         // "Identify screens" ping from admin → every open screen flashes its own name.
         .on("broadcast", { event: DISPLAY_IDENTIFY_EVENT }, () => flashIdentify())
+        // Settings saved → live-refetch config so idle media / slide timing / base rotation update
+        // without a manual reload (local ⚙/URL overrides preserved by applyConfig).
+        .on("broadcast", { event: DISPLAY_CONFIG_EVENT }, () => {
+          fetch("/api/display/config").then((r) => r.json()).then((c) => applyConfig(c, false)).catch(() => {});
+        })
         .subscribe();
     }
     // Fallback: 30s when realtime is active (safety net), else the old short poll.
@@ -250,7 +262,7 @@ export default function DisplayPage() {
       clearInterval(t);
       if (channel && supabaseBrowser) supabaseBrowser.removeChannel(channel);
     };
-  }, [flashIdentify]);
+  }, [flashIdentify, applyConfig]);
 
   // Arbitration: table presence wins; else sent customer list; else idle
   const presenceProducts = presentEpcs.map((e) => productMap.get(e)).filter(Boolean) as DProduct[];

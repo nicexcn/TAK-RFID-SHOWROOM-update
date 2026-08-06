@@ -4,6 +4,7 @@ import { invalidateIdleCache } from "@/lib/sessionConfig";
 import { normalizeReaders } from "@/lib/readers";
 import { normalizeDisplays } from "@/lib/displays";
 import { requireAccess } from "@/lib/permissions";
+import { broadcastDisplayConfigChanged } from "@/lib/realtime";
 
 export async function GET() {
   try {
@@ -66,6 +67,9 @@ export async function PUT(req: NextRequest) {
       create: { id: "singleton", ...data },
     });
     if ("sessionTimeout" in data) invalidateIdleCache(); // apply the new idle window immediately
+    // Nudge open /display screens to live-refetch their config (idle media, slide timing, base
+    // rotation, registry) — no manual TV reload. Fire-and-forget; screens also poll as a fallback.
+    await broadcastDisplayConfigChanged();
     return NextResponse.json(settings);
   } catch (error) {
     console.error(error);

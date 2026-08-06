@@ -21,6 +21,8 @@ export const DISPLAY_CHANNEL = "sessions-display";
 export const DISPLAY_EVENT = "changed";
 // Admin-triggered "flash your name" ping so staff can tell which physical TV is which.
 export const DISPLAY_IDENTIFY_EVENT = "identify";
+// Settings changed → open screens live-refetch /api/display/config (no manual reload needed).
+export const DISPLAY_CONFIG_EVENT = "config";
 
 export const NOTIF_CHANNEL = "notifications";
 export const NOTIF_EVENT = "changed";

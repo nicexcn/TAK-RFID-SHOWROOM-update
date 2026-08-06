@@ -36,6 +36,12 @@ export function broadcastDisplayIdentify(): Promise<void> {
   return broadcast("sessions-display", "identify");
 }
 
+/** Settings saved → open /display screens re-fetch their config (idle media, slide timing,
+ * registry, base rotation) live, without a manual reload. Local ⚙ overrides still win. */
+export function broadcastDisplayConfigChanged(): Promise<void> {
+  return broadcast("sessions-display", "config");
+}
+
 // What a "notifications" broadcast carries, so subscribers can apply the change
 // directly instead of refetching. Unknown/absent payloads fall back to a refetch.
 export type NotifEvent =
