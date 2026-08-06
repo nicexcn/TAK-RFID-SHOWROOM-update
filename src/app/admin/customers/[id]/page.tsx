@@ -199,7 +199,7 @@ export default function CustomerDetailPage() {
         actions={<>
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>
           {/* #9: print the 8×5cm sample sticker (opens a standalone print view). */}
-          <a href={`/print/sticker?${new URLSearchParams({ company: customer.company || "", contact: customer.fullName || "", phone: customer.phone || "", project: customer.project || "", requester: customer.fullName || "", code: customer.customerCode || "" }).toString()}`}
+          <a href={`/print/sticker?${new URLSearchParams({ company: customer.company || "", contact: customer.fullName || "", phone: customer.phone || "", requester: customer.fullName || "", code: customer.customerCode || "" }).toString()}`}
             target="_blank" rel="noopener noreferrer"
             className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>🖨 Print Sticker</a>
           {/* #3: attributed survey link for this customer (opens the public survey pre-tagged). */}

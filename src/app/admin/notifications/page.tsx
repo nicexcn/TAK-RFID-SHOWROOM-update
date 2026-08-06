@@ -14,7 +14,7 @@ interface Notif {
     id: string; name: string; productCode: string | null; location: string | null;
     imageUrl: string | null; brand: string | null; colour: string | null; size: string | null;
   };
-  customer: { id: string; customerCode: string; fullName: string; company: string; phone: string; project: string | null } | null;
+  customer: { id: string; customerCode: string; fullName: string; company: string; phone: string } | null;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -242,7 +242,7 @@ export default function NotificationsPage() {
                           </button>
                         )}
                         {n.customer && (
-                          <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", project: n.customer.project || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
+                          <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
                             target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                             style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>

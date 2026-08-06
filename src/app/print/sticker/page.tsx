@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 
 // #9: printable "Product Sample" sticker — AW size W 8 × H 5 cm (image2).
-// Title in Archer Semibold; body (บริษัท / ติดต่อ / โปรเจกต์ / ผู้เบิก) in DB Heavent Light.
+// Title in Archer Semibold; body (บริษัท / ติดต่อ / ผู้เบิก) in DB Heavent Light.
 // Data comes from URL params (opened from a customer's page); ผู้เบิก is editable before printing.
 
 export default function StickerPrintPage() {
-  const [d, setD] = useState({ company: "", contact: "", phone: "", project: "", requester: "", code: "" });
+  const [d, setD] = useState({ company: "", contact: "", phone: "", requester: "", code: "" });
   const [bleed, setBleed] = useState(false); // #9: 0.5cm bleed (9×6cm artwork for a die-cut print house)
 
   useEffect(() => {
@@ -16,7 +16,6 @@ export default function StickerPrintPage() {
       company: p.get("company") || "",
       contact: p.get("contact") || "",
       phone: p.get("phone") || "",
-      project: p.get("project") || "",
       requester: p.get("requester") || p.get("contact") || "",
       code: p.get("code") || "",
     });
@@ -91,7 +90,6 @@ export default function StickerPrintPage() {
           <div style={{ fontSize: "12.5pt", lineHeight: 1.28 }}>
             {row("บริษัท", d.company)}
             {row("ติดต่อ", [d.contact, d.phone].filter(Boolean).join(" "))}
-            {row("โปรเจกต์", d.project)}
             {row("ผู้เบิก", d.requester)}
           </div>
         </div>
