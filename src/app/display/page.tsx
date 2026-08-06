@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { normalizeReaders, readerUrl, type SavedReader } from "@/lib/readers";
-import { normalizeDisplays, type SavedDisplay } from "@/lib/displays";
-import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT } from "@/lib/supabaseBrowser";
+import { normalizeDisplays, resolveDisplaySettings, type SavedDisplay } from "@/lib/displays";
+import { supabaseBrowser, DISPLAY_CHANNEL, DISPLAY_EVENT, DISPLAY_IDENTIFY_EVENT } from "@/lib/supabaseBrowser";
 import { isImageUrl } from "@/lib/storage";
 
 /**
@@ -82,6 +82,13 @@ export default function DisplayPage() {
   const [ipDraft, setIpDraft] = useState("");
   const [showConfig, setShowConfig] = useState(false);
   const [simOn, setSimOn] = useState(false);
+  const [identifying, setIdentifying] = useState(false); // "Identify screens" — flash this screen's name big for ~5s
+  const identifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashIdentify = useCallback(() => {
+    setIdentifying(true);
+    if (identifyTimer.current) clearTimeout(identifyTimer.current);
+    identifyTimer.current = setTimeout(() => setIdentifying(false), 5000);
+  }, []);
 
   // Product map (for presence lookup) + this screen's reader / rotation / name.
   useEffect(() => {
@@ -102,20 +109,29 @@ export default function DisplayPage() {
     // screen auto-connects to the reader its display-registry entry is bound to.
     const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
     fetch("/api/display/config").then((r) => r.json()).then((c) => {
-      if (c?.slideDuration) setImageMs(Math.max(1, Number(c.slideDuration)) * 1000);
       if (c?.relayUrl) setRelayUrl(c.relayUrl);
       setRelaySubKey(String(c?.relaySubscriberKey || ""));
       const readers = normalizeReaders(c?.readers);
       setSavedReaders(readers);
       const dl = normalizeDisplays(c?.displays);
       setDisplays(dl);
-      setIdleVideoUrl(c?.idleVideoUrl || "");
-      setIdleVideoFit(c?.idleVideoFit === "cover" ? "cover" : "contain");
-      setIdleImages(Array.isArray(c?.idleImages) ? c.idleImages.filter((u: unknown): u is string => typeof u === "string" && u.length > 0) : []);
-      setIdleSlideSeconds(Math.max(1, Number(c?.idleSlideSeconds) || 6));
       // Resolve which physical screen (zone) this is: ?display=<id> → its registry entry.
       const disp = urlDisplay ? dl.find((d) => d.id === urlDisplay) : undefined;
       setDisplayName(disp?.name || "");
+      // Idle/slide settings resolve per-screen: this display's override wins, else the global
+      // default (resolveDisplaySettings). So two TVs can show different idle media at once.
+      const eff = resolveDisplaySettings(disp, {
+        idleVideoUrl: String(c?.idleVideoUrl || ""),
+        idleImages: Array.isArray(c?.idleImages) ? c.idleImages.filter((u: unknown): u is string => typeof u === "string" && u.length > 0) : [],
+        idleSlideSeconds: Math.max(1, Number(c?.idleSlideSeconds) || 6),
+        idleVideoFit: c?.idleVideoFit === "cover" ? "cover" : "contain",
+        slideDuration: Math.max(1, Number(c?.slideDuration) || 5),
+      });
+      setImageMs(eff.slideDuration * 1000);
+      setIdleVideoUrl(eff.idleVideoUrl);
+      setIdleVideoFit(eff.idleVideoFit);
+      setIdleImages(eff.idleImages);
+      setIdleSlideSeconds(eff.idleSlideSeconds);
       // ?rotate= per-screen override wins over the display's own rotation, which wins over the
       // global Settings default. All must be 0/90/180/270.
       const raw = new URLSearchParams(window.location.search).get("rotate");
@@ -219,7 +235,11 @@ export default function DisplayPage() {
     let channel: ReturnType<NonNullable<typeof supabaseBrowser>["channel"]> | null = null;
     if (supabaseBrowser) {
       channel = supabaseBrowser.channel(DISPLAY_CHANNEL);
-      channel.on("broadcast", { event: DISPLAY_EVENT }, refetch).subscribe();
+      channel
+        .on("broadcast", { event: DISPLAY_EVENT }, refetch)
+        // "Identify screens" ping from admin → every open screen flashes its own name.
+        .on("broadcast", { event: DISPLAY_IDENTIFY_EVENT }, () => flashIdentify())
+        .subscribe();
     }
     // Fallback: 30s when realtime is active (safety net), else the old short poll.
     const t = setInterval(load, supabaseBrowser ? 30000 : POLL_MS);
@@ -230,7 +250,7 @@ export default function DisplayPage() {
       clearInterval(t);
       if (channel && supabaseBrowser) supabaseBrowser.removeChannel(channel);
     };
-  }, []);
+  }, [flashIdentify]);
 
   // Arbitration: table presence wins; else sent customer list; else idle
   const presenceProducts = presentEpcs.map((e) => productMap.get(e)).filter(Boolean) as DProduct[];
@@ -545,17 +565,38 @@ export default function DisplayPage() {
         </div>
       )}
 
-      {/* status + config */}
+      {/* status + config. The screen NAME is always shown (falls back to "Default screen") and
+          set a touch larger/semibold so staff can identify a TV at a glance; the rest stays muted. */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "var(--color-success)" : "var(--color-danger-soft)" }} />
-        <span className="text-xs" style={{ color: currentImage ? "var(--color-surface)" : "var(--color-text-muted)" }}>
-          {displayName ? `${displayName} · ` : ""}{mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
+        <span className="px-2 py-0.5 rounded-md" style={{ background: "rgba(0,0,0,0.35)", color: "var(--color-surface)" }}>
+          <span className="text-sm font-semibold">{displayName || "Default screen"}</span>
+          <span className="text-xs" style={{ opacity: 0.75 }}> · {mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}</span>
         </span>
         <button onClick={() => setShowConfig((s) => !s)} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "var(--color-surface)" }}>⚙</button>
       </div>
 
+      {/* "Identify screens" flash — big centered name for ~5s so staff can match the on-screen
+          label to the physical TV during setup/routing. Triggered by admin broadcast or the ⚙ button. */}
+      {identifying && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none"
+          style={{ background: "rgba(0,0,0,0.72)", animation: "takImgFade 0.4s ease" }}>
+          <p style={{ color: "var(--color-surface)", fontSize: "8vw", fontWeight: 800, lineHeight: 1, textAlign: "center", padding: "0 4vw" }}>
+            {displayName || "Default screen"}
+          </p>
+          <p className="mt-4" style={{ color: "var(--color-surface)", opacity: 0.7, fontSize: "2vw" }}>
+            {ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}
+          </p>
+        </div>
+      )}
+
       {showConfig && (
         <div className="absolute top-14 right-6 p-4 rounded-xl" style={{ background: "rgba(20,20,20,0.92)", border: "1px solid #444", minWidth: 280 }}>
+          {/* Flash THIS screen's name big (no broadcast) — confirm which physical TV you're at. */}
+          <button onClick={flashIdentify}
+            className="w-full mb-3 px-3 py-1.5 rounded text-xs text-white" style={{ background: "#4a6fa5" }}>
+            Identify this screen
+          </button>
           {displays.length > 0 && (
             // Screen picker — this device self-selects its zone (remembered + put in the URL),
             // so a TV can be set up by opening plain /display and choosing here.

@@ -43,6 +43,7 @@ export function proxy(req: NextRequest) {
     // be authenticated. Only GET is public for that path.
     const isPublic = isPublicPath
       && !(pathname === "/api/sessions/display" && req.method !== "GET")
+      && pathname !== "/api/display/identify" // staff-only fan-out (matched by the /api/display prefix); require auth
       && !(pathname === "/api/survey" && req.method !== "POST"); // only the public SUBMIT is open; results (GET) stay gated
     if (!isPublic) {
       if (!token) {

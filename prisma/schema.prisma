@@ -218,10 +218,6 @@ model AppSettings {
   // Global default; a per-screen ?rotate= URL param overrides it.
   displayRotation Int      @default(0)
   sessionTimeout  Int      @default(30)  // minutes idle before a session is abandoned
-  scheduleEnabled Boolean  @default(false)
-  scheduleOn      String   @default("08:00")
-  scheduleOff     String   @default("18:00")
-  scheduleDays    String[] @default(["Mon", "Tue", "Wed", "Thu", "Fri"])
   // Option E cloud relay base, e.g. "wss://relay.fly.dev". Set once; readers then
   // just need a room id (deviceId). Empty = use direct LAN ws:// URLs.
   relayUrl        String   @default("")

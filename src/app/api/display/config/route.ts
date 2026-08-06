@@ -11,16 +11,11 @@ export async function GET() {
     const s = await prisma.appSettings.findUnique({
       where: { id: "singleton" },
       select: {
-        slideDuration: true, scheduleEnabled: true,
-        scheduleOn: true, scheduleOff: true, scheduleDays: true, relayUrl: true, relaySubscriberKey: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true, idleImages: true, idleSlideSeconds: true,
+        slideDuration: true, relayUrl: true, relaySubscriberKey: true, readers: true, displays: true, idleVideoUrl: true, displayRotation: true, idleVideoFit: true, idleImages: true, idleSlideSeconds: true,
       },
     });
     return NextResponse.json({
       slideDuration: s?.slideDuration ?? 5,
-      scheduleEnabled: s?.scheduleEnabled ?? false,
-      scheduleOn: s?.scheduleOn ?? "08:00",
-      scheduleOff: s?.scheduleOff ?? "18:00",
-      scheduleDays: s?.scheduleDays ?? [],
       relayUrl: s?.relayUrl ?? "",
       relaySubscriberKey: s?.relaySubscriberKey ?? "",
       readers: normalizeReaders(s?.readers),
@@ -32,6 +27,6 @@ export async function GET() {
       idleSlideSeconds: s?.idleSlideSeconds ?? 6,
     });
   } catch {
-    return NextResponse.json({ slideDuration: 5, scheduleEnabled: false, relayUrl: "", readers: [], displays: [], idleVideoUrl: "", displayRotation: 0, idleVideoFit: "contain", idleImages: [], idleSlideSeconds: 6 });
+    return NextResponse.json({ slideDuration: 5, relayUrl: "", readers: [], displays: [], idleVideoUrl: "", displayRotation: 0, idleVideoFit: "contain", idleImages: [], idleSlideSeconds: 6 });
   }
 }

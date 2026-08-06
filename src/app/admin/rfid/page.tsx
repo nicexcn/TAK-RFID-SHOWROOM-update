@@ -720,6 +720,18 @@ function RFIDPageInner() {
     }
   }
 
+  // "Identify screens" — ping every open /display to flash its own name, so staff can match a
+  // dropdown option to the physical TV before sending.
+  async function handleIdentifyScreens() {
+    try {
+      const res = await fetch("/api/display/identify", { method: "POST" });
+      if (res.ok) notifyOk("Screens flashing their names");
+      else warn("Couldn't identify screens");
+    } catch {
+      warn("Couldn't identify screens");
+    }
+  }
+
   // Take THIS session off whatever screen it's on → that screen returns to idle. Scoped by
   // sessionId so it never blanks another zone's screen (multi-display safe).
   async function handleStopDisplay() {
@@ -758,13 +770,26 @@ function RFIDPageInner() {
             </button>
             {displays.length > 0 && (
               // Which screen to send to — defaults to the one bound to this session's reader.
+              // Each option names its bound reader so staff aren't guessing which physical TV it is.
               <select value={targetDisplay} onChange={(e) => { userPickedDisplay.current = true; setTargetDisplay(e.target.value); }}
                 aria-label="Target screen"
                 className="px-3 py-2 rounded-xl text-sm outline-none"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                 <option value="">Default screen</option>
-                {displays.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {displays.map((d) => {
+                  const rd = d.readerId ? savedReaders.find((r) => r.id === d.readerId) : undefined;
+                  const rn = rd ? (rd.name || rd.device || rd.url) : "";
+                  return <option key={d.id} value={d.id}>{d.name}{rn ? ` (reader: ${rn})` : ""}</option>;
+                })}
               </select>
+            )}
+            {displays.length > 0 && (
+              // Flash every screen's name so staff can match the target dropdown to the physical TV.
+              <button onClick={handleIdentifyScreens}
+                className="px-4 py-2 rounded-xl text-sm"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+                Identify screens
+              </button>
             )}
             <button onClick={handleSendToDisplay} disabled={sending || session.scans.length === 0}
               className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"

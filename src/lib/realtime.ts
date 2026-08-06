@@ -31,6 +31,11 @@ export function broadcastDisplayChanged(): Promise<void> {
   return broadcast("sessions-display", "changed");
 }
 
+/** "Identify screens" — every open /display flashes its own name so staff can match label→TV. */
+export function broadcastDisplayIdentify(): Promise<void> {
+  return broadcast("sessions-display", "identify");
+}
+
 // What a "notifications" broadcast carries, so subscribers can apply the change
 // directly instead of refetching. Unknown/absent payloads fall back to a refetch.
 export type NotifEvent =

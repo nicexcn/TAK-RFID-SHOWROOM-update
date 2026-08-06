@@ -130,6 +130,9 @@ export default function SettingsPage() {
   const [relaySubscriberKey, setRelaySubscriberKey] = useState(""); // relay subscriber key (paired with relayUrl)
   const [readers, setReaders] = useState<SavedReader[]>([]); // central reader registry
   const [displays, setDisplays] = useState<SavedDisplay[]>([]); // central TV screen (zone) registry
+  // Snapshot of readers+displays as last saved, to flag unsaved edits (JSON compare is fine at this scale).
+  const [savedRegistrySnap, setSavedRegistrySnap] = useState("[]|[]");
+  const registryDirty = savedRegistrySnap !== JSON.stringify(readers) + "|" + JSON.stringify(displays);
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // /display idle-loop video
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
   const [idleImages, setIdleImages] = useState<string[]>([]); // idle slideshow (images-only); takes precedence over idleVideoUrl
@@ -166,8 +169,11 @@ export default function SettingsPage() {
       if (Array.isArray(d.idleImages)) setIdleImages(d.idleImages);
       if (d.idleSlideSeconds !== undefined) setIdleSlideSeconds(d.idleSlideSeconds);
       if (d.displayRotation !== undefined) setDisplayRotation(d.displayRotation);
-      if (Array.isArray(d.readers)) setReaders(d.readers);
-      if (Array.isArray(d.displays)) setDisplays(d.displays);
+      const ld = Array.isArray(d.readers) ? d.readers : [];
+      const dd = Array.isArray(d.displays) ? d.displays : [];
+      setReaders(ld);
+      setDisplays(dd);
+      setSavedRegistrySnap(JSON.stringify(ld) + "|" + JSON.stringify(dd)); // baseline for the unsaved-changes pill
       if (d.id) {
         setDashboardSettings({
           defaultFilter: d.defaultFilter,
@@ -309,13 +315,29 @@ export default function SettingsPage() {
   const addReader = () => setReaders((rs) => [...rs, { id: newRegistryId(), name: "", device: "", url: "" }]);
   const updateReader = (id: string, patch: Partial<SavedReader>) =>
     setReaders((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  const removeReader = (id: string) => setReaders((rs) => rs.filter((r) => r.id !== id));
+  // Guard: warn if any screen is bound to this reader (deleting it silently breaks that TV's presence).
+  async function removeReader(id: string) {
+    const bound = displays.filter((d) => d.readerId === id);
+    if (bound.length > 0) {
+      const names = bound.map((d) => d.name || "(unnamed)").join(", ");
+      if (!(await confirm({ title: "Remove reader?", message: `${bound.length} screen(s) use this reader (${names}). They'll lose live table presence. Remove anyway?`, danger: true }))) return;
+    }
+    setReaders((rs) => rs.filter((r) => r.id !== id));
+  }
 
   // Display (TV screen) registry editor — one row per physical screen/zone.
   const addDisplay = () => setDisplays((ds) => [...ds, { id: newRegistryId(), name: "", readerId: "", rotation: 0 }]);
   const updateDisplay = (id: string, patch: Partial<SavedDisplay>) =>
     setDisplays((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-  const removeDisplay = (id: string) => setDisplays((ds) => ds.filter((d) => d.id !== id));
+  // Guard: a named display's URL may be open on a physical TV (its id is in that TV's localStorage);
+  // removing it strands that screen on a dead zone id. Confirm named rows.
+  async function removeDisplay(id: string) {
+    const d = displays.find((x) => x.id === id);
+    if (d?.name && !(await confirm({ title: "Remove display?", message: `"${d.name}" may be open on a TV — that screen will fall back to the default. Remove it?`, danger: true }))) return;
+    setDisplays((ds) => ds.filter((x) => x.id !== id));
+  }
+  const [expandedDisplay, setExpandedDisplay] = useState("");   // which display row has its overrides open
+  const identifyScreens = async () => { try { await fetch("/api/display/identify", { method: "POST" }); } catch { /* ignore */ } };
 
   // Idle video upload → fills idleVideoUrl (browser-direct to storage; signed URL).
   async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -832,7 +854,13 @@ export default function SettingsPage() {
                 <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium" style={{ color: "var(--color-text)" }}>Displays (TV screens)</label>
-                    <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+ Add display</button>
+                    <div className="flex items-center gap-2">
+                      {displays.length > 0 && (
+                        // Flash every open screen's name so you can match a row to the physical TV.
+                        <button onClick={identifyScreens} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>Identify screens</button>
+                      )}
+                      <button onClick={addDisplay} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>+ Add display</button>
+                    </div>
                   </div>
                   <p className="text-xs mb-3" style={{ color: "var(--color-text-subtle)" }}>
                     Each screen is a zone. Bind it to a <b>reader</b> (its live table presence) and a <b>rotation</b>, then open that TV at its <b>URL</b> below.
@@ -872,6 +900,72 @@ export default function SettingsPage() {
                           ) : (
                             <p className="text-xs mt-1.5 pl-1" style={{ color: "var(--color-text-subtle)" }}>Name this screen to get its URL — unnamed rows aren&apos;t saved.</p>
                           )}
+
+                          {/* Per-screen IDLE overrides — collapsed by default. Any control left empty
+                              inherits the global idle settings above; an explicit value overrides only
+                              THIS screen. Stored in the display row's JSON (no schema change). */}
+                          {(() => {
+                            const hasOverride = !!(d.idleVideoUrl || (d.idleImages && d.idleImages.length) || d.idleSlideSeconds || d.idleVideoFit || d.slideDuration);
+                            const open = expandedDisplay === d.id;
+                            return (
+                              <div className="mt-1.5 pl-1">
+                                <button onClick={() => setExpandedDisplay(open ? "" : d.id)}
+                                  className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                                  {open ? "▾" : "▸"} Override idle media for this screen{hasOverride && !open ? " (active)" : ""}
+                                </button>
+                                {open && (
+                                  <div className="mt-2 p-3 rounded-lg space-y-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+                                    <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>Blank = inherit the global idle settings above. Set only what should differ on <b>{d.name || "this screen"}</b>.</p>
+                                    {/* Idle slideshow images (per-screen) */}
+                                    <div>
+                                      <label className="block text-xs mb-1" style={{ color: "var(--color-text)" }}>Idle slideshow images</label>
+                                      <ProductImagePicker urls={d.idleImages ?? []} onChange={(urls) => updateDisplay(d.id, { idleImages: urls.length ? urls : undefined })} />
+                                    </div>
+                                    {/* Single idle media URL (per-screen) */}
+                                    <div>
+                                      <label className="block text-xs mb-1" style={{ color: "var(--color-text)" }}>Or a single idle media URL (image/video)</label>
+                                      <input value={d.idleVideoUrl ?? ""} onChange={(e) => updateDisplay(d.id, { idleVideoUrl: e.target.value.trim() || undefined })}
+                                        placeholder="https://… .mp4 or .png  (blank = inherit)"
+                                        className="w-full px-3 py-2 rounded-lg outline-none text-sm" style={iS} />
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      {/* Fit/Fill */}
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Fit:</span>
+                                        {(["", "contain", "cover"] as const).map((v) => (
+                                          <button key={v || "inherit"} onClick={() => updateDisplay(d.id, { idleVideoFit: v || undefined })}
+                                            className="px-2 py-1 rounded-md text-xs"
+                                            style={{ background: (d.idleVideoFit ?? "") === v ? "var(--color-primary)" : "var(--color-surface)", color: (d.idleVideoFit ?? "") === v ? "var(--color-surface)" : "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                                            {v === "" ? "Inherit" : v === "contain" ? "Fit" : "Fill"}
+                                          </button>
+                                        ))}
+                                      </div>
+                                      {/* Idle slide seconds */}
+                                      <label className="text-xs flex items-center gap-1.5" style={{ color: "var(--color-text-muted)" }}>
+                                        Slide secs
+                                        <input type="number" min={1} max={120} value={d.idleSlideSeconds ?? ""} placeholder="—"
+                                          onChange={(e) => { const n = Math.floor(Number(e.target.value)); updateDisplay(d.id, { idleSlideSeconds: Number.isFinite(n) && n >= 1 ? Math.min(120, n) : undefined }); }}
+                                          className="w-16 px-2 py-1 rounded-md outline-none text-sm" style={iS} />
+                                      </label>
+                                      {/* Product slide duration */}
+                                      <label className="text-xs flex items-center gap-1.5" style={{ color: "var(--color-text-muted)" }}>
+                                        Product secs
+                                        <input type="number" min={1} max={120} value={d.slideDuration ?? ""} placeholder="—"
+                                          onChange={(e) => { const n = Math.floor(Number(e.target.value)); updateDisplay(d.id, { slideDuration: Number.isFinite(n) && n >= 1 ? Math.min(120, n) : undefined }); }}
+                                          className="w-16 px-2 py-1 rounded-md outline-none text-sm" style={iS} />
+                                      </label>
+                                    </div>
+                                    {hasOverride && (
+                                      <button onClick={() => updateDisplay(d.id, { idleVideoUrl: undefined, idleImages: undefined, idleSlideSeconds: undefined, idleVideoFit: undefined, slideDuration: undefined })}
+                                        className="text-xs px-2.5 py-1 rounded-lg" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+                                        Reset to global
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
@@ -965,11 +1059,18 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {displaySettingsSuccess && <p className="text-sm mt-3" style={{ color: "var(--color-success)" }}>{displaySettingsSuccess}</p>}
+                <div className="flex items-center gap-2 mt-3">
+                  {displaySettingsSuccess && <p className="text-sm" style={{ color: "var(--color-success)" }}>{displaySettingsSuccess}</p>}
+                  {registryDirty && !displaySettingsSuccess && (
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>
+                      Unsaved reader/display changes
+                    </span>
+                  )}
+                </div>
                 <button disabled={savingDisplay}
                   onClick={async () => {
                     setSavingDisplay(true);
-                    await saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit, idleImages, idleSlideSeconds }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); });
+                    await saveSettings({ slideDuration, sessionTimeout, relayUrl: relayUrl.trim(), relaySubscriberKey: relaySubscriberKey.trim(), readers, displays, idleVideoUrl: idleVideoUrl.trim(), displayRotation, idleVideoFit, idleImages, idleSlideSeconds }, () => { setDisplaySettingsSuccess("✓ Saved"); setTimeout(() => setDisplaySettingsSuccess(""), 2000); setSavedRegistrySnap(JSON.stringify(readers) + "|" + JSON.stringify(displays)); });
                     setSavingDisplay(false);
                   }}
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>

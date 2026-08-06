@@ -20,8 +20,8 @@ export async function GET() {
 
 const ALLOWED = [
   "defaultFilter", "graphColor", "takeawayLimit", "takeawayEnabled",
-  "visibleWidgets", "slideDuration", "sessionTimeout", "scheduleEnabled",
-  "scheduleOn", "scheduleOff", "scheduleDays", "relayUrl", "relaySubscriberKey", "readers", "displays", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit", "idleImages", "idleSlideSeconds",
+  "visibleWidgets", "slideDuration", "sessionTimeout",
+  "relayUrl", "relaySubscriberKey", "readers", "displays", "borrowDays", "idleVideoUrl", "displayRotation", "idleVideoFit", "idleImages", "idleSlideSeconds",
 ];
 
 export async function PUT(req: NextRequest) {

@@ -19,6 +19,8 @@ export const supabaseBrowser =
 
 export const DISPLAY_CHANNEL = "sessions-display";
 export const DISPLAY_EVENT = "changed";
+// Admin-triggered "flash your name" ping so staff can tell which physical TV is which.
+export const DISPLAY_IDENTIFY_EVENT = "identify";
 
 export const NOTIF_CHANNEL = "notifications";
 export const NOTIF_EVENT = "changed";
