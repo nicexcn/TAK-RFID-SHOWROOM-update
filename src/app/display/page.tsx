@@ -45,7 +45,6 @@ export default function DisplayPage() {
   const [imageMs, setImageMs] = useState(IMAGE_MS); // per-image slide duration (from Settings)
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base (from Settings)
   const [relaySubKey, setRelaySubKey] = useState(""); // relay subscriber key so the TV's WS passes relay auth
-  const [cloudRoom, setCloudRoom] = useState(""); // optional device_id filter for the relay (empty = all readers)
   const [savedReaders, setSavedReaders] = useState<SavedReader[]>([]); // central registry (from Settings)
   const [idleVideoUrl, setIdleVideoUrl] = useState(""); // optional video that loops when idle (from Settings)
   const [idleVideoFit, setIdleVideoFit] = useState("contain"); // "contain" (Fit) | "cover" (Fill)
@@ -83,6 +82,7 @@ export default function DisplayPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [simOn, setSimOn] = useState(false);
   const [identifying, setIdentifying] = useState(false); // "Identify screens" — flash this screen's name big for ~5s
+  const [showAdvancedReader, setShowAdvancedReader] = useState(false); // ⚙: reveal the manual address field
   const identifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashIdentify = useCallback(() => {
     setIdentifying(true);
@@ -132,13 +132,22 @@ export default function DisplayPage() {
     setBaseRotation(base);
     setRotationOverride(fromStorage !== null);
     setRotation(fromQuery ?? fromStorage ?? base);
-    // Reader (re)connect only on first mount — see comment above.
+    // Reader connection. A manual ⚙ pick is sticky in localStorage (READER_KEY) and ALWAYS wins —
+    // it's this device's deliberate override and a settings save must never yank it. When there's
+    // NO manual override, the connection is purely registry-driven, so we follow the display's
+    // bound reader — on first mount AND live on a config broadcast (so repointing/removing a
+    // reader in Settings updates the open TV without a reload).
+    const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
+    const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
+    const bound = boundReader ? readerUrl(boundReader, String(c.relayUrl || ""), String(c.relaySubscriberKey || "")) : "";
     if (initial) {
-      const stored = (typeof window !== "undefined" && window.localStorage.getItem(READER_KEY)) || "";
-      const boundReader = disp?.readerId ? readers.find((r) => r.id === disp.readerId) : undefined;
-      const bound = boundReader ? readerUrl(boundReader, String(c.relayUrl || ""), String(c.relaySubscriberKey || "")) : "";
       const ip = stored || bound;
       setReaderIp(ip); setIpDraft(ip);
+    } else if (!stored) {
+      // Live config push, no manual override → re-point to the (possibly changed/removed) bound URL.
+      // If the bound reader was deleted, `bound` is "" → disconnect (screen shows "No reader").
+      setReaderIp((prev) => (prev === bound ? prev : bound));
+      setIpDraft(bound);
     }
   }, []);
 
@@ -392,22 +401,28 @@ export default function DisplayPage() {
     return () => { clearInterval(t); presentRef.current.clear(); };
   }, [simOn, productMap]);
 
-  function connect() {
-    const ip = ipDraft.trim(); if (!ip) return;
-    window.localStorage.setItem(READER_KEY, ip); setReaderIp(ip); setShowConfig(false);
+  // Single connect path: persist the resolved WS URL to this device's localStorage and connect.
+  // Every reader control (saved-reader dropdown, manual field) funnels through here.
+  function connectTo(url: string) {
+    const u = (url || "").trim(); if (!u) return;
+    setIpDraft(u);
+    window.localStorage.setItem(READER_KEY, u); setReaderIp(u); setShowConfig(false);
   }
 
-  // Option E: subscribe via the central relay. device_id is in every payload, so no room
-  // is needed — connect to the relay base for ALL readers, or add ?device=<id> to show
-  // only one reader (e.g. the table reader on this screen).
-  function connectViaRelay() {
-    if (!relayUrl) return;
-    const base = relayUrl.replace(/\/+$/, "");
-    const dev = cloudRoom.trim();
-    const url = readerUrl({ device: dev }, base, relaySubKey);
-    setIpDraft(url);
-    window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
+  // Manual "Advanced" field — one input that smart-parses: looks like a URL/IP → treat as a
+  // DIRECT reader (used as-is); otherwise treat the text as a relay DEVICE tag and build the
+  // relay subscriber URL (needs a configured relay). This replaces the old separate
+  // "Fix Reader" (direct) + "Cloud relay device_id" fields that both wrote the same key.
+  function connectManual() {
+    const raw = ipDraft.trim(); if (!raw) return;
+    const looksLikeUrl = /^wss?:\/\//i.test(raw) || /^\d{1,3}(\.\d{1,3}){3}(:\d+)?/.test(raw) || raw.includes(":") || raw.includes("/");
+    const url = looksLikeUrl ? raw : readerUrl({ device: raw }, relayUrl.replace(/\/+$/, ""), relaySubKey);
+    connectTo(url);
   }
+
+  // Which saved reader (if any) resolves to the URL we're currently connected to — so the
+  // dropdown can show a "connected" marker and preselect it.
+  const activeReaderId = savedReaders.find((r) => readerUrl(r, relayUrl, relaySubKey) === readerIp)?.id ?? "";
 
   // Pick which screen (zone) this device is. Remember it (so a bare /display restores it) and
   // navigate to that screen's URL — the mount logic then re-resolves reader/rotation/name/scope
@@ -415,13 +430,6 @@ export default function DisplayPage() {
   function pickDisplay(id: string) {
     window.localStorage.setItem(DISPLAY_KEY, id);
     window.location.href = id ? `/display?display=${encodeURIComponent(id)}` : "/display";
-  }
-
-  // Pick a reader by NAME from the central registry → resolve to its subscriber URL + connect.
-  function applySavedReader(url: string) {
-    if (!url) return;
-    setIpDraft(url);
-    window.localStorage.setItem(READER_KEY, url); setReaderIp(url); setShowConfig(false);
   }
 
   // Rotate the screen live from the ⚙ panel. Sticky on this device (survives reload) so a
@@ -652,42 +660,39 @@ export default function DisplayPage() {
               })}
             </div>
           </div>
-          {savedReaders.length > 0 && (
-            <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
-              <p className="text-white/60 text-[11px] mb-1">Saved readers</p>
-              <select aria-label="Saved reader" value="" onChange={(e) => applySavedReader(e.target.value)}
+          {/* Unified Reader control: one dropdown of saved readers (the common path), with a
+              collapsed "Advanced" manual-address field for power users. Replaces the old
+              Saved-readers + Fix-Reader + Cloud-relay trio that all wrote the same localStorage key. */}
+          <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
+            <p className="text-white/60 text-[11px] mb-1">Reader</p>
+            {savedReaders.length > 0 ? (
+              <select aria-label="Reader" value={activeReaderId} onChange={(e) => { const r = savedReaders.find((x) => x.id === e.target.value); if (r) connectTo(readerUrl(r, relayUrl, relaySubKey)); }}
                 className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "var(--color-surface)" }}>
-                <option value="">Select reader…</option>
+                <option value="">{readerIp ? "Custom / manual address" : "Select reader…"}</option>
                 {savedReaders.map((r) => {
                   const url = readerUrl(r, relayUrl, relaySubKey);
-                  return <option key={r.id} value={url} disabled={!url}>{r.name || r.device || r.url}</option>;
+                  const label = r.name || r.device || r.url;
+                  return <option key={r.id} value={r.id} disabled={!url}>{label}{r.id === activeReaderId ? " • connected" : ""}</option>;
                 })}
               </select>
-            </div>
-          )}
-          <p className="text-white text-sm mb-2">Fix Reader (table)</p>
-          <input value={ipDraft} onChange={(e) => setIpDraft(e.target.value)}
-            placeholder="192.168.1.104  or  wss://xxx.ngrok-free.app"
-            className="w-full px-2 py-1.5 rounded outline-none text-xs mb-2" style={{ background: "#333", color: "var(--color-surface)" }} />
-          <p className="text-white/40 text-[10px] mb-2">LAN IP (HTTP), or wss:// (ngrok) when this page is HTTPS</p>
-          <div className="flex gap-2">
-            <button onClick={connect} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: "#4a6fa5" }}>Connect</button>
-            <button onClick={() => setSimOn((s) => !s)} className="px-3 py-1.5 rounded text-xs text-white flex-1" style={{ background: simOn ? "var(--color-danger-soft)" : "var(--color-primary)" }}>{simOn ? "Stop demo" : "Demo"}</button>
-          </div>
-
-          {relayUrl && (
-            // Option E: subscribe via the cloud relay. Leave the field empty for ALL readers,
-            // or enter a device_id to show only that reader on this screen.
-            <div className="mt-2 pt-2" style={{ borderTop: "1px solid #444" }}>
-              <p className="text-white/60 text-[11px] mb-1">Cloud relay — device_id (empty = all readers)</p>
-              <div className="flex gap-2">
-                <input value={cloudRoom} onChange={(e) => setCloudRoom(e.target.value)} placeholder="empty = all readers / or mac·serial"
-                  className="flex-1 px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "var(--color-surface)" }} />
-                <button onClick={connectViaRelay} className="px-3 py-1.5 rounded text-xs text-white whitespace-nowrap" style={{ background: "#4a7c59" }}>Use relay</button>
+            ) : (
+              <p className="text-white/40 text-[11px]">No saved readers — add them in Settings, or use Advanced below.</p>
+            )}
+            <button onClick={() => setShowAdvancedReader((s) => !s)} className="text-white/50 text-[11px] mt-1.5">
+              {showAdvancedReader ? "▾" : "▸"} Advanced — manual address
+            </button>
+            {showAdvancedReader && (
+              <div className="mt-1.5">
+                <input value={ipDraft} onChange={(e) => setIpDraft(e.target.value)}
+                  placeholder="ws://192.168.1.104:8080, wss://…, or a relay device tag"
+                  className="w-full px-2 py-1.5 rounded outline-none text-xs mb-1" style={{ background: "#333", color: "var(--color-surface)" }} />
+                <p className="text-white/40 text-[10px] mb-1.5">A URL/IP = direct reader (use wss:// when this page is HTTPS). Plain text = a relay device tag{relayUrl ? "" : " (needs a relay URL in Settings)"}.</p>
+                <button onClick={connectManual} className="w-full px-3 py-1.5 rounded text-xs text-white" style={{ background: "#4a6fa5" }}>Connect</button>
+                {relayUrl && <p className="text-white/30 text-[10px] mt-1 truncate">relay: {relayUrl}</p>}
               </div>
-              <p className="text-white/30 text-[10px] mt-1 truncate">relay: {relayUrl}</p>
-            </div>
-          )}
+            )}
+          </div>
+          <button onClick={() => setSimOn((s) => !s)} className="w-full px-3 py-1.5 rounded text-xs text-white" style={{ background: simOn ? "var(--color-danger-soft)" : "var(--color-primary)" }}>{simOn ? "Stop demo" : "Demo mode"}</button>
           {readerIp && (
             // Disconnect: close the socket AND clear readerIp so neither the
             // hook's auto-reconnect nor the page's auto-connect effect re-opens it.

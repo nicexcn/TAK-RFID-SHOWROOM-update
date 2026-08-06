@@ -14,6 +14,7 @@ import { ROLES } from "@/lib/roles";
 import { formatDate } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ProductImagePicker from "@/components/ProductImagePicker";
+import ReaderSetupGuide from "@/components/ReaderSetupGuide";
 import { toast } from "sonner";
 
 const errToast = (msg: string) =>
@@ -848,6 +849,7 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   )}
+                  <ReaderSetupGuide />
                 </div>
 
                 {/* Central display (TV screen) registry — one row per physical screen/zone */}
