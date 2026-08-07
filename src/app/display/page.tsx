@@ -83,6 +83,7 @@ export default function DisplayPage() {
   const [simOn, setSimOn] = useState(false);
   const [identifying, setIdentifying] = useState(false); // "Identify screens" — flash this screen's name big for ~5s
   const [showAdvancedReader, setShowAdvancedReader] = useState(false); // ⚙: reveal the manual address field
+  const [showAllReaders, setShowAllReaders] = useState(false); // ⚙: reveal non-table readers (hidden by default on a display)
   const identifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashIdentify = useCallback(() => {
     setIdentifying(true);
@@ -665,20 +666,49 @@ export default function DisplayPage() {
               Saved-readers + Fix-Reader + Cloud-relay trio that all wrote the same localStorage key. */}
           <div className="mb-3 pb-3" style={{ borderBottom: "1px solid #444" }}>
             <p className="text-white/60 text-[11px] mb-1">Reader</p>
-            {savedReaders.length > 0 ? (
-              <select aria-label="Reader" value={activeReaderId} onChange={(e) => { const r = savedReaders.find((x) => x.id === e.target.value); if (r) connectTo(readerUrl(r, relayUrl, relaySubKey)); }}
-                className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "var(--color-surface)" }}>
-                <option value="">{readerIp ? "Custom / manual address" : "Select reader…"}</option>
-                {savedReaders.map((r) => {
-                  const url = readerUrl(r, relayUrl, relaySubKey);
-                  const label = r.name || r.device || r.url;
-                  const k = r.kind === "table" ? " · Table" : r.kind === "handheld" ? " · Handheld" : "";
-                  return <option key={r.id} value={r.id} disabled={!url}>{label}{k}{r.id === activeReaderId ? " • connected" : ""}</option>;
-                })}
-              </select>
-            ) : (
-              <p className="text-white/40 text-[11px]">No saved readers — add them in Settings, or use Advanced below.</p>
-            )}
+            {(() => {
+              // Table readers first — this screen shows live table presence, so a Table reader is the
+              // intended pick (handhelds shouldn't be bound to a display). Order: Table → Handheld →
+              // Unspecified; stable sort keeps registry order within each group.
+              const sorted = [...savedReaders].sort((a, b) => {
+                const rank = (k?: string) => (k === "table" ? 0 : k === "handheld" ? 1 : 2);
+                return rank(a.kind) - rank(b.kind);
+              });
+              const tableCount = sorted.filter((r) => r.kind === "table").length;
+              // Hide non-table readers by default (a display wants the table reader). Safeguards:
+              //  - always keep the CURRENTLY-CONNECTED reader visible, even if non-table;
+              //  - if there are NO table readers, show everything (never hide the whole list);
+              //  - the toggle below reveals the rest and shows how many are hidden.
+              const hidingActive = !showAllReaders && tableCount > 0;
+              const visible = hidingActive
+                ? sorted.filter((r) => r.kind === "table" || r.id === activeReaderId)
+                : sorted;
+              const hiddenCount = sorted.length - visible.length;
+              return savedReaders.length > 0 ? (
+                <>
+                  <select aria-label="Reader" value={activeReaderId} onChange={(e) => { const r = savedReaders.find((x) => x.id === e.target.value); if (r) connectTo(readerUrl(r, relayUrl, relaySubKey)); }}
+                    className="w-full px-2 py-1.5 rounded outline-none text-xs" style={{ background: "#333", color: "var(--color-surface)" }}>
+                    {/* Non-selectable status/placeholder: shows "Custom / manual address" while a manual
+                        address (set via Advanced below) is active, else the empty-state prompt. Disabled so it
+                        can't be re-picked as a silent no-op — it only reflects state; Advanced sets a custom one. */}
+                    <option value="" disabled>{readerIp ? "Custom / manual address" : "Select reader…"}</option>
+                    {visible.map((r) => {
+                      const url = readerUrl(r, relayUrl, relaySubKey);
+                      const label = r.name || r.device || r.url;
+                      const k = r.kind === "table" ? " · Table" : r.kind === "handheld" ? " · Handheld" : "";
+                      return <option key={r.id} value={r.id} disabled={!url}>{label}{k}{r.id === activeReaderId ? " • connected" : ""}</option>;
+                    })}
+                  </select>
+                  {(hiddenCount > 0 || (showAllReaders && tableCount > 0)) && (
+                    <button onClick={() => setShowAllReaders((s) => !s)} className="text-white/50 text-[11px] mt-1">
+                      {showAllReaders ? "Show table readers only" : `Show all readers (${hiddenCount} hidden)`}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-white/40 text-[11px]">No saved readers — add them in Settings, or use Advanced below.</p>
+              );
+            })()}
             <p className="text-white/40 text-[10px] mt-1">Pick the <b>Table</b> reader here — this screen shows what&apos;s on it live; sent customer lists show when the table&apos;s clear.</p>
             <button onClick={() => setShowAdvancedReader((s) => !s)} className="text-white/50 text-[11px] mt-1.5">
               {showAdvancedReader ? "▾" : "▸"} Advanced — manual address
