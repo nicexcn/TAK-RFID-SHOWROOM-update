@@ -3,7 +3,7 @@
 **For the client to verify each meeting request works, on the live system.**
 Run top-to-bottom, tick each box, note anything that doesn't match "Expected". Every item below maps to a numbered request from the 24-6-26 meeting doc.
 
-- **Where:** `https://app.nimitrlog.com` (or `https://tak-rfid-showroom.vercel.app`)
+- **Where:** `https://nimitrlog.com` (or `https://tak-rfid-showroom.vercel.app`). `app.nimitrlog.com` still works — it 301-redirects to the apex.
 - **Login:** your assigned account. Super-Admin steps (⚙) need a Super Admin login.
 - **Labels below are the exact on-screen text** (English UI).
 - This checklist doubles as the **regression list** — re-run it before each release.

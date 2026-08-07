@@ -42,13 +42,32 @@ export default function ReaderSetupGuide() {
             <p className="font-medium mb-1" style={h}>A. Relay reader</p>
             <ol className="list-decimal ml-4 space-y-1" style={muted}>
               <li>Set the shared <b>Relay URL</b> + <b>Subscriber key</b> above (once for all relay readers).</li>
-              <li>Add a reader below with just its <b>Device tag</b> (leave URL blank).</li>
+              <li>Add a reader below and give it a <b>Device tag</b> — any short label you choose for that
+                physical reader, e.g. <span style={code}>table-1</span> (leave URL blank).</li>
               <li>Point the reader&apos;s middleware at the relay as a <b>pusher</b>:</li>
             </ol>
-            <p className="mt-1" style={code}>wss://&lt;relay-host&gt;/?role=pusher&amp;key=&lt;ingestKey&gt;&amp;device=&lt;deviceTag&gt;</p>
-            <p className="mt-1" style={sub}>
-              sending each scan as JSON: <span style={code}>{'{"status":"SCANNING","device_id":"…","epc":"…","rssi":-50,"count":1,"battery":100}'}</span>
+            <p className="mt-1" style={muted}>Template (replace each <span style={code}>&lt;…&gt;</span>):</p>
+            <p className="mt-1" style={code}>wss://&lt;relay-host&gt;/?role=pusher&amp;key=&lt;pusher-key&gt;&amp;device=&lt;device-tag&gt;</p>
+            <p className="mt-2" style={muted}>Example, filled in:</p>
+            <p className="mt-1" style={code}>wss://ws.nimitrlog.com/?role=pusher&amp;key=Sk9f2aQ...&amp;device=table-1</p>
+            <p className="mt-2" style={sub}>
+              …sending each scan as JSON: <span style={code}>{'{"status":"SCANNING","device_id":"…","epc":"…","rssi":-50,"count":1,"battery":100}'}</span>
             </p>
+            <p className="mt-3" style={muted}>
+              <b>What goes in each <span style={code}>&lt;…&gt;</span>:</b>
+            </p>
+            <ul className="list-disc ml-4 space-y-1" style={sub}>
+              <li><span style={code}>&lt;relay-host&gt;</span> — the relay&apos;s address, the same host as the
+                <b> Relay URL</b> above (here <span style={code}>ws.nimitrlog.com</span>).</li>
+              <li><span style={code}>&lt;pusher-key&gt;</span> — the relay&apos;s <b>pusher key</b>, a secret set on
+                the relay server (in <span style={code}>relay.config.json</span>, the field named <span style={code}>ingestKey</span>).
+                It is <b>not</b> the <b>Subscriber key</b> field above — the relay has <b>two different keys</b>:
+                the <b>pusher key</b> lets a reader send scans <i>in</i>; the <b>Subscriber key</b> lets this app read scans <i>out</i>.
+                Put the pusher key here, the Subscriber key in the field above.</li>
+              <li><span style={code}>&lt;device-tag&gt;</span> — a short label you invent for this one reader
+                (e.g. <span style={code}>table-1</span>). Use the <b>exact same text</b> here and in the reader&apos;s
+                <b> Device tag</b> field above — that match is what routes this reader&apos;s scans to the right screen.</li>
+            </ul>
           </div>
 
           {/* Direct LAN reader */}

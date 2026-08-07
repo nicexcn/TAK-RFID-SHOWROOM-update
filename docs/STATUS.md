@@ -5,7 +5,7 @@ Source of truth for "where are we." Update the status + commit as the last step 
 
 - **Spec:** `ข้อมูล Update หลังประชุม 24-6-26/` (docx = 13 items · Showroom Report.xlsx · font zip), dated 2026-06-29 — the latest client input.
 - **Code:** branch `feat/meeting-followup-2606`, HEAD `5fba545` (update on each change).
-- **Live:** Vercel `tak-rfid-showroom.vercel.app` + on-prem `app.nimitrlog.com` — both `/login` = 200 (last checked 2026-07-23).
+- **Live:** Vercel `tak-rfid-showroom.vercel.app` + on-prem `nimitrlog.com` (apex is primary; `app.nimitrlog.com` → 301 redirect) — both `/login` = 200 (last checked 2026-08-07).
 - **Legend:** 🟢 done & verified · 🟡 partial · 🔴 missing · ⚪ not-software (hardware/IT/procurement).
 
 ---

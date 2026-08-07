@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ProductImagePicker from "@/components/ProductImagePicker";
 import ReaderSetupGuide from "@/components/ReaderSetupGuide";
+import SecretInput from "@/components/SecretInput";
 import { toast } from "sonner";
 
 const errToast = (msg: string) =>
@@ -815,8 +816,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="mt-4 max-w-md">
                   <label htmlFor="relay-subkey" className="block text-sm mb-1" style={{ color: "var(--color-text)" }}>Relay Subscriber Key</label>
-                  <input id="relay-subkey" type="text" value={relaySubscriberKey} onChange={(e) => setRelaySubscriberKey(e.target.value)}
+                  <SecretInput id="relay-subkey" value={relaySubscriberKey} onChange={setRelaySubscriberKey}
                     placeholder="subscriberKey from the relay config (needed for relay readers)"
+                    secretLabel="subscriber key"
                     className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={iS} />
                   <p className="text-xs mt-1" style={{ color: "var(--color-text-subtle)" }}>Lets the Scan &amp; Display pages subscribe to the relay. Must match the relay&apos;s subscriberKey or reader connections close (1008). Read-only — receives scans, cannot inject.</p>
                 </div>
