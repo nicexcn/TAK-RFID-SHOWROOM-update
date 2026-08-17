@@ -23,13 +23,81 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   COMPLETE:  { label: "Complete",  color: "var(--color-success)", bg: "#d1fae5" },
 };
 
+const TZ_OFFSET_MS = 7 * 60 * 60 * 1000; // Asia/Bangkok — match api/reports convention
+function bkkDay(iso: string) {
+  // Bangkok calendar YYYY-MM-DD of a UTC instant (notification.createdAt).
+  return new Date(new Date(iso).getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+interface DocGroup {
+  key: string;
+  date: string;       // Bangkok YYYY-MM-DD
+  customerCode: string;
+  company: string;
+  contact: string;
+  phone: string;
+  items: Notif[];
+  docNo: string;
+}
+
+// Group take-home notifications into one Document per (customer + day).
+// customerCode is the primary key so walk-ins (empty company) never merge
+// different customers into one document. (Notification customers carry no
+// project field, so project is not part of the key — a customer is one job
+// per day, matching the ERP mockup where a doc = one customer's day.)
+function groupNotifs(notifs: Notif[]): DocGroup[] {
+  const map = new Map<string, Notif[]>();
+  for (const n of notifs) {
+    if (!(n.takeawayQty && n.takeawayQty > 0)) continue; // ERP doc = taken-home lines only
+    const date = bkkDay(n.createdAt);
+    const code = n.customer?.customerCode || n.customer?.fullName || "WALK-IN";
+    const key = `${code}|${date}`;
+    const arr = map.get(key) || [];
+    arr.push(n);
+    map.set(key, arr);
+  }
+  const groups: DocGroup[] = [...map.entries()].map(([key, items]) => {
+    const first = items[0];
+    const code = first.customer?.customerCode || first.customer?.fullName || "WALK-IN";
+    return {
+      key,
+      date: bkkDay(first.createdAt),
+      customerCode: first.customer?.customerCode || "",
+      company: first.customer?.company || "",
+      contact: first.customer?.fullName || code,
+      phone: first.customer?.phone || "",
+      items,
+      docNo: "", // assigned below, after month-bucket sort
+    };
+  });
+  // Sort by date desc, then customerCode — newest jobs first (display order).
+  groups.sort((a, b) => b.date.localeCompare(a.date) || a.customerCode.localeCompare(b.customerCode));
+
+  // Assign Document No. (NO + YY + MM + 4-digit seq), seq resets per (YY, MM).
+  // seq is the 1-based index of the group among same-month groups, in ascending
+  // (date, customerCode) order — deterministic: same data ⇒ same numbers, no DB write.
+  const byMonth = new Map<string, DocGroup[]>();
+  for (const g of groups) {
+    const [y, m] = g.date.split("-");
+    const mk = `${y}${m}`;
+    const arr = byMonth.get(mk) || [];
+    arr.push(g);
+    byMonth.set(mk, arr);
+  }
+  for (const arr of byMonth.values()) {
+    // ascending order for numbering: earliest job of the month = 0001
+    arr.sort((a, b) => a.date.localeCompare(b.date) || a.customerCode.localeCompare(b.customerCode));
+    const [y, m] = arr[0].date.split("-");
+    arr.forEach((g, i) => { g.docNo = `NO${y.slice(2)}${m}${String(i + 1).padStart(4, "0")}`; });
+  }
+  return groups;
+}
+
 export default function NotificationsPage() {
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  // No synchronous setLoading here — `loading` starts true and is cleared when the first
-  // fetch resolves; refetches (poll/realtime) update silently.
   const fetchNotifs = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
@@ -40,7 +108,6 @@ export default function NotificationsPage() {
   }, []);
 
   // Apply a realtime broadcast straight to local state — no refetch round-trip.
-  // Unknown/legacy shapes fall back to a full refetch.
   const applyBroadcast = useCallback((payload: { type?: string; notification?: Notif; id?: string } | null) => {
     const p = payload || {};
     if (p.type === "create" && p.notification) {
@@ -59,13 +126,9 @@ export default function NotificationsPage() {
     }
   }, [fetchNotifs]);
 
-  // Live: apply realtime nudges instantly (a prepare alert raised on a scan station, or
-  // another prep staff acting), plus a slow fallback poll for consistency.
   useEffect(() => {
     fetchNotifs();
-    const t = setInterval(fetchNotifs, 8000); // fallback safety net (was 20s)
-    // Shared channel; re-sync on every (re)connect so a nudge dropped during load/reconnect
-    // is caught now (no second channel on the same topic → no teardown race with the badge).
+    const t = setInterval(fetchNotifs, 8000);
     const unsub = subscribeNotifications(
       (payload) => applyBroadcast(payload as { type?: string; notification?: Notif; id?: string }),
       () => fetchNotifs(),
@@ -73,24 +136,23 @@ export default function NotificationsPage() {
     return () => { clearInterval(t); unsub(); };
   }, [fetchNotifs, applyBroadcast]);
 
-  async function updateStatus(id: string, status: string) {
+  const updateStatus = useCallback((id: string, status: string) => {
     setNotifs((p) => p.map((n) => n.id === id ? { ...n, status, isRead: true } : n)); // optimistic
-    await fetch(`/api/notifications/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+    fetch(`/api/notifications/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, isRead: true }),
     });
-  }
+  }, []);
 
-  async function markAllRead() {
+  const markAllRead = useCallback(() => {
     setNotifs((p) => p.map((n) => ({ ...n, isRead: true })));
-    await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" } });
-  }
+    fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" } });
+  }, []);
 
-  async function deleteNotif(id: string) {
+  const deleteNotif = useCallback((id: string) => {
     setNotifs((p) => p.filter((n) => n.id !== id));
-    await fetch(`/api/notifications/${id}`, { method: "DELETE" });
-  }
+    fetch(`/api/notifications/${id}`, { method: "DELETE" });
+  }, []);
 
   const filtered = notifs.filter((n) => filter === "all" || n.status === filter);
   const unread = notifs.filter((n) => !n.isRead).length;
@@ -154,110 +216,181 @@ export default function NotificationsPage() {
           <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No notifications</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((n) => {
-            const cfg = STATUS_CFG[n.status] || STATUS_CFG.PENDING;
-            return (
-              <div key={n.id} className="rounded-xl p-5 transition-all"
-                style={{
-                  background: "var(--color-surface)",
-                  border: `1px solid ${n.isRead ? "var(--color-border)" : "#9f886c"}`,
-                  opacity: n.isRead ? 0.85 : 1,
-                }}>
-                <div className="flex items-start gap-4">
-                  {/* Product thumbnail — lets prep staff identify the right sample at a glance */}
-                  <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
-                    style={{ background: "var(--color-bg)" }}>
-                    {n.product.imageUrl ? (
-                      <Image src={n.product.imageUrl} alt={n.product.name} width={48} height={48} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg width="18" height="18" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <path d="m21 15-5-5L5 21"/>
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{n.title}</p>
-                          {!!n.takeawayQty && n.takeawayQty > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[11px] font-semibold"
-                              style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>×{n.takeawayQty}</span>
-                          )}
-                          {!n.isRead && <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-danger)" }} />}
-                        </div>
-                        <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>
-                          {n.product.name}
-                          {n.product.productCode && <span style={{ color: "var(--color-text-muted)" }}> · {n.product.productCode}</span>}
-                        </p>
-                        {(n.product.brand || n.product.colour || n.product.size) && (
-                          <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>
-                            {[n.product.brand, n.product.colour, n.product.size].filter(Boolean).join(" · ")}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                          {n.product.location && <span>📍 {n.product.location}</span>}
-                          {n.customer && (
-                            <a href={`/admin/customers/${n.customer.id}`} target="_blank" rel="noopener noreferrer"
-                              className="hover:underline" title="Open customer details (new tab)" style={{ color: "var(--color-text-muted)" }}>
-                              👤 {n.customer.fullName} ({n.customer.customerCode})
-                              {n.customer.company ? ` · ${n.customer.company}` : ""}
-                              {n.customer.phone ? ` · 📞 ${n.customer.phone}` : ""}
-                            </a>
-                          )}
-                          <span>🕐 {new Date(n.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                          style={{ background: cfg.bg, color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                        <button onClick={() => deleteNotif(n.id)} title="Delete"
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-colors"
-                          style={{ background: "#faf0f0", color: "var(--color-danger-soft)" }}>✕</button>
-                      </div>
-                    </div>
+        <DocGroups filtered={filtered} onUpdate={updateStatus} onDelete={deleteNotif} />
+      )}
+    </div>
+  );
+}
 
-                    {/* Action Buttons — Start/Done gate on status; Print Sticker shows for any
-                        status whenever a customer is attached (prep staff prints the envelope
-                        label from here, and can reprint after COMPLETE). */}
-                    {(n.status !== "COMPLETE" || n.customer) && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {n.status === "PENDING" && (
-                          <button onClick={() => updateStatus(n.id, "PREPARING")}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            style={{ background: "#dbeafe", color: "var(--color-info)" }}>
-                            Start preparing
-                          </button>
-                        )}
-                        {n.status !== "COMPLETE" && (
-                          <button onClick={() => updateStatus(n.id, "COMPLETE")}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            style={{ background: "#d1fae5", color: "var(--color-success)" }}>
-                            Mark done
-                          </button>
-                        )}
-                        {n.customer && (
-                          <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
-                            target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
-                            🖨 Print Sticker
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+// Render taken-home notifications grouped into ERP documents (one Document No. per
+// customer + day). Each group has a header (doc no / date / customer / totals +
+// 🖨 Print requisition slip) with the per-item prep cards indented underneath.
+// Notifications with no takeaway stay ungrouped at the bottom so the prep queue
+// is still fully visible.
+function DocGroups({
+  filtered, onUpdate, onDelete,
+}: { filtered: Notif[]; onUpdate: (id: string, status: string) => void; onDelete: (id: string) => void }) {
+  const groups = groupNotifs(filtered);
+  const groupedIds = new Set(groups.flatMap((g) => g.items.map((i) => i.id)));
+  const ungrouped = filtered.filter((n) => !groupedIds.has(n.id));
+
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => {
+        const totalQty = g.items.reduce((s, n) => s + (n.takeawayQty || 0), 0);
+        const dateDisplay = new Date(g.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
+        const itemsParam = encodeURIComponent(JSON.stringify(g.items.map((n) => ({
+          code: n.product.productCode || "", name: n.product.name, qty: n.takeawayQty || 0,
+          imageUrl: n.product.imageUrl || "", brand: n.product.brand || "",
+        }))));
+        const printHref = `/print/erp-doc?${new URLSearchParams({
+          doc: g.docNo, date: g.date, company: g.company, contact: g.contact,
+          phone: g.phone, customerCode: g.customerCode, items: itemsParam,
+        }).toString()}`;
+        return (
+          <div key={g.key}>
+            {/* Document header */}
+            <div className="rounded-xl p-4 mb-2 flex flex-wrap items-center gap-3"
+              style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+              <span className="font-mono text-sm font-bold px-2 py-1 rounded-md" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>{g.docNo}</span>
+              <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>📅 {dateDisplay}</span>
+              <span className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
+                {g.company || g.contact || g.customerCode || "Walk-in"}
+              </span>
+              {g.contact && g.company && (
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>👤 {g.contact}{g.phone ? ` · 📞 ${g.phone}` : ""}</span>
+              )}
+              <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+                {g.items.length} item{g.items.length !== 1 ? "s" : ""} · {totalQty} pcs
+              </span>
+              <a href={printHref} target="_blank" rel="noopener noreferrer" title="Print requisition slip (ใบเบิกรายการ)"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ml-auto"
+                style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+                🖨 Print slip
+              </a>
+            </div>
+            {/* Per-item prep cards */}
+            <div className="space-y-3 pl-4" style={{ borderLeft: "2px solid var(--color-border)" }}>
+              {g.items.map((n) => <NotifCard key={n.id} n={n} onUpdate={onUpdate} onDelete={onDelete} />)}
+            </div>
+          </div>
+        );
+      })}
+
+      {ungrouped.length > 0 && (
+        <div>
+          {groups.length > 0 && (
+            <p className="text-xs mb-2" style={{ color: "var(--color-text-subtle)" }}>Other notifications (no takeaway)</p>
+          )}
+          <div className="space-y-3">
+            {ungrouped.map((n) => <NotifCard key={n.id} n={n} onUpdate={onUpdate} onDelete={onDelete} />)}
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function NotifCard({
+  n, onUpdate, onDelete,
+}: { n: Notif; onUpdate: (id: string, status: string) => void; onDelete: (id: string) => void }) {
+  const cfg = STATUS_CFG[n.status] || STATUS_CFG.PENDING;
+  return (
+    <div className="rounded-xl p-5 transition-all"
+      style={{
+        background: "var(--color-surface)",
+        border: `1px solid ${n.isRead ? "var(--color-border)" : "#9f886c"}`,
+        opacity: n.isRead ? 0.85 : 1,
+      }}>
+      <div className="flex items-start gap-4">
+        {/* Product thumbnail — lets prep staff identify the right sample at a glance */}
+        <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
+          style={{ background: "var(--color-bg)" }}>
+          {n.product.imageUrl ? (
+            <Image src={n.product.imageUrl} alt={n.product.name} width={48} height={48} className="w-full h-full object-cover" />
+          ) : (
+            <svg width="18" height="18" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{n.title}</p>
+                {!!n.takeawayQty && n.takeawayQty > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-md text-[11px] font-semibold"
+                    style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>×{n.takeawayQty}</span>
+                )}
+                {!n.isRead && <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-danger)" }} />}
+              </div>
+              <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>
+                {n.product.name}
+                {n.product.productCode && <span style={{ color: "var(--color-text-muted)" }}> · {n.product.productCode}</span>}
+              </p>
+              {(n.product.brand || n.product.colour || n.product.size) && (
+                <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>
+                  {[n.product.brand, n.product.colour, n.product.size].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                {n.product.location && <span>📍 {n.product.location}</span>}
+                {n.customer && (
+                  <a href={`/admin/customers/${n.customer.id}`} target="_blank" rel="noopener noreferrer"
+                    className="hover:underline" title="Open customer details (new tab)" style={{ color: "var(--color-text-muted)" }}>
+                    👤 {n.customer.fullName} ({n.customer.customerCode})
+                    {n.customer.company ? ` · ${n.customer.company}` : ""}
+                    {n.customer.phone ? ` · 📞 ${n.customer.phone}` : ""}
+                  </a>
+                )}
+                <span>🕐 {new Date(n.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: cfg.bg, color: cfg.color }}>
+                {cfg.label}
+              </span>
+              <button onClick={() => onDelete(n.id)} title="Delete"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-colors"
+                style={{ background: "#faf0f0", color: "var(--color-danger-soft)" }}>✕</button>
+            </div>
+          </div>
+
+          {/* Action Buttons — Start/Done gate on status; Print Sticker shows for any
+              status whenever a customer is attached (prep staff prints the envelope
+              label from here, and can reprint after COMPLETE). */}
+          {(n.status !== "COMPLETE" || n.customer) && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {n.status === "PENDING" && (
+                <button onClick={() => onUpdate(n.id, "PREPARING")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: "#dbeafe", color: "var(--color-info)" }}>
+                  Start preparing
+                </button>
+              )}
+              {n.status !== "COMPLETE" && (
+                <button onClick={() => onUpdate(n.id, "COMPLETE")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: "#d1fae5", color: "var(--color-success)" }}>
+                  Mark done
+                </button>
+              )}
+              {n.customer && (
+                <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                  🖨 Print Sticker
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
