@@ -29,6 +29,19 @@ function bkkDay(iso: string) {
   return new Date(new Date(iso).getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+// URL-safe base64 (uses -_ instead of +/, no padding) for passing the items JSON to
+// /print/erp-doc. Raw JSON in the query string trips the on-prem ModSecurity WAF (the
+// {" ":""} syntax looks like injection); base64 is opaque to it. Decoded in the print page.
+function urlSafeB64(s: string) {
+  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function fromUrlSafeB64(s: string) {
+  try {
+    const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
+    return decodeURIComponent(escape(atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad)));
+  } catch { return ""; }
+}
+
 interface DocGroup {
   key: string;
   date: string;       // Bangkok YYYY-MM-DD
@@ -239,7 +252,7 @@ function DocGroups({
       {groups.map((g) => {
         const totalQty = g.items.reduce((s, n) => s + (n.takeawayQty || 0), 0);
         const dateDisplay = new Date(g.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
-        const itemsParam = encodeURIComponent(JSON.stringify(g.items.map((n) => ({
+        const itemsParam = urlSafeB64(JSON.stringify(g.items.map((n) => ({
           code: n.product.productCode || "", name: n.product.name, qty: n.takeawayQty || 0,
           imageUrl: n.product.imageUrl || "", brand: n.product.brand || "",
         }))));

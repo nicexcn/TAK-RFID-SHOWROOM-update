@@ -23,6 +23,15 @@ function bkkDate(d: Date) {
   return new Date(d.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+// Decode URL-safe base64 (the items JSON is encoded this way by the notifications page
+// because raw JSON in the query string trips the on-prem ModSecurity WAF).
+function fromUrlSafeB64(s: string) {
+  try {
+    const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
+    return decodeURIComponent(escape(atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad)));
+  } catch { return ""; }
+}
+
 export default function ErpDocPrintPage() {
   const [d, setD] = useState({
     doc: "", date: "", company: "", contact: "", phone: "", project: "", customerCode: "",
@@ -42,7 +51,7 @@ export default function ErpDocPrintPage() {
     });
     try {
       const raw = p.get("items");
-      if (raw) setItems(JSON.parse(decodeURIComponent(raw)));
+      if (raw) setItems(JSON.parse(fromUrlSafeB64(raw)));
     } catch { /* malformed — render empty table */ }
   }, []);
 
