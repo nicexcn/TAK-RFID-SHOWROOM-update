@@ -252,9 +252,13 @@ function DocGroups({
       {groups.map((g) => {
         const totalQty = g.items.reduce((s, n) => s + (n.takeawayQty || 0), 0);
         const dateDisplay = new Date(g.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
+        // Items payload excludes imageUrl — it's ~130 chars/item and pushes the URL past
+        // IIS's query-string limit (a 7-item doc was already 2051 chars > 2048). The slip
+        // design (3.jfif) shows only Item No./Description/Quantity anyway. base64 keeps the
+        // JSON off the on-prem WAF (raw JSON in a query param 403s).
         const itemsParam = urlSafeB64(JSON.stringify(g.items.map((n) => ({
           code: n.product.productCode || "", name: n.product.name, qty: n.takeawayQty || 0,
-          imageUrl: n.product.imageUrl || "", brand: n.product.brand || "",
+          brand: n.product.brand || "",
         }))));
         const printHref = `/print/erp-doc?${new URLSearchParams({
           doc: g.docNo, date: g.date, company: g.company, contact: g.contact,
