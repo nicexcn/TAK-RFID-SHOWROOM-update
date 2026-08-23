@@ -47,7 +47,7 @@ interface Session {
   readerId?: string | null;
 }
 interface CustomerInfo {
-  id: string; customerCode: string; fullName: string; title: string; company: string; phone: string;
+  id: string; customerCode: string; fullName: string; title?: string; company?: string | null; phone?: string | null;
 }
 interface DeviceLog {
   deviceId: number; tag: string; time: string; productName: string | null; ok: boolean;
@@ -78,7 +78,7 @@ function RFIDPageInner() {
 
   // Customer
   const [customerQuery, setCustomerQuery] = useState(preloadCode);
-  const [searchType, setSearchType] = useState<"code" | "name" | "phone">("code");
+  const [searchType, setSearchType] = useState<"code" | "name" | "phone" | "company">("code");
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(
     preloadCode && preloadName ? {
       id: "", customerCode: preloadCode, fullName: decodeURIComponent(preloadName),
@@ -539,6 +539,9 @@ function RFIDPageInner() {
 
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]); // #8
   const [contactName, setContactName] = useState("");
+  // #5: when a name/company/phone search matches several customers, hold the list so
+  // the picker can render a pick list (onPick → sets customerInfo).
+  const [customerMatches, setCustomerMatches] = useState<CustomerInfo[]>([]);
   const searchSeqRef = useRef(0); // ignore a stale contacts fetch that resolves after a newer search
 
   async function handleSearchCustomer() {
@@ -548,12 +551,21 @@ function RFIDPageInner() {
     const res = await fetch(`/api/customers/search?q=${encodeURIComponent(customerQuery.trim())}&type=${searchType}`);
     const data = await res.json();
     if (searchSeqRef.current !== seq) return; // superseded by a newer search
-    if (data?.id) {
-      setCustomerInfo(data);
-      setContactName(""); // "" = primary contact; only set when staff pick an extra contact
-      fetch(`/api/customers/${data.id}/contacts`).then((r) => r.json())
+    // #5: search returns an array. Auto-select the single match (preserves the old
+    // code-search UX); when several match, leave customerInfo null so the picker
+    // shows the list for staff to pick (onPick sets customerInfo + loads contacts).
+    const arr: CustomerInfo[] = Array.isArray(data) ? data : (data ? [data] : []);
+    if (arr.length === 1) {
+      setCustomerInfo(arr[0]);
+      setContactName("");
+      fetch(`/api/customers/${arr[0].id}/contacts`).then((r) => r.json())
         .then((cs) => { if (searchSeqRef.current === seq) setContacts(Array.isArray(cs) ? cs : []); }).catch(() => {});
-    } else setSearchError("No matching member found");
+    } else if (arr.length === 0) {
+      setSearchError("No matching member found");
+    }
+    // arr.length > 1: setCustomerMatches(list) so CustomerPicker renders the pick list
+    if (arr.length > 1) setCustomerMatches(arr);
+    else setCustomerMatches([]);
     setSearching(false);
   }
 
@@ -561,6 +573,16 @@ function RFIDPageInner() {
     const code = customerInfo?.customerCode || customerQuery.trim();
     if (!code) { setError("Please enter a Customer ID"); return; }
     await handleStartSessionWith(code, customerInfo?.id || null, contactName);
+  }
+
+  // #5: staff pick one customer from a multi-match search list.
+  function pickCustomer(c: CustomerInfo) {
+    setCustomerInfo(c);
+    setContactName("");
+    setCustomerMatches([]);
+    setContacts([]);
+    fetch(`/api/customers/${c.id}/contacts`).then((r) => r.json())
+      .then((cs) => setContacts(Array.isArray(cs) ? cs : [])).catch(() => {});
   }
 
   // Persist a scan's prepare status / takeaway qty (customer req #2) — previously
@@ -820,10 +842,11 @@ function RFIDPageInner() {
             <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>Search a customer or enter an ID to start</p>
             <CustomerPicker
               searchType={searchType}
-              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); }}
+              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); setCustomerMatches([]); }}
               query={customerQuery} onQueryChange={setCustomerQuery} onSearch={handleSearchCustomer}
               searching={searching} searchError={searchError}
-              customer={customerInfo} contacts={contacts} contactName={contactName} onContactChange={setContactName}
+              customers={customerMatches} onPick={pickCustomer} selected={customerInfo}
+              contacts={contacts} contactName={contactName} onContactChange={setContactName}
               onStart={handleStartSession} starting={loading} startLabel="Start Session" startMode="footer"
             />
             {error && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{error}</p>}

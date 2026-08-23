@@ -85,6 +85,19 @@ export default function DisplayPage() {
   const [showAdvancedReader, setShowAdvancedReader] = useState(false); // ⚙: reveal the manual address field
   const [showAllReaders, setShowAllReaders] = useState(false); // ⚙: reveal non-table readers (hidden by default on a display)
   const identifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // #2 (TAK 21/8/26): idle video sound. Browsers block autoplay-with-sound without a prior
+  // gesture, so the video starts muted (autoplay works) and staff un-mute via this toggle
+  // (persisted) or by opening ⚙ (a gesture). On until the user turns it off.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [soundOn, setSoundOn] = useState(false);
+  useEffect(() => { try { setSoundOn(localStorage.getItem("tak-video-sound") === "1"); } catch {} }, []);
+  const applySound = useCallback((on: boolean) => {
+    setSoundOn(on);
+    try { localStorage.setItem("tak-video-sound", on ? "1" : "0"); } catch {}
+    const v = videoRef.current; if (v) { v.muted = !on; if (on && v.paused) v.play().catch(() => {}); }
+  }, []);
+  // when the video element (re)mounts (idleVideoUrl changes), re-apply the saved choice.
+  useEffect(() => { const v = videoRef.current; if (v) v.muted = !soundOn; }, [idleVideoUrl, soundOn]);
   const flashIdentify = useCallback(() => {
     setIdentifying(true);
     if (identifyTimer.current) clearTimeout(identifyTimer.current);
@@ -505,7 +518,7 @@ export default function DisplayPage() {
             className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ background: "#1a1a1a" }} />
         ) : (
-          <video key={idleVideoUrl + idleVideoFit} src={idleVideoUrl} autoPlay loop muted playsInline
+          <video key={idleVideoUrl + idleVideoFit} ref={videoRef} src={idleVideoUrl} autoPlay loop muted playsInline
             className={`w-full h-full ${idleVideoFit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ background: "#1a1a1a" }} />
         )
@@ -586,15 +599,14 @@ export default function DisplayPage() {
         </div>
       )}
 
-      {/* status + config. The screen NAME is always shown (falls back to "Default screen") and
-          set a touch larger/semibold so staff can identify a TV at a glance; the rest stays muted. */}
-      <div className="absolute top-6 right-6 flex items-center gap-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: simOn ? "#c07a30" : ws.isConnected ? "var(--color-success)" : "var(--color-danger-soft)" }} />
-        <span className="px-2 py-0.5 rounded-md" style={{ background: "rgba(0,0,0,0.35)", color: "var(--color-surface)" }}>
-          <span className="text-sm font-semibold">{displayName || "Default screen"}</span>
-          <span className="text-xs" style={{ opacity: 0.75 }}> · {mode === "table" ? "Table (live)" : mode === "session" ? "On display" : "Idle"} · {simOn ? "Demo" : ws.isConnected ? "Connected" : readerIp ? "Connecting…" : "No reader"}</span>
-        </span>
-        <button onClick={() => setShowConfig((s) => !s)} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "var(--color-surface)" }}>⚙</button>
+      {/* config gear + sound toggle only. The on-screen status text ("Default screen · Idle · No reader")
+          was removed per client request (TAK 21/8/26) — staff use the ⚙ panel + Identify flash. */}
+      <div className="absolute top-6 right-6 flex items-center gap-1">
+        {idleVideoUrl && (
+          <button onClick={() => applySound(!soundOn)} title={soundOn ? "Mute idle video" : "Unmute idle video"} aria-label="Toggle video sound"
+            className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "var(--color-surface)" }}>{soundOn ? "🔊" : "🔇"}</button>
+        )}
+        <button onClick={() => { setShowConfig((s) => !s); if (soundOn && videoRef.current?.muted) applySound(true); }} aria-label="Settings" aria-expanded={showConfig} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", color: "var(--color-surface)" }}>⚙</button>
       </div>
 
       {/* "Identify screens" flash — big centered name for ~5s so staff can match the on-screen

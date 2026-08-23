@@ -20,19 +20,21 @@ interface Product {
   materialType: string | null; category: string | null; imageUrl: string | null; location: string | null;
 }
 interface ScanItem { product: Product; takeawayQty: number; }
-interface Customer { id: string; customerCode: string; fullName: string; company: string; phone: string; }
+interface Customer { id: string; customerCode: string; fullName: string; company?: string | null; phone?: string | null; }
 
 const SHOWN_CAP = 60;
 
 export default function ManualScanPage() {
   // Customer selection
-  const [searchType, setSearchType] = useState<"code" | "name" | "phone">("code");
+  const [searchType, setSearchType] = useState<"code" | "name" | "phone" | "company">("code");
   const [query, setQuery] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]); // #8
   const [contactName, setContactName] = useState("");
+  // #5: name/company/phone can match several customers; hold the list for staff to pick.
+  const [customerMatches, setCustomerMatches] = useState<Customer[]>([]);
 
   // Session
   const [session, setSession] = useState<{ id: string; customerCode: string; scans: ScanItem[] } | null>(null);
@@ -104,14 +106,29 @@ export default function ManualScanPage() {
     try {
       const res = await fetch(`/api/customers/search?q=${encodeURIComponent(query.trim())}&type=${searchType}`);
       const data = await res.json();
-      if (data?.id) {
-        setCustomer(data);
-        setContactName(""); // "" = primary contact; only set when staff pick an extra contact
-        fetch(`/api/customers/${data.id}/contacts`).then((r) => r.json())
+      // #5: search returns an array. Auto-select a single match; show a pick list when several.
+      const arr: Customer[] = Array.isArray(data) ? data : (data ? [data] : []);
+      if (arr.length === 1) {
+        setCustomer(arr[0]);
+        setContactName("");
+        fetch(`/api/customers/${arr[0].id}/contacts`).then((r) => r.json())
           .then((cs) => setContacts(Array.isArray(cs) ? cs : [])).catch(() => setContacts([]));
-      } else setSearchError("No matching customer found");
+      } else if (arr.length === 0) {
+        setSearchError("No matching customer found");
+      }
+      setCustomerMatches(arr.length > 1 ? arr : []);
     } catch { setSearchError("Search failed"); }
     finally { setSearching(false); }
+  }
+
+  // #5: staff pick one customer from a multi-match search list.
+  function pickCustomer(c: Customer) {
+    setCustomer(c);
+    setContactName("");
+    setCustomerMatches([]);
+    setContacts([]);
+    fetch(`/api/customers/${c.id}/contacts`).then((r) => r.json())
+      .then((cs) => setContacts(Array.isArray(cs) ? cs : [])).catch(() => setContacts([]));
   }
 
   async function startSession(code: string, custId: string | null, contact?: string) {
@@ -249,10 +266,11 @@ export default function ManualScanPage() {
         <div className="rounded-xl p-6 max-w-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>Select customer</h2>
           <CustomerPicker
-            searchType={searchType} onSearchTypeChange={setSearchType}
+            searchType={searchType} onSearchTypeChange={(t) => { setSearchType(t); setQuery(""); setSearchError(""); setCustomer(null); setContactName(""); setContacts([]); setCustomerMatches([]); }}
             query={query} onQueryChange={setQuery} onSearch={searchCustomer}
             searching={searching} searchError={searchError}
-            customer={customer} contacts={contacts} contactName={contactName} onContactChange={setContactName}
+            customers={customerMatches} onPick={pickCustomer} selected={customer}
+            contacts={contacts} contactName={contactName} onContactChange={setContactName}
             onStart={() => customer && startSession(customer.customerCode, customer.id, contactName)}
             starting={starting} startLabel="Start" startMode="card"
             allowWalkIn onWalkIn={() => startSession("WALK-IN", null)}
