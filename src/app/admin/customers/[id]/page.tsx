@@ -174,14 +174,13 @@ export default function CustomerDetailPage() {
   const uniqueProducts = new Map(allScans.map((s) => [s.product.id, s]));
   const fields: [string, string][] = [
     ["Customer ID", customer.customerCode],
-    ["Occupation", customer.title === "Other" ? customer.titleOther || "Other" : customerTypeLabel(customer.title) || "—"],
+    ["Customer Segment", customer.title === "Other" ? customer.titleOther || "Other" : customerTypeLabel(customer.title) || "—"],
     ["Full Name", customer.fullName || "—"],
     ["Company", customer.company || "—"],
     ["Phone", customer.phone || "—"],
     ["Email", customer.email || "—"],
     ["LINE ID", customer.lineId || "—"],
     ["Heard via", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
-    ["Source", customer.source || "—"],
     ["Sales", customer.salesPerson || "—"],
     ["Project", customer.project || "—"],
     ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
@@ -228,7 +227,6 @@ export default function CustomerDetailPage() {
                 ["Phone", "phone"],
                 ["Email", "email"],
                 ["LINE ID", "lineId"],
-                ["Source", "source"],
                 ["Project", "project"],
               ] as [string, keyof EditForm][]).map(([label, key]) => (
                 <label key={key} className="block">
@@ -237,10 +235,10 @@ export default function CustomerDetailPage() {
                     className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 </label>
               ))}
-              {/* Occupation / customer type */}
+              {/* Customer Segment (was "Occupation" — renamed per TAK feedback slide 22) */}
               <label className="block">
-                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Occupation</span>
-                <select aria-label="Occupation" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Customer Segment</span>
+                <select aria-label="Customer Segment" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
                   {/* Guard: if this customer holds a legacy value not in the list, keep it as an
                       option so opening + saving doesn't silently rewrite their occupation. */}

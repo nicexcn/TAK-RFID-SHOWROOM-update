@@ -4,7 +4,7 @@ import { Spinner } from "@/components/Spinner";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { CUSTOMER_TYPES, CUSTOMER_SOURCES } from "@/lib/customerTypes";
+import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => ({ value: t.value, label: `${t.label} / ${t.labelTh}` }));
 type TitleType = string;
@@ -19,7 +19,7 @@ export default function AddCustomerPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   // #8: per-field feedback (red ring + helper text) keyed by field name.
-  type FieldKey = "fullName" | "title" | "titleOther" | "company" | "phone" | "email" | "pdpa" | "source";
+  type FieldKey = "fullName" | "title" | "titleOther" | "company" | "phone" | "email" | "pdpa";
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const clearFieldError = (k: FieldKey) => setFieldErrors((p) => (p[k] ? { ...p, [k]: undefined } : p));
   const [fullName, setFullName] = useState("");
@@ -34,7 +34,7 @@ export default function AddCustomerPage() {
   const [pdpa, setPdpa] = useState(false);
   const [salesPerson, setSalesPerson] = useState(""); // #2: staff-filled — who handles this customer
   const [project, setProject] = useState(""); // #4: project this customer is associated with
-  const [source, setSource] = useState(""); // #2/#4: how the customer came in
+  // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
   const [salesOptions, setSalesOptions] = useState<string[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
 
@@ -46,7 +46,6 @@ export default function AddCustomerPage() {
   const phoneRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const pdpaRef = useRef<HTMLElement>(null);
-  const sourceRef = useRef<HTMLDivElement>(null);
 
   const toggleChannel = (ch: string) =>
     setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch]);
@@ -62,13 +61,12 @@ export default function AddCustomerPage() {
   }, []);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setMe(d.username); }).catch(() => {}); }, []);
 
-  // #2: for a WALK-IN customer, the "Sales Showroom person in charge" defaults to the logged-in
-  // staff (editable later). Only auto-fills when the field is still empty, so we never clobber
-  // a name the staff picked. `source` values come from CUSTOMER_SOURCES; treat any "walk"* as walk-in.
-  const isWalkIn = /walk/i.test(source);
+  // #2: the "Sales Showroom person in charge" defaults to the logged-in staff (editable later).
+  // Only auto-fills when the field is still empty, so we never clobber a name the staff picked.
+  // (Was gated on Source = Walk-in; Source field removed per TAK feedback slide 5.)
   useEffect(() => {
-    if (isWalkIn && me && !salesPerson) setSalesPerson(me);
-  }, [isWalkIn, me]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (me && !salesPerson) setSalesPerson(me);
+  }, [me]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dropdown options = managed sales list + the current staff (so a walk-in default is always selectable).
   const salesChoices = [...new Set([salesPerson, me, ...salesOptions].filter(Boolean))];
@@ -81,13 +79,12 @@ export default function AddCustomerPage() {
     // Show the summary error AND per-field helper text; focus/scroll to the first invalid field.
     if (!fullName) { setError(req); setFieldErrors({ fullName: "Full name is required" }); fullNameRef.current?.focus(); return; }
     if (!title) { setError(req); setFieldErrors({ title: "Please select an option" }); scrollTo(occupationRef.current); return; }
-    if (title === "Other" && !titleOther.trim()) { setError(req); setFieldErrors({ titleOther: "Please specify the occupation" }); titleOtherRef.current?.focus(); return; }
+    if (title === "Other" && !titleOther.trim()) { setError(req); setFieldErrors({ titleOther: "Please specify the segment" }); titleOtherRef.current?.focus(); return; }
     if (!company) { setError(req); setFieldErrors({ company: "Company is required" }); companyRef.current?.focus(); return; }
     if (!phone) { setError(req); setFieldErrors({ phone: "Mobile phone is required" }); phoneRef.current?.focus(); return; }
     if (!email) { setError(req); setFieldErrors({ email: "Email is required" }); emailRef.current?.focus(); return; }
     if (!emailOk) { setError("Please enter a valid email address."); setFieldErrors({ email: "Enter a valid email address" }); emailRef.current?.focus(); return; }
     if (!pdpa) { setError("Please confirm PDPA consent."); setFieldErrors({ pdpa: "Consent is required" }); scrollTo(pdpaRef.current); return; }
-    if (!source) { setError("Please select a source."); setFieldErrors({ source: "Please select a source" }); scrollTo(sourceRef.current); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/customers", {
@@ -102,7 +99,6 @@ export default function AddCustomerPage() {
           pdpaConsent: pdpa,
           salesPerson: salesPerson || undefined,
           project: project || undefined,
-          source: source || undefined,
         }),
       });
       if (res.ok) { router.push("/admin/customers"); }
@@ -171,7 +167,7 @@ export default function AddCustomerPage() {
                   <input id="titleOther" ref={titleOtherRef} value={titleOther}
                     onChange={(e) => { setTitleOther(e.target.value); clearFieldError("titleOther"); }}
                     aria-invalid={!!fieldErrors.titleOther}
-                    placeholder="Specify occupation..."
+                    placeholder="Specify segment..."
                     className="w-full px-4 py-3 rounded-xl outline-none text-sm mt-2" style={fieldErrors.titleOther ? { ...inputStyle, ...errorRing } : inputStyle} />
                   {fieldErrors.titleOther && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.titleOther}</p>}
                 </>
@@ -295,17 +291,6 @@ export default function AddCustomerPage() {
             For staff use
           </h2>
           <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Filled in by staff — not part of the customer form.</p>
-          <div className="mb-4" ref={sourceRef}>
-            <label htmlFor="source" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Source <span style={{ color: "var(--color-danger)" }}>*</span></label>
-            <select id="source" value={source} onChange={(e) => { setSource(e.target.value); clearFieldError("source"); }} aria-label="Source"
-              aria-invalid={!!fieldErrors.source}
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.source ? { background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", ...errorRing } : { background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-              <option value="">— Select —</option>
-              {CUSTOMER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-            {fieldErrors.source && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.source}</p>}
-            <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Sales invite = invited by a TWC salesperson · Walk-in = came in on their own (Sales = showroom team).</p>
-          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="salesPerson" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales</label>
@@ -316,7 +301,7 @@ export default function AddCustomerPage() {
                 {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                Walk-ins are auto-assigned to the showroom sales on duty · Manage the sales list in Settings → Product Management → Salesperson
+                Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Product Management → Salesperson
               </p>
             </div>
             <div>
