@@ -36,6 +36,17 @@ export default function CustomersPage() {
   const globalFilter = useDebouncedValue(searchInput, 300);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  // Dropdown mirror of `sorting` (TAK feedback slide 6): "newest" | "earliest" | "az" | "za".
+  // Deriving it back from sorting[0] would fight the column-header toggles, so we keep an
+  // explicit choice and translate it to/from the sorting state.
+  const [sortChoice, setSortChoice] = useState("newest");
+  function applySortChoice(v: string) {
+    setSortChoice(v);
+    setSorting(v === "az" ? [{ id: "fullName", desc: false }]
+      : v === "za" ? [{ id: "fullName", desc: true }]
+      : v === "earliest" ? [{ id: "createdAt", desc: false }]
+      : [{ id: "createdAt", desc: true }]); // newest (default)
+  }
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -89,8 +100,8 @@ export default function CustomersPage() {
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) { toast("No data to export", errorToast); return; }
       const rows = [
-        ["Code", "Full Name", "Title", "Company", "Phone", "Email", "Channels", "Source", "Sales", "Registered"],
-        ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.source ?? "", c.salesPerson ?? "", formatDate(c.createdAt)]),
+        ["Code", "Full Name", "Segment", "Company", "Phone", "Email", "Channels", "Sales", "Registered"],
+        ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.salesPerson ?? "", formatDate(c.createdAt)]),
       ];
       const csv = toCsv(rows);
       const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
@@ -321,6 +332,23 @@ export default function CustomersPage() {
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", minWidth: "120px" }}>
                 <option value="all">All Types</option>
                 {TITLE_OPTIONS.map((t) => <option key={t} value={t}>{customerTypeLabel(t)}</option>)}
+              </select>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                <svg width="12" height="12" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+              </div>
+            </div>
+            {/* Sort — A-Z / Z-A / Newest / Earliest (TAK feedback slide 6). Drives the same
+                `sorting` state the column headers use, so server-side sort params stay in sync. */}
+            <div className="relative w-full sm:w-auto">
+              <select aria-label="Sort customers"
+                value={sortChoice}
+                onChange={(e) => applySortChoice(e.target.value)}
+                className="appearance-none outline-none text-sm pl-3 pr-8 py-1.5 rounded-lg cursor-pointer w-full sm:w-auto"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", minWidth: "130px" }}>
+                <option value="newest">Newest first</option>
+                <option value="earliest">Earliest first</option>
+                <option value="az">Name A→Z</option>
+                <option value="za">Name Z→A</option>
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
                 <svg width="12" height="12" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
