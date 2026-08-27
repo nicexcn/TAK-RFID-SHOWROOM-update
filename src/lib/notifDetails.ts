@@ -43,3 +43,27 @@ export async function attachTakeawayMany<T extends HasSessionProduct>(notifs: T[
     takeawayQty: n.sessionId ? map.get(`${n.sessionId}::${n.productId}`) ?? null : null,
   }));
 }
+
+// Phase 2 (slides 9+11+26): enrich notifications with the visit's project from its
+// Session — so document grouping and the printed ERP slip show the actual โครงการ the
+// visit was filed under, not just the customer-level free-text field.
+export type WithVisitInfo = { sessionId?: string | null };
+
+export async function attachVisitInfoMany<T extends WithVisitInfo>(notifs: T[]): Promise<(T & {
+  project: { id: string; name: string; zone: string | null; salesName: string | null } | null;
+})[]> {
+  const sessionIds = [...new Set(notifs.map((n) => n.sessionId).filter((s): s is string => !!s))];
+  if (sessionIds.length === 0) return notifs.map((n) => ({ ...n, project: null }));
+  const sessions = await prisma.session.findMany({
+    where: { id: { in: sessionIds } },
+    select: {
+      id: true,
+      project: { select: { id: true, name: true, zone: true, salesName: true } },
+    },
+  });
+  const bySession = new Map(sessions.map((s) => [s.id, s]));
+  return notifs.map((n) => ({
+    ...n,
+    project: n.sessionId ? bySession.get(n.sessionId)?.project ?? null : null,
+  }));
+}

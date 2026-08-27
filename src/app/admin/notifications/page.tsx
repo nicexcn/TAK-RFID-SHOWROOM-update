@@ -11,6 +11,9 @@ interface Notif {
   id: string; title: string; message: string; status: string; isRead: boolean; createdAt: string;
   takeawayQty?: number | null;
   docNo?: string | null; // server-assigned ERP document no. of the prep batch (slide 26)
+  // Visit context (Phase 2): the session's chosen contact + project (slides 9+11)
+  contactName?: string | null;
+  project?: { id: string; name: string; zone: string | null; salesName: string | null } | null;
   product: {
     id: string; name: string; productCode: string | null; location: string | null;
     imageUrl: string | null; brand: string | null; colour: string | null; size: string | null;
@@ -50,6 +53,7 @@ interface DocGroup {
   company: string;
   contact: string;
   phone: string;
+  project: string;    // visit's project name (slides 9+11) — printed on the requisition slip
   items: Notif[];
   docNo: string;
 }
@@ -78,8 +82,11 @@ function groupNotifs(notifs: Notif[]): DocGroup[] {
       date: bkkDay(first.createdAt),
       customerCode: first.customer?.customerCode || "",
       company: first.customer?.company || "",
-      contact: first.customer?.fullName || code,
+      // Slides 9+11: prefer the visit's chosen contact + project (Session), falling back
+      // to the customer record when staff didn't pick one.
+      contact: first.contactName || first.customer?.fullName || code,
       phone: first.customer?.phone || "",
+      project: first.project?.name || "",
       items,
       docNo: "",
     };
@@ -252,7 +259,7 @@ function DocGroups({
         }))));
         const printHref = `/print/erp-doc?${new URLSearchParams({
           doc: g.docNo, date: g.date, company: g.company, contact: g.contact,
-          phone: g.phone, customerCode: g.customerCode, items: itemsParam,
+          phone: g.phone, project: g.project, customerCode: g.customerCode, items: itemsParam,
         }).toString()}`;
         return (
           <div key={g.key}>
@@ -268,6 +275,11 @@ function DocGroups({
               </span>
               {g.contact && g.company && (
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>👤 {g.contact}{g.phone ? ` · 📞 ${g.phone}` : ""}</span>
+              )}
+              {g.project && (
+                <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }} title="Visit project">
+                  📁 {g.project}
+                </span>
               )}
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                 {g.items.length} item{g.items.length !== 1 ? "s" : ""} · {totalQty} pcs

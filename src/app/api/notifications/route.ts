@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { broadcastNotifications } from "@/lib/realtime";
-import { notifInclude, attachTakeaway, attachTakeawayMany } from "@/lib/notifDetails";
+import { notifInclude, attachTakeaway, attachTakeawayMany, attachVisitInfoMany } from "@/lib/notifDetails";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-    return NextResponse.json(await attachTakeawayMany(notifications));
+    return NextResponse.json(await attachVisitInfoMany(await attachTakeawayMany(notifications)));
   } catch (error) {
     console.error("NOTIF GET ERROR:", error);
     return NextResponse.json({ error: "Failed to load notifications" }, { status: 500 });
