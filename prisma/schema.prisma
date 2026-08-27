@@ -21,7 +21,7 @@ model User {
 
 model Product {
   id            String         @id @default(cuid())
-  rfidTag       String         @unique
+  rfidTag       String?        @unique // nullable: non-RFID items (catalogs) have no tag; multiple NULLs are allowed by Postgres
   brand         String?
   materialType  String?
   category      String?

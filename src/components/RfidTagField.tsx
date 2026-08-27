@@ -13,7 +13,9 @@ const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--col
 export default function RfidTagField({
   value,
   onChange,
-  required = true,
+  // Optional by default (TAK feedback slide 29): non-RFID items (catalogs etc.) are
+  // also entered here, so the tag must not be a required field.
+  required = false,
 }: {
   value: string;
   onChange: (v: string) => void;

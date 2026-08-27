@@ -26,7 +26,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable } = data;
     const product = await prisma.product.update({
       where: { id },
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable },
+      // Empty tag → null so untagged products don't collide on the unique index.
+      data: { rfidTag: String(rfidTag || "").trim() || null, brand, materialType, category, productCode, name, size, colour, description, location, returnable },
     });
     return NextResponse.json(product);
   } catch (error) {
@@ -87,7 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     let rfidTag = prod.rfidTag;
     let tagRecovered = true; // true unless the original tag is taken
-    const m = prod.rfidTag.match(/^(.+)·deleted·[^·]+$/);
+    const m = rfidTag?.match(/^(.+)·deleted·[^·]+$/);
     if (m) {
       const original = m[1];
       const taken = await prisma.product.findUnique({ where: { rfidTag: original }, select: { id: true } });

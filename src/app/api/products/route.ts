@@ -57,7 +57,9 @@ export async function POST(req: NextRequest) {
   let rfidTag = ""; // hoisted so the catch can name the conflicting tag without re-reading the body
   try {
     const data = await req.json();
-    rfidTag = String(data.rfidTag || "").trim();
+    // Empty tag → null (non-RFID items like catalogs). The unique index ignores NULLs,
+    // so any number of untagged products can coexist.
+    rfidTag = String(data.rfidTag || "").trim() || null as unknown as string;
     const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive, returnable } = data;
 
     // RFID tag reuse: a tag can be held by a SOFT-DELETED product (hidden from the catalog

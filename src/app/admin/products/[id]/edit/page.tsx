@@ -86,8 +86,8 @@ export default function EditProductPage() {
   }
 
   async function handleSubmit() {
-    if (!form.rfidTag || !form.name) {
-      setError("Please fill in required fields (RFID Tag, Product Name)");
+    if (!form.name) {
+      setError("Please fill in required fields (Product Name)");
       return;
     }
     setLoading(true);
