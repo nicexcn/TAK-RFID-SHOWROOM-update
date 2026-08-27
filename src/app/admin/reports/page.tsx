@@ -87,12 +87,12 @@ export default function ReportsPage() {
       const res = await fetch(`/api/reports?${params}`);
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
-      const takeaways = (d.takeaways || []) as { date: string; customerCode: string; customer: string; company: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; project: string }[];
+      const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string }[];
       const rows: (string | number)[][] = [
-        ["Date", "Customer Code", "Customer", "Company", "Product Code", "Product Name", "Brand", "Category", "Qty Taken", "Sale", "Project"],
+        ["Doc No", "Date", "Customer Code", "Customer", "Company", "Zone", "Project", "Product Code", "Product Name", "Brand", "Category", "Qty Taken", "Sale"],
         ...takeaways.map((t) => [
-          t.date, t.customerCode, t.customer, t.company, // t.date is already a Bangkok YYYY-MM-DD string
-          t.productCode, t.productName, t.brand, t.category, t.qty, t.sale, t.project,
+          t.docNo, t.date, t.customerCode, t.customer, t.company, // t.date is already a Bangkok YYYY-MM-DD string
+          t.zone, t.project, t.productCode, t.productName, t.brand, t.category, t.qty, t.sale,
         ]),
       ];
       const csv = toCsv(rows);

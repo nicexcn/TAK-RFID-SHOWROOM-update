@@ -123,26 +123,36 @@ export async function GET(req: NextRequest) {
 
     // #11: ERP stock-cut export — per-takeaway line items (only when detail=takeaways is requested,
     // to keep the normal report payload lean). One row per taken-home line, enriched with customer.
-    let takeaways: { date: string; customerCode: string; customer: string; company: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; project: string }[] | undefined;
+    let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string }[] | undefined;
     if (url.searchParams.get("detail") === "takeaways") {
       const takeScans = filtered.filter((s) => (s.takeawayQty || 0) > 0);
       const custIds = [...new Set(takeScans.map((s) => s.session.customerId).filter(Boolean) as string[])];
       const custs = custIds.length
-        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, project: true } })
+        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, zone: true, project: true } })
         : [];
       const byId = new Map(custs.map((c) => [c.id, c]));
+      // Doc numbers live on the prep-batch notifications (slide 26); resolve them once
+      // for the window so each row can carry its document's N{YY}{MM}{seq}.
+      const sessionIds = [...new Set(takeScans.map((s) => s.session.id))];
+      const notifs = await prisma.notification.findMany({
+        where: { sessionId: { in: sessionIds }, docNo: { not: null } },
+        select: { sessionId: true, productId: true, docNo: true },
+      });
+      const docByKey = new Map(notifs.map((n) => [`${n.sessionId}|${n.productId}`, n.docNo as string]));
       takeaways = takeScans.map((s) => {
         const c = s.session.customerId ? byId.get(s.session.customerId) : undefined;
         // Bangkok calendar day (YYYY-MM-DD), matching the report windows — the ERP consumes this per-day.
         const day = new Date(s.scannedAt.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
         return {
-          date: day, customerCode: s.session.customerCode,
+          date: day, docNo: docByKey.get(`${s.session.id}|${s.product.id}`) || "",
+          customerCode: s.session.customerCode,
           customer: c?.fullName || s.session.customerCode, company: c?.company || "",
+          zone: c?.zone || "", project: c?.project || "",
           productCode: s.product?.productCode || "", productName: s.product?.name || "",
           brand: s.product?.brand || "", category: s.product?.category || "",
-          qty: s.takeawayQty, sale: c?.salesPerson || "", project: c?.project || "",
+          qty: s.takeawayQty, sale: c?.salesPerson || "",
         };
-      }).sort((a, b) => a.date.localeCompare(b.date));
+      }).sort((a, b) => a.date.localeCompare(b.date) || a.docNo.localeCompare(b.docNo));
     }
 
     // #4 (Excel report list) — visitor & customer insights, from the customers active this period.
