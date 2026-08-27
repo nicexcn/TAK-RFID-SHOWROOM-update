@@ -36,7 +36,7 @@ export default function AddCustomerPage() {
   const [project, setProject] = useState(""); // #4: project this customer is associated with
   const [zone, setZone] = useState(""); // slide 3: sales territory (เขต) of the customer/project
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
-  const [salesOptions, setSalesOptions] = useState<string[]>([]);
+  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
   // Zone suggestions from zones already on file (falls back to a sensible default set).
   const [existingZones, setExistingZones] = useState<string[]>([]);
@@ -55,17 +55,20 @@ export default function AddCustomerPage() {
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  // #2: options for the staff "Sales" dropdown come from the Sale master (Settings →
-  // Salesperson), plus any legacy managed names still referenced by existing customers.
+  // #2: options for the staff "Sales" combobox come from the Sale master (Settings →
+  // Salesperson, name + ERP code so slide-28 search can match both), plus any legacy
+  // managed names still referenced by existing customers.
   useEffect(() => {
     Promise.all([
       fetch("/api/sales").then((r) => r.json()).catch(() => []),
       fetch("/api/dropdown?type=sales").then((r) => r.json()).catch(() => []),
-    ]).then(([master, legacy]: [{ name: string }[], { value: string }[]]) => {
-      setSalesOptions([...new Set([
-        ...(Array.isArray(master) ? master.map((s) => s.name) : []),
-        ...(Array.isArray(legacy) ? legacy.map((o) => o.value) : []),
-      ].filter(Boolean))]);
+    ]).then(([master, legacy]: [{ name: string; code: string }[], { value: string }[]]) => {
+      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code }));
+      const masterNames = new Set(fromMaster.map((s) => s.name));
+      const fromLegacy = (Array.isArray(legacy) ? legacy : [])
+        .map((o) => ({ name: o.value, code: "" }))
+        .filter((s) => !masterNames.has(s.name));
+      setSalesOptions([...fromMaster, ...fromLegacy]);
     });
   }, []);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setMe(d.username); }).catch(() => {}); }, []);
@@ -85,9 +88,6 @@ export default function AddCustomerPage() {
   useEffect(() => {
     if (me && !salesPerson) setSalesPerson(me);
   }, [me]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Dropdown options = managed sales list + the current staff (so a walk-in default is always selectable).
-  const salesChoices = [...new Set([salesPerson, me, ...salesOptions].filter(Boolean))];
 
   async function handleSubmit() {
     setError("");
@@ -313,12 +313,18 @@ export default function AddCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="salesPerson" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales</label>
-              <select id="salesPerson" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
+              {/* Slide 28: 60+ sales — searchable combobox (type to filter by name or staff code),
+                  not a plain dropdown. datalist keeps it native; the value stored is "name". */}
+              <input id="salesPerson" list="sales-options" value={salesPerson}
+                onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
+                placeholder="Type to search name or code…"
+                autoComplete="off"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                <option value="">— Select sales —</option>
-                {salesChoices.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              <datalist id="sales-options">
+                {salesOptions.map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
+                {me && !salesOptions.some((s) => s.name === me) ? <option value={me} /> : null}
+              </datalist>
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
                 Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Product Management → Salesperson
               </p>
