@@ -104,6 +104,12 @@ function RFIDPageInner() {
   const [unknownTags, setUnknownTags] = useState<string[]>([]); // scanned EPCs with no matching product
 
   // Misc
+  // Manual item picker (TAK feedback slide 30): search + add a product without an RFID
+  // scan — e.g. a catalog the customer wants to take home.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [pickerProducts, setPickerProducts] = useState<Product[]>([]);
+  const [pickerAdding, setPickerAdding] = useState<string | null>(null); // product id being added
   const [takeaway, setTakeaway] = useState<Record<string, number>>({});
   const [takeawayLimit, setTakeawayLimit] = useState(3);       // max takeaway pieces per session
   const [takeawayEnabled, setTakeawayEnabled] = useState(true); // whether the limit is enforced
@@ -292,6 +298,41 @@ function RFIDPageInner() {
       flushTimerRef.current = setTimeout(flushScans, 500);
     }
   }, [session, productMap, flushScans]);
+
+  // ── Manual item picker (TAK feedback slide 30) ─────────────────────────
+  const pickerDebounce = useRef<NodeJS.Timeout | null>(null);
+  function searchPicker(q: string) {
+    setPickerQuery(q);
+    if (pickerDebounce.current) clearTimeout(pickerDebounce.current);
+    pickerDebounce.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ search: q.trim(), all: "true", status: "active" });
+        const res = await fetch(`/api/products?${params}`);
+        const data = await res.json();
+        setPickerProducts(Array.isArray(data) ? data : data.products || []);
+      } catch { setPickerProducts([]); }
+    }, 250);
+  }
+  async function addManualProduct(p: Product) {
+    if (!session || pickerAdding) return;
+    if (session.scans.some((s) => s.product.id === p.id)) { setPickerOpen(false); return; }
+    setPickerAdding(p.id);
+    try {
+      // Optimistic row + persist through the same batch endpoint an RFID scan uses
+      // (productId resolved directly — no tag lookup needed for manual items).
+      const fakeScan: ScanItem = {
+        id: `manual-${Date.now()}-${p.id}`, scannedAt: new Date().toISOString(),
+        product: p, prepareStatus: "NONE", deviceId: 1,
+      };
+      setSession((prev) => (prev ? { ...prev, scans: [fakeScan, ...prev.scans] } : prev));
+      scanQueueRef.current.push({ productId: p.id, rfidTag: p.productCode || "" });
+      if (!flushTimerRef.current) flushTimerRef.current = setTimeout(flushScans, 200);
+      setPickerOpen(false);
+      setPickerQuery("");
+    } finally {
+      setPickerAdding(null);
+    }
+  }
 
   const wsCallbacks = useMemo(() => ({
     onTag: (epc: string, rssi: number, count: number) => handleTag(epc, rssi, count, wsDeviceId),
@@ -1064,6 +1105,13 @@ function RFIDPageInner() {
               <p className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
                 Scanned items <span style={{ color: "var(--color-text-muted)" }}>({session.scans.length})</span>
               </p>
+              <div className="flex items-center gap-2">
+                {/* Manual add (TAK feedback slide 30): pick a product without scanning */}
+                <button onClick={() => { setPickerOpen(true); searchPicker(""); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+                  + Add item
+                </button>
               {visibleScans.some((s) => s.prepareStatus === "NONE" && s.product.returnable !== false) && (
                 <button onClick={() => {
                   const ready = visibleScans.filter((s) => s.prepareStatus === "NONE" && s.product.returnable !== false && (takeaway[s.id] ?? 0) >= 1);
@@ -1076,6 +1124,7 @@ function RFIDPageInner() {
                   Prepare all
                 </button>
               )}
+              </div>
             </div>
 
             {visibleScans.length === 0 ? (
@@ -1185,6 +1234,52 @@ function RFIDPageInner() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Manual item picker modal (TAK feedback slide 30) ── */}
+      {pickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)" }}
+          onClick={() => setPickerOpen(false)}>
+          <div className="w-full max-w-lg rounded-2xl p-5 max-h-[80vh] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Add item manually</p>
+              <button onClick={() => setPickerOpen(false)} aria-label="Close"
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>✕</button>
+            </div>
+            <input autoFocus value={pickerQuery} onChange={(e) => searchPicker(e.target.value)}
+              placeholder="Search product name / code / brand…"
+              className="w-full px-4 py-2.5 rounded-xl outline-none text-sm mb-3"
+              style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+            <div className="flex-1 overflow-y-auto space-y-1.5">
+              {pickerProducts.length === 0 && (
+                <p className="text-sm text-center py-8" style={{ color: "var(--color-text-subtle)" }}>
+                  {pickerQuery ? "No matching products" : "Type to search the catalog"}
+                </p>
+              )}
+              {pickerProducts.slice(0, 50).map((p) => {
+                const already = session?.scans.some((s) => s.product.id === p.id);
+                return (
+                  <button key={p.id} onClick={() => addManualProduct(p)} disabled={already || pickerAdding === p.id}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left disabled:opacity-40"
+                    style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+                    {p.imageUrl
+                      ? <img src={p.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                      : <div className="w-9 h-9 rounded-lg flex-shrink-0" style={{ background: "var(--color-border)" }} />}
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm truncate" style={{ color: "var(--color-text)" }}>{p.name}</span>
+                      <span className="block text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{p.productCode || "—"}</span>
+                    </span>
+                    <span className="text-xs font-medium flex-shrink-0" style={{ color: already ? "var(--color-text-subtle)" : "var(--color-primary)" }}>
+                      {already ? "Added" : pickerAdding === p.id ? "…" : "Add"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
