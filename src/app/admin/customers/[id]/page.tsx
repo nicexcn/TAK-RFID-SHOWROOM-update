@@ -21,7 +21,7 @@ const CAN_DELETE_ROLES = ["super_admin"];
 // Item 2: fields staff may edit after registration.
 type EditForm = {
   fullName: string; title: string; titleOther: string; company: string; phone: string;
-  email: string; lineId: string; salesPerson: string; project: string; source: string;
+  email: string; lineId: string; salesPerson: string; zone: string; project: string; source: string;
 };
 
 interface ScanRow {
@@ -42,7 +42,7 @@ interface SessionRow {
 interface Contact { id: string; name: string; phone: string; note?: string | null; }
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string; titleOther?: string | null;
-  company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; project?: string | null; source?: string | null;
+  company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; zone?: string | null; project?: string | null; source?: string | null;
   knowChannel: string[]; knowChannelOther?: string | null; pdpaConsent: boolean; createdAt: string;
   sessions: SessionRow[]; contacts?: Contact[];
 }
@@ -89,8 +89,8 @@ export default function CustomerDetailPage() {
     setForm({
       fullName: customer.fullName || "", title: customer.title || "", titleOther: customer.titleOther || "",
       company: customer.company || "", phone: customer.phone || "", email: customer.email || "",
-      lineId: customer.lineId || "", salesPerson: customer.salesPerson || "", project: customer.project || "",
-      source: customer.source || "",
+      lineId: customer.lineId || "", salesPerson: customer.salesPerson || "", zone: customer.zone || "",
+      project: customer.project || "", source: customer.source || "",
     });
     setEditing(true);
   }
@@ -182,6 +182,7 @@ export default function CustomerDetailPage() {
     ["LINE ID", customer.lineId || "—"],
     ["Heard via", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
     ["Sales", customer.salesPerson || "—"],
+    ["Zone (เขต)", customer.zone || "—"],
     ["Project", customer.project || "—"],
     ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
     ["Created", formatDateTime(customer.createdAt)],
@@ -252,6 +253,12 @@ export default function CustomerDetailPage() {
                 <input value={form.titleOther} onChange={(e) => setForm({ ...form, titleOther: e.target.value })} placeholder="Specify occupation"
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               )}
+              {/* Slide 3: sales territory */}
+              <label className="block">
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Zone (เขต)</span>
+                <input value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} placeholder="e.g. กรุงเทพฯ ตะวันออก"
+                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              </label>
               {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales</span>

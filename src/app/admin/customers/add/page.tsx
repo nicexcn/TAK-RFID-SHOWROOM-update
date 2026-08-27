@@ -34,9 +34,12 @@ export default function AddCustomerPage() {
   const [pdpa, setPdpa] = useState(false);
   const [salesPerson, setSalesPerson] = useState(""); // #2: staff-filled — who handles this customer
   const [project, setProject] = useState(""); // #4: project this customer is associated with
+  const [zone, setZone] = useState(""); // slide 3: sales territory (เขต) of the customer/project
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
   const [salesOptions, setSalesOptions] = useState<string[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
+  // Zone suggestions from zones already on file (falls back to a sensible default set).
+  const [existingZones, setExistingZones] = useState<string[]>([]);
 
   // Refs to move the user to the first missing required field on submit.
   const fullNameRef = useRef<HTMLInputElement>(null);
@@ -52,14 +55,29 @@ export default function AddCustomerPage() {
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  // #2: options for the staff "Sales" dropdown come from the managed list (Settings → Salesperson).
+  // #2: options for the staff "Sales" dropdown come from the Sale master (Settings →
+  // Salesperson), plus any legacy managed names still referenced by existing customers.
   useEffect(() => {
-    fetch("/api/dropdown?type=sales")
-      .then((r) => r.json())
-      .then((opts: { value: string }[]) => setSalesOptions(Array.isArray(opts) ? opts.map((o) => o.value) : []))
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/sales").then((r) => r.json()).catch(() => []),
+      fetch("/api/dropdown?type=sales").then((r) => r.json()).catch(() => []),
+    ]).then(([master, legacy]: [{ name: string }[], { value: string }[]]) => {
+      setSalesOptions([...new Set([
+        ...(Array.isArray(master) ? master.map((s) => s.name) : []),
+        ...(Array.isArray(legacy) ? legacy.map((o) => o.value) : []),
+      ].filter(Boolean))]);
+    });
   }, []);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setMe(d.username); }).catch(() => {}); }, []);
+  useEffect(() => {
+    fetch("/api/customers?all=true")
+      .then((r) => r.json())
+      .then((rows: { zone?: string | null }[]) => {
+        if (!Array.isArray(rows)) return;
+        setExistingZones([...new Set(rows.map((c) => c.zone).filter(Boolean) as string[])]);
+      })
+      .catch(() => {});
+  }, []);
 
   // #2: the "Sales Showroom person in charge" defaults to the logged-in staff (editable later).
   // Only auto-fills when the field is still empty, so we never clobber a name the staff picked.
@@ -98,6 +116,7 @@ export default function AddCustomerPage() {
           knowChannelOther: channels.includes("Other") ? channelOther : undefined,
           pdpaConsent: pdpa,
           salesPerson: salesPerson || undefined,
+          zone: zone || undefined,
           project: project || undefined,
         }),
       });
@@ -311,6 +330,17 @@ export default function AddCustomerPage() {
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Used in Reports search &amp; printed on the sticker</p>
+            </div>
+            <div>
+              <label htmlFor="zone" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Zone (เขต)</label>
+              <input id="zone" value={zone} onChange={(e) => setZone(e.target.value)}
+                list="zone-options" placeholder="e.g. กรุงเทพฯ ตะวันออก"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              <datalist id="zone-options">
+                {(existingZones.length ? existingZones : ["กรุงเทพฯ", "ต่างจังหวัด", "ต่างประเทศ"]).map((z) => <option key={z} value={z} />)}
+              </datalist>
+              <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Sales territory — helps identify the covering sale</p>
             </div>
           </div>
         </section>
