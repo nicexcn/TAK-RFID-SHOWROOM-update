@@ -48,6 +48,10 @@ export default function AdminShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  // Kiosk mode (TAK feedback 6/8/26 slide 2): the Add Customer form is often filled in
+  // on a tablet handed to the customer — hide the sidebar/top bar there so visitors
+  // can't see or tap into other pages.
+  const kioskMode = pathname.startsWith("/admin/customers/add");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [username, setUsername] = useState(initialUsername || "...");
   const [role, setRole] = useState(initialRole); // #3: hide Survey Results from the basic/Sales role
@@ -179,11 +183,11 @@ export default function AdminShell({
         }}
       />
       {/* Mobile drawer backdrop (tap to close); hidden on desktop where the sidebar is a push-panel */}
-      {sidebarOpen && (
+      {!kioskMode && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} aria-hidden
           className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
       )}
-      <aside
+      {!kioskMode && <aside
         className={`fixed lg:static top-0 left-0 z-50 flex flex-col py-6 transition-all duration-300 flex-shrink-0 w-56 ${
           sidebarOpen
             ? "translate-x-0 px-4 lg:w-56"
@@ -240,8 +244,9 @@ export default function AdminShell({
           <p className="px-3 text-xs" style={{ color: "var(--color-text)" }}>{username}</p>
           <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm" style={{ color: "var(--color-text)" }}>Logout</button>
         </div>
-      </aside>
+      </aside>}
       <div className="flex-1 flex flex-col min-w-0">
+        {!kioskMode && (
         <div className="flex items-center px-4 sm:px-6 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--color-sidebar)", background: "var(--color-border)" }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu" className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg">
             <span className="block w-5 h-0.5 rounded" style={{ background: "var(--color-primary)" }} />
@@ -261,6 +266,7 @@ export default function AdminShell({
             <span className="hidden sm:inline">{notifOn ? "Sound on" : "Enable sound"}</span>
           </button>
         </div>
+        )}
         <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
