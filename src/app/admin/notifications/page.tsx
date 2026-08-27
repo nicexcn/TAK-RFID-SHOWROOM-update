@@ -285,6 +285,17 @@ function DocGroups({
                 style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                 🖨 Print slip
               </a>
+              {/* Envelope sticker — ONE per document (TAK feedback slide 12): the sticker
+                  carries only customer/project info (no product code), so printing per item
+                  was redundant. Prints once for the whole prepared batch. */}
+              {g.customerCode && (
+                <a href={`/print/sticker?${new URLSearchParams({ company: g.company || "", contact: g.contact || "", phone: g.phone || "", requester: g.contact || "", code: g.customerCode || "" }).toString()}`}
+                  target="_blank" rel="noopener noreferrer" title="Print envelope sticker (one per prepared batch)"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                  🖨 Print sticker
+                </a>
+              )}
             </div>
             {/* Per-item prep cards */}
             <div className="space-y-3 pl-4" style={{ borderLeft: "2px solid var(--color-border)" }}>
@@ -377,10 +388,9 @@ function NotifCard({
             </div>
           </div>
 
-          {/* Action Buttons — Start/Done gate on status; Print Sticker shows for any
-              status whenever a customer is attached (prep staff prints the envelope
-              label from here, and can reprint after COMPLETE). */}
-          {(n.status !== "COMPLETE" || n.customer) && (
+          {/* Action Buttons — Start/Done gate on status. Print Sticker moved to the
+              document header (one per batch) per TAK feedback slide 12. */}
+          {n.status !== "COMPLETE" && (
             <div className="flex flex-wrap gap-2 mt-3">
               {n.status === "PENDING" && (
                 <button onClick={() => onUpdate(n.id, "PREPARING")}
@@ -389,21 +399,11 @@ function NotifCard({
                   Start preparing
                 </button>
               )}
-              {n.status !== "COMPLETE" && (
-                <button onClick={() => onUpdate(n.id, "COMPLETE")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{ background: "#d1fae5", color: "var(--color-success)" }}>
-                  Mark done
-                </button>
-              )}
-              {n.customer && (
-                <a href={`/print/sticker?${new URLSearchParams({ company: n.customer.company || "", contact: n.customer.fullName || "", phone: n.customer.phone || "", requester: n.customer.fullName || "", code: n.customer.customerCode || "" }).toString()}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
-                  🖨 Print Sticker
-                </a>
-              )}
+              <button onClick={() => onUpdate(n.id, "COMPLETE")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{ background: "#d1fae5", color: "var(--color-success)" }}>
+                Mark done
+              </button>
             </div>
           )}
         </div>
