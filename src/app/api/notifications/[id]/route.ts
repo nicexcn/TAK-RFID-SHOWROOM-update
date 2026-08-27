@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { broadcastNotifications, broadcastDisplayChanged } from "@/lib/realtime";
 import { notifInclude, attachTakeaway } from "@/lib/notifDetails";
+import { assignDocNumbers } from "@/lib/erpDocNo";
 
 const VALID_STATUS = ["PENDING", "PREPARING", "COMPLETE"];
 
@@ -30,6 +31,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data: { prepareStatus: status },
       });
       await broadcastDisplayChanged();
+    }
+
+    // ERP document number (TAK slide 26): the FIRST completion in a (customer, Bangkok-day)
+    // prep batch stamps N{YY}{MM}{seq} on every takeaway notification of that batch.
+    // Persisted server-side so numbers are stable across reloads — replacing the old
+    // client-side recomputation that drifted when older notifications arrived later.
+    if (status === "COMPLETE" && !updated.docNo && updated.customerId) {
+      const BKK_OFFSET_MS = 7 * 3600 * 1000;
+      const bkkDay = new Date(updated.createdAt.getTime() + BKK_OFFSET_MS);
+      const prefix = `N${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
+      const dayStartUtc = new Date(Date.UTC(bkkDay.getUTCFullYear(), bkkDay.getUTCMonth(), bkkDay.getUTCDate()) - BKK_OFFSET_MS);
+      const docNo = await assignDocNumbers(prefix, { customerId: updated.customerId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
+      if (docNo) {
+        await broadcastNotifications({ type: "update", notification: { ...updated, docNo } });
+      }
     }
 
     const notification = await attachTakeaway(updated);

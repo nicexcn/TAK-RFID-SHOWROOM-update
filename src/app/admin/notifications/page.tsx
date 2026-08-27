@@ -10,6 +10,7 @@ import { subscribeNotifications } from "@/lib/notifChannel";
 interface Notif {
   id: string; title: string; message: string; status: string; isRead: boolean; createdAt: string;
   takeawayQty?: number | null;
+  docNo?: string | null; // server-assigned ERP document no. of the prep batch (slide 26)
   product: {
     id: string; name: string; productCode: string | null; location: string | null;
     imageUrl: string | null; brand: string | null; colour: string | null; size: string | null;
@@ -80,28 +81,17 @@ function groupNotifs(notifs: Notif[]): DocGroup[] {
       contact: first.customer?.fullName || code,
       phone: first.customer?.phone || "",
       items,
-      docNo: "", // assigned below, after month-bucket sort
+      docNo: "",
     };
   });
   // Sort by date desc, then customerCode — newest jobs first (display order).
   groups.sort((a, b) => b.date.localeCompare(a.date) || a.customerCode.localeCompare(b.customerCode));
 
-  // Assign Document No. (NO + YY + MM + 4-digit seq), seq resets per (YY, MM).
-  // seq is the 1-based index of the group among same-month groups, in ascending
-  // (date, customerCode) order — deterministic: same data ⇒ same numbers, no DB write.
-  const byMonth = new Map<string, DocGroup[]>();
+  // Document No. now comes from the server (Notification.docNo — stamped N{YY}{MM}{seq}
+  // when the batch's first item is marked COMPLETE; slide 26). Groups whose notifications
+  // aren't numbered yet (not completed) show "—" until staff complete the prep.
   for (const g of groups) {
-    const [y, m] = g.date.split("-");
-    const mk = `${y}${m}`;
-    const arr = byMonth.get(mk) || [];
-    arr.push(g);
-    byMonth.set(mk, arr);
-  }
-  for (const arr of byMonth.values()) {
-    // ascending order for numbering: earliest job of the month = 0001
-    arr.sort((a, b) => a.date.localeCompare(b.date) || a.customerCode.localeCompare(b.customerCode));
-    const [y, m] = arr[0].date.split("-");
-    arr.forEach((g, i) => { g.docNo = `NO${y.slice(2)}${m}${String(i + 1).padStart(4, "0")}`; });
+    g.docNo = g.items.find((n) => n.docNo)?.docNo || "";
   }
   return groups;
 }
@@ -269,7 +259,9 @@ function DocGroups({
             {/* Document header */}
             <div className="rounded-xl p-4 mb-2 flex flex-wrap items-center gap-3"
               style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-              <span className="font-mono text-sm font-bold px-2 py-1 rounded-md" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>{g.docNo}</span>
+              <span className="font-mono text-sm font-bold px-2 py-1 rounded-md" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+                {g.docNo || "—"}
+              </span>
               <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>📅 {dateDisplay}</span>
               <span className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
                 {g.company || g.contact || g.customerCode || "Walk-in"}

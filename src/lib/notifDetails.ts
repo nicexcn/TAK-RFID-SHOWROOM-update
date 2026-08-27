@@ -9,6 +9,8 @@ export const notifInclude = {
   customer: {
     select: { id: true, customerCode: true, fullName: true, company: true, phone: true },
   },
+  // Phase 2 (slide 26): server-assigned ERP document number on the batch.
+  docNo: true,
 } as const;
 
 type HasSessionProduct = { sessionId: string | null; productId: string };

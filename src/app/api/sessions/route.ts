@@ -17,7 +17,7 @@ const sessionInclude = {
 // Both writes run in one transaction; a partial unique index backstops the invariant.
 export async function POST(req: NextRequest) {
   try {
-    const { customerCode, customerId, deviceId, readerId, contactName } = await req.json();
+    const { customerCode, customerId, deviceId, readerId, contactName, contactId, projectId } = await req.json();
 
     // Resolve the customerId from the code when the client didn't supply one (e.g. staff
     // typed the customer ID directly instead of picking a search result). Otherwise the
@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
           customerCode,
           customerId: resolvedCustomerId,
           contactName: String(contactName || "").trim() || null,
+          // Phase 2 structured links (slides 9+11): a saved contact + the project this
+          // visit belongs to. Kept alongside contactName so old clients keep working.
+          contactId: String(contactId || "").trim() || null,
+          projectId: String(projectId || "").trim() || null,
           deviceId: deviceId || null,
           readerId: readerId ? String(readerId) : null,
           isActive: true,
