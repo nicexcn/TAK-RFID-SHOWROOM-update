@@ -57,10 +57,12 @@ model Customer {
   knowChannelOther String?
   pdpaConsent      Boolean        @default(false)
   // #2: the Sales who handles this customer (TWC rep, or the showroom staff for a walk-in).
-  // Free text, suggestions come from the managed list (DropdownOption type "sales").
+  // Free text, suggestions come from the Sale master list (falling back to DropdownOption type "sales").
   salesPerson      String?
-  // #4: the project this customer is associated with (e.g. "Samsung Office"). Used on the
-  // sticker (image2) and searchable in Reports (by customer code / Project / Sale).
+  // TAK feedback slide 3: sales territory (เขต) — picking a zone suggests the covering sale.
+  zone             String?
+  // #4: the default/current project this customer is associated with (e.g. "Samsung Office").
+  // Legacy single-project field; new visits pick/create a Project row instead (see Project model).
   project          String?
   // #2/#4: how the customer came in (Sales invite / Walk-in / Event / Online / Referral).
   // Distinguishes a TWC-invited customer (salesPerson = TWC rep) from a Walk-in (salesPerson =
@@ -70,6 +72,36 @@ model Customer {
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]
   contacts         Contact[]
+  projects         Project[]
+}
+
+// Sales master (TAK feedback slides 3+28): the real TWC salesforce (~62 people with ERP
+// codes B*/C*/W*), separate from login accounts. Referenced by name string on Customer/
+// Session so existing free-text values keep working.
+model Sale {
+  id        String   @id @default(cuid())
+  code      String   @unique // ERP personnel code, e.g. "B0002"
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// TAK feedback slides 8-9+11: one customer can have several projects. A visit (Session)
+// is filed under ONE project; scans/notifs inherit it for grouping + ERP export.
+model Project {
+  id         String   @id @default(cuid())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  name       String
+  zone       String?  // territory of the project (เขต)
+  salesName  String?  // covering sale (Sale.name reference, free text like Customer.salesPerson)
+  note       String?
+  createdAt  DateTime @default(now())
+
+  sessions   Session[]
+
+  @@unique([customerId, name])
+  @@index([customerId])
 }
 
 // #8: a customer (company) can have several named contacts; a scan/session picks one.
@@ -101,6 +133,10 @@ model Session {
   customerCode String
   customerId   String?
   contactName  String?   // #8: the specific contact (of the customer's several) this visit is for
+  // Phase 2: structured links — which saved contact and which project this visit belongs to.
+  contactId    String?
+  projectId    String?
+  project      Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   deviceId     String?   // station id (one configured staff station/tablet) — concurrent sessions are keyed per station
   // The physical reader (mac/serial) bound to this session. Set when staff serve a
   // customer with a relay-connected reader. Server-side ingest (/api/scan) maps an
@@ -168,10 +204,15 @@ model Notification {
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerId String?
   sessionId  String?
+  // Phase 2 (TAK slide 26): the ERP document number assigned when this notification's
+  // prep batch completes (format N{YY}{MM}{seq}, server-assigned, stable across reloads).
+  docNo      String?
   status     String    @default("PENDING")
   isRead     Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
+  @@index([docNo])
 }
 
 model DropdownOption {
