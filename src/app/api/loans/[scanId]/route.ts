@@ -6,16 +6,18 @@ import { prisma } from "@/lib/prisma";
 //   body { returnAll: true }            -> mark every remaining item returned
 //        { returnedQty: number }        -> set the returned count (clamped 0..takeawayQty)
 //        { dueDate: string | null }     -> override / clear the due date
+//        { borrowerNote: string|null }  -> manual borrower correction (slide 32)
+//        { borrowedAt: string|null }    -> manual borrow-date override (slide 32)
 // returnedAt is kept in sync: set when the loan becomes fully returned, cleared otherwise.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ scanId: string }> }) {
   try {
     const { scanId } = await params;
-    const body = await req.json().catch(() => ({})) as { returnAll?: boolean; returnedQty?: number; dueDate?: string | null };
+    const body = await req.json().catch(() => ({})) as { returnAll?: boolean; returnedQty?: number; dueDate?: string | null; borrowerNote?: string | null; borrowedAt?: string | null };
 
     const scan = await prisma.scan.findUnique({ where: { id: scanId }, select: { takeawayQty: true, returnedAt: true } });
     if (!scan) return NextResponse.json({ error: "Loan not found" }, { status: 404 });
 
-    const data: { returnedQty?: number; returnedAt?: Date | null; dueDate?: Date | null } = {};
+    const data: { returnedQty?: number; returnedAt?: Date | null; dueDate?: Date | null; borrowerNote?: string | null; borrowedAtOverride?: Date | null } = {};
 
     if (body.returnAll) {
       data.returnedQty = scan.takeawayQty;
@@ -29,6 +31,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sc
     if ("dueDate" in body) {
       data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     }
+    // Manual corrections (slide 32): the customer record doesn't always match who
+    // actually took the item, and staff may backfill the real borrow date.
+    if ("borrowerNote" in body) {
+      data.borrowerNote = String(body.borrowerNote || "").trim() || null;
+    }
+    if ("borrowedAt" in body) {
+      data.borrowedAtOverride = body.borrowedAt ? new Date(body.borrowedAt) : null;
+    }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
@@ -37,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sc
     const updated = await prisma.scan.update({
       where: { id: scanId },
       data,
-      select: { id: true, takeawayQty: true, returnedQty: true, returnedAt: true, dueDate: true, scannedAt: true },
+      select: { id: true, takeawayQty: true, returnedQty: true, returnedAt: true, dueDate: true, scannedAt: true, borrowerNote: true, borrowedAtOverride: true },
     });
     return NextResponse.json({ ok: true, scan: updated });
   } catch (error) {

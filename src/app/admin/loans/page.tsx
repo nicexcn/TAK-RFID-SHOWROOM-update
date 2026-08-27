@@ -28,6 +28,8 @@ interface Loan {
   returnedAt: string | null;
   status: "OUT" | "OVERDUE" | "RETURNED";
   daysOverdue: number;
+  borrowerNote: string;
+  borrowedAtOverride: boolean;
 }
 interface Counts { all: number; outstanding: number; overdue: number; returned: number }
 
@@ -138,7 +140,37 @@ export default function LoansPage() {
         </div>
       );
     } }),
-    columnHelper.accessor("borrowedAt", { header: "Borrowed", cell: (i) => <span style={{ color: "var(--color-text)" }}>{fmtDate(i.getValue())}</span> }),
+    columnHelper.accessor((l) => l.customerName, { id: "customer", header: "Customer", cell: ({ row }) => {
+      const l = row.original;
+      return (
+        <div>
+          {l.borrowerNote && (
+            <span className="text-[10px] px-1 py-0.5 rounded mr-1" style={{ background: "var(--color-info-bg, #dbeafe)", color: "var(--color-text)" }} title="Manually corrected borrower">{l.borrowerNote}</span>
+          )}
+          {l.customerId ? (
+            <a href={`/admin/customers/${l.customerId}`} target="_blank" rel="noopener noreferrer"
+              className="font-medium underline underline-offset-2 hover:opacity-80" style={{ color: "var(--color-primary)" }}>{l.customerName}</a>
+          ) : <span className="font-medium" style={{ color: "var(--color-text)" }}>{l.customerName}</span>}
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            {[l.customerCode, l.customerPhone].filter(Boolean).join(" · ")}
+          </p>
+          <BorrowerNoteInline scanId={l.scanId} initial={l.borrowerNote} onSaved={() => load(false)} />
+        </div>
+      );
+    } }),
+    columnHelper.accessor("borrowedAt", { id: "borrowedAt", header: "Borrowed", cell: ({ row }) => {
+      const l = row.original;
+      // Slide 32: staff can correct the real take date (the scan time is only the default).
+      return (
+        <div className="flex flex-col gap-0.5">
+          <input type="date" value={toDateInput(l.borrowedAt)} onChange={(e) => patch(l.scanId, { borrowedAt: e.target.value ? new Date(e.target.value).toISOString() : null })}
+            title="Correct the borrow date"
+            className="px-1.5 py-1 rounded-md text-xs"
+            style={{ border: "1px solid var(--color-border)", color: "var(--color-text)", background: "var(--color-surface)" }} />
+          {l.borrowedAtOverride && <button onClick={() => patch(l.scanId, { borrowedAt: null })} className="text-[11px] underline text-left" style={{ color: "var(--color-text-muted)" }}>reset</button>}
+        </div>
+      );
+    } }),
     columnHelper.accessor("dueDate", { id: "dueDate", header: "Due", cell: ({ row }) => {
       const l = row.original;
       if (l.status === "RETURNED") return <span style={{ color: "var(--color-text-muted)" }}>{fmtDate(l.dueDate)}</span>;
@@ -237,5 +269,38 @@ export default function LoansPage() {
         }
       />
     </div>
+  );
+}
+
+// Slide 32: inline "actual borrower" correction — click to type who really took the item
+// (e.g. a colleague of the registered customer). Saves straight to Scan.borrowerNote.
+function BorrowerNoteInline({ scanId, initial, onSaved }: { scanId: string; initial: string; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  if (!editing) {
+    return (
+      <button onClick={() => { setValue(initial); setEditing(true); }} className="text-[11px] underline" style={{ color: "var(--color-text-subtle)" }}>
+        {initial ? "edit borrower" : "correct borrower"}
+      </button>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 mt-0.5">
+      <input value={value} autoFocus onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && (async () => {
+          setSaving(true);
+          await fetch(`/api/loans/${scanId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ borrowerNote: value }) });
+          setSaving(false); setEditing(false); onSaved();
+        })()}
+        placeholder="Actual borrower"
+        className="w-full px-1.5 py-0.5 rounded-md text-[11px] outline-none"
+        style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text)" }} />
+      <button disabled={saving} onClick={async () => {
+        setSaving(true);
+        await fetch(`/api/loans/${scanId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ borrowerNote: value }) });
+        setSaving(false); setEditing(false); onSaved();
+      }} className="text-[11px] px-1 rounded-md font-medium" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>✓</button>
+    </span>
   );
 }

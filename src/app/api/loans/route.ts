@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
         id: true, scannedAt: true, takeawayQty: true, returnedQty: true, returnedAt: true, dueDate: true,
         product: { select: { id: true, name: true, productCode: true, imageUrl: true, brand: true, colour: true, size: true } },
         session: { select: { customerCode: true, customerId: true } },
+        borrowerNote: true,
+        borrowedAtOverride: true,
       },
       orderBy: { scannedAt: "desc" },
     });
@@ -45,16 +47,19 @@ export async function GET(req: NextRequest) {
         customerName: c?.fullName || s.session.customerCode,
         customerCompany: c?.company || "",
         customerPhone: c?.phone || "",
+        // Slide 32: manual borrower correction (shown instead of the record when set)
+        borrowerNote: s.borrowerNote || "",
+        borrowedAtOverride: !!s.borrowedAtOverride,
         product: s.product,
         borrowedQty: s.takeawayQty,
         returnedQty: s.returnedQty,
         remaining: loanRemaining(s),
-        borrowedAt: s.scannedAt,
-        dueDate: effectiveDueDate(s, borrowDays),
+        borrowedAt: s.borrowedAtOverride || s.scannedAt,
+        dueDate: effectiveDueDate({ ...s, scannedAt: s.borrowedAtOverride || s.scannedAt }, borrowDays),
         dueOverridden: !!s.dueDate,
         returnedAt: s.returnedAt,
-        status: loanStatus(s, now, borrowDays),
-        daysOverdue: daysOverdue(s, now, borrowDays),
+        status: loanStatus({ ...s, scannedAt: s.borrowedAtOverride || s.scannedAt }, now, borrowDays),
+        daysOverdue: daysOverdue({ ...s, scannedAt: s.borrowedAtOverride || s.scannedAt }, now, borrowDays),
       };
     });
 

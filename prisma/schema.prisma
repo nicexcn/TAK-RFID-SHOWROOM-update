@@ -183,6 +183,10 @@ model Scan {
   returnedQty   Int    @default(0)
   returnedAt    DateTime?
   dueDate       DateTime?
+  // Slide 32: manual corrections on the Loans page — who actually took the item (when the
+  // customer record doesn't match) and when it was really taken (overrides scannedAt).
+  borrowerNote  String?
+  borrowedAtOverride DateTime?
   // Reader that produced this scan — mac (handheld) / serial (Speedway). MPT confirms
   // it's in every message + unique (customer req #3: "ตำแหน่งที่ Scan" / device→customer).
   deviceId      String?
