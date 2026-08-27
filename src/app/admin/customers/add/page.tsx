@@ -11,7 +11,8 @@ type TitleType = string;
 
 const KNOW_CHANNELS = [
   "Facebook","Instagram","Website","Google search","Friend or colleague",
-  "Designer / Architect recommendation","Event or exhibition","LINE","Email","Other",
+  "Designer / Architect recommendation","Sales recommendation",
+  "Event or exhibition","LINE","Email","Other",
 ] as const;
 
 export default function AddCustomerPage() {
