@@ -14,14 +14,27 @@ export default function SurveyResultsPage() {
   const [data, setData] = useState<{ total: number; results: Result[] } | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "forbidden" | "error">("loading");
   const [surveyUrl, setSurveyUrl] = useState("");
+  // Date-window filter (slide 25): inclusive Bangkok-day range; empty = all time.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [filterTick, setFilterTick] = useState(0);
 
   useEffect(() => {
     setSurveyUrl(`${window.location.origin}/survey`);
-    fetch("/api/survey")
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    fetch(`/api/survey?${params}`)
       .then((r) => { if (r.status === 403) { setState("forbidden"); return null; } if (!r.ok) { setState("error"); return null; } return r.json(); })
       .then((d) => { if (d) { setData(d); setState("ok"); } })
       .catch(() => setState("error"));
-  }, []);
+  }, [filterTick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function applyFilter() {
+    if (from && to && from > to) return; // inverted range — do nothing rather than show an empty result
+    setState("loading");
+    setFilterTick((t) => t + 1);
+  }
 
   return (
     <div>
@@ -39,6 +52,30 @@ export default function SurveyResultsPage() {
           className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
           Open survey ↗
         </a>
+      </div>
+
+      {/* Date-window filter (slide 25): inclusive Bangkok-day range, empty = all time */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <label className="text-sm" style={{ color: "var(--color-text-muted)" }}>From</label>
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm outline-none"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+        <label className="text-sm" style={{ color: "var(--color-text-muted)" }}>to</label>
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm outline-none"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+        <button onClick={applyFilter}
+          className="px-4 py-1.5 rounded-lg text-sm font-medium"
+          style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+          Apply
+        </button>
+        {(from || to) && (
+          <button onClick={() => { setFrom(""); setTo(""); setState("loading"); setFilterTick((t) => t + 1); }}
+            className="px-3 py-1.5 rounded-lg text-sm"
+            style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}>
+            Clear
+          </button>
+        )}
       </div>
 
       {state === "loading" ? (

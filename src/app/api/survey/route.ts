@@ -42,7 +42,24 @@ export async function GET(req: NextRequest) {
     // #3/#6: only roles with survey access (super_admin, admin, management) see results — Sales/prep can't.
     if (!canAccessPath(user.role, "/admin/survey")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const rows = await prisma.surveyResponse.findMany({ orderBy: { createdAt: "desc" }, take: 5000 });
+    // Optional date window (slide 25): ?from=YYYY-MM-DD&to=YYYY-MM-DD (inclusive, Bangkok
+    // days). createdAt is stored UTC; a Bangkok day spans [00:00+07 − 7h, +24h) in UTC.
+    const BKK_OFFSET_MS = 7 * 3600 * 1000;
+    const fromParam = new URL(req.url).searchParams.get("from");
+    const toParam = new URL(req.url).searchParams.get("to");
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (fromParam && /^\d{4}-\d{2}-\d{2}$/.test(fromParam)) {
+      createdAt.gte = new Date(Date.parse(`${fromParam}T00:00:00Z`) - BKK_OFFSET_MS);
+    }
+    if (toParam && /^\d{4}-\d{2}-\d{2}$/.test(toParam)) {
+      // `to` is inclusive: end of that Bangkok day.
+      createdAt.lt = new Date(Date.parse(`${toParam}T00:00:00Z`) - BKK_OFFSET_MS + 24 * 3600 * 1000);
+    }
+    const rows = await prisma.surveyResponse.findMany({
+      where: Object.keys(createdAt).length ? { createdAt } : undefined,
+      orderBy: { createdAt: "desc" },
+      take: 5000,
+    });
     const answersList = rows.map((r) => (r.answers && typeof r.answers === "object" ? (r.answers as Record<string, unknown>) : {}));
 
     const results = SURVEY_QUESTIONS.map((q) => {
