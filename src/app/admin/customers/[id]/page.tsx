@@ -69,7 +69,7 @@ export default function CustomerDetailPage() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [salesOptions, setSalesOptions] = useState<string[]>([]);
+  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
   const canEdit = CAN_EDIT_ROLES.includes(role);
   const canDelete = CAN_DELETE_ROLES.includes(role);
 
@@ -82,7 +82,20 @@ export default function CustomerDetailPage() {
   }, [id]);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }); }, []);
   // Item 2: the "Sales owner" picker is a real dropdown fed from Settings → Salesperson.
-  useEffect(() => { fetch("/api/dropdown?type=sales").then((r) => r.json()).then((d) => setSalesOptions(Array.isArray(d) ? d.map((x: { value?: string } | string) => (typeof x === "string" ? x : x.value || "")).filter(Boolean) : [])).catch(() => {}); }, []);
+  // Sale master first (name + ERP code), legacy dropdown options as fallback entries.
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/sales").then((r) => r.json()).catch(() => []),
+      fetch("/api/dropdown?type=sales").then((r) => r.json()).catch(() => []),
+    ]).then(([master, legacy]: [{ name: string; code: string }[], { value: string }[]]) => {
+      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code }));
+      const names = new Set(fromMaster.map((s) => s.name));
+      const fromLegacy = (Array.isArray(legacy) ? legacy : [])
+        .map((o) => ({ name: o.value, code: "" }))
+        .filter((s) => s.name && !names.has(s.name));
+      setSalesOptions([...fromMaster, ...fromLegacy]);
+    });
+  }, []);
 
   function startEdit() {
     if (!customer) return;
@@ -259,16 +272,19 @@ export default function CustomerDetailPage() {
                 <input value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} placeholder="e.g. กรุงเทพฯ ตะวันออก"
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               </label>
-              {/* Item 2: Sales owner — a real dropdown of sales names (editable later) */}
+              {/* Item 2 + slide 28: Sales owner — searchable combobox of the Sale master
+                  (name + ERP code in the suggestion), editable later */}
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales</span>
-                <select aria-label="Sales" value={form.salesPerson} onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-                  <option value="">— none —</option>
-                  {[...new Set([form.salesPerson, ...salesOptions].filter(Boolean))].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <input list="edit-sales-options" aria-label="Sales" value={form.salesPerson}
+                  onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
+                  placeholder="Type to search name or code…"
+                  autoComplete="off"
+                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                <datalist id="edit-sales-options">
+                  {salesOptions.map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
+                  {form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
+                </datalist>
               </label>
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
