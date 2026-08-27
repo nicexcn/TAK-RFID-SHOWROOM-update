@@ -95,6 +95,10 @@ export default function AddCustomerPage() {
     setFieldErrors({});
     const req = "Please fill in all required fields (*).";
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    // Slide-28 combobox: datalist lets staff type an ERP staff code (e.g. "B0007") without
+    // picking the option, which would store the code where a name belongs. Resolve it here.
+    const codeMatch = salesOptions.find((s) => s.code && s.code === salesPerson.trim());
+    const salesPersonName = codeMatch ? codeMatch.name : salesPerson.trim();
     // Show the summary error AND per-field helper text; focus/scroll to the first invalid field.
     if (!fullName) { setError(req); setFieldErrors({ fullName: "Full name is required" }); fullNameRef.current?.focus(); return; }
     if (!title) { setError(req); setFieldErrors({ title: "Please select an option" }); scrollTo(occupationRef.current); return; }
@@ -116,7 +120,7 @@ export default function AddCustomerPage() {
           knowChannel: channels,
           knowChannelOther: channels.includes("Other") ? channelOther : undefined,
           pdpaConsent: pdpa,
-          salesPerson: salesPerson || undefined,
+          salesPerson: salesPersonName || undefined,
           zone: zone || undefined,
           project: project || undefined,
         }),

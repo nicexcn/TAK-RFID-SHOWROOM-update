@@ -111,8 +111,12 @@ export default function CustomerDetailPage() {
     if (!form) return;
     setSaving(true);
     try {
+      // Slide-28 combobox: datalist lets staff type an ERP staff code (e.g. "B0007") without
+      // picking the option, which would store the code where a name belongs. Resolve it here.
+      const codeMatch = salesOptions.find((s) => s.code && s.code === form.salesPerson.trim());
+      const payload = { ...form, salesPerson: codeMatch ? codeMatch.name : form.salesPerson.trim() };
       const res = await fetch(`/api/customers/${id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       if (res.ok) { const updated = await res.json(); setCustomer((c) => (c ? { ...c, ...updated } : c)); setEditing(false); }
       else toast(res.status === 403 ? "You don't have permission to edit customers" : "Failed to save", errorToast);
