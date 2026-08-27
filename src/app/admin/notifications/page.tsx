@@ -94,7 +94,7 @@ function groupNotifs(notifs: Notif[]): DocGroup[] {
   // Sort by date desc, then customerCode — newest jobs first (display order).
   groups.sort((a, b) => b.date.localeCompare(a.date) || a.customerCode.localeCompare(b.customerCode));
 
-  // Document No. now comes from the server (Notification.docNo — stamped N{YY}{MM}{seq}
+  // Document No. comes from the server (Notification.docNo — stamped NO{YY}{MM}{seq}
   // when the batch's first item is marked COMPLETE; slide 26). Groups whose notifications
   // aren't numbered yet (not completed) show "—" until staff complete the prep.
   for (const g of groups) {

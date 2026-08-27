@@ -30,7 +30,7 @@ async function main() {
   console.log(`projects created: ${created}`);
 
   // 2) Backfill docNo for COMPLETE batches that predate server-side numbering:
-  //    group by (customerCode|bkkDay), reuse the client-era format N{YY}{MM}{seq} so
+  //    group by (customerCode|bkkDay), NO{YY}{MM}{seq} per slide-27 template so
   //    historical documents stay consistent with the new scheme.
   const notifs = await prisma.notification.findMany({
     where: { status: "COMPLETE", docNo: null, customer: { isNot: null } },
@@ -48,7 +48,7 @@ async function main() {
   // Seed the monthly counter from existing docNos so we don't collide with future assigns.
   const existingDocs = await prisma.notification.findMany({ where: { docNo: { not: null } }, select: { docNo: true } });
   for (const d of existingDocs) {
-    const m = /^N(\d{2})(\d{2})(\d{4})$/.exec(d.docNo as string);
+    const m = /^NO?(\d{2})(\d{2})(\d{4})$/.exec(d.docNo as string);
     if (m) monthly.set(`${m[1]}${m[2]}`, Math.max(monthly.get(`${m[1]}${m[2]}`) || 0, parseInt(m[3], 10)));
   }
   const sorted = [...groups.entries()].sort((a, b) => a[1][0].createdAt.getTime() - b[1][0].createdAt.getTime());
@@ -59,7 +59,7 @@ async function main() {
     const mkey = `${yy}${mm}`;
     const seq = (monthly.get(mkey) || 0) + 1;
     monthly.set(mkey, seq);
-    const docNo = `N${yy}${mm}${String(seq).padStart(4, "0")}`;
+    const docNo = `NO${yy}${mm}${String(seq).padStart(4, "0")}`;
     await prisma.notification.updateMany({ where: { id: { in: items.map((i) => i.id) } }, data: { docNo } });
     numbered++;
     console.log(`batch ${docNo}: ${items.length} notif(s) (${items[0].customer?.customerCode})`);

@@ -87,12 +87,18 @@ export default function ReportsPage() {
       const res = await fetch(`/api/reports?${params}`);
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
-      const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string }[];
+      const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[];
+      // Column set follows the TAK ERP template (slide 27). Posting Date as dd/mm/yy.
+      const posting = (iso: string) => {
+        const [y, m, d2] = iso.split("-");
+        return `${d2}/${m}/${y.slice(2)}`;
+      };
       const rows: (string | number)[][] = [
-        ["Doc No", "Date", "Customer Code", "Customer", "Company", "Zone", "Project", "Product Code", "Product Name", "Brand", "Category", "Qty Taken", "Sale"],
+        ["Posting Date", "Document No.", "Item No.", "Quantity", "Customer Name", "Contact Person", "Project Name", "Sales Name", "Sales Dimension"],
         ...takeaways.map((t) => [
-          t.docNo, t.date, t.customerCode, t.customer, t.company, // t.date is already a Bangkok YYYY-MM-DD string
-          t.zone, t.project, t.productCode, t.productName, t.brand, t.category, t.qty, t.sale,
+          posting(t.date), t.docNo, // t.date is a Bangkok YYYY-MM-DD string
+          t.productCode, t.qty, t.customer, [t.contact, t.phone].filter(Boolean).join(" "),
+          t.project, t.sale, t.saleCode,
         ]),
       ];
       const csv = toCsv(rows);

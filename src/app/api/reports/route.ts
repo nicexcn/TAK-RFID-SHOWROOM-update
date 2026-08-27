@@ -121,36 +121,54 @@ export async function GET(req: NextRequest) {
       uniqueProducts: prodMap.size,
     };
 
-    // #11: ERP stock-cut export — per-takeaway line items (only when detail=takeaways is requested,
-    // to keep the normal report payload lean). One row per taken-home line, enriched with customer.
-    let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string }[] | undefined;
+    // #11: ERP stock-cut export (slide 27 template) — per-takeaway line items, only when
+    // detail=takeaways is requested. Columns follow the TAK template:
+    //   Posting Date | Document No. | Item No. | Quantity | Customer Name | Contact Person |
+    //   Project Name | Sales Name | Sales Dimension (sale's ERP code)
+    // Contact/project come from the visit's Session (contactId/projectId) with customer-level
+    // fallbacks; Sales Dimension is the Sale master code, matched by the customer's sale name.
+    let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[] | undefined;
     if (url.searchParams.get("detail") === "takeaways") {
       const takeScans = filtered.filter((s) => (s.takeawayQty || 0) > 0);
       const custIds = [...new Set(takeScans.map((s) => s.session.customerId).filter(Boolean) as string[])];
       const custs = custIds.length
-        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, zone: true, project: true } })
+        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, phone: true, salesPerson: true, zone: true, project: true } })
         : [];
       const byId = new Map(custs.map((c) => [c.id, c]));
+      // Sale master: name → ERP personnel code (Sales Dimension in the template).
+      const sales = await prisma.sale.findMany({ where: { active: true }, select: { code: true, name: true } });
+      const saleCodeByName = new Map(sales.map((s2) => [s2.name, s2.code]));
       // Doc numbers live on the prep-batch notifications (slide 26); resolve them once
-      // for the window so each row can carry its document's N{YY}{MM}{seq}.
+      // for the window so each row can carry its document's NO{YY}{MM}{seq}.
       const sessionIds = [...new Set(takeScans.map((s) => s.session.id))];
-      const notifs = await prisma.notification.findMany({
-        where: { sessionId: { in: sessionIds }, docNo: { not: null } },
-        select: { sessionId: true, productId: true, docNo: true },
-      });
+      const [notifs, sessions] = await Promise.all([
+        prisma.notification.findMany({
+          where: { sessionId: { in: sessionIds }, docNo: { not: null } },
+          select: { sessionId: true, productId: true, docNo: true },
+        }),
+        prisma.session.findMany({
+          where: { id: { in: sessionIds } },
+          select: { id: true, contactName: true, project: { select: { name: true } } },
+        }),
+      ]);
       const docByKey = new Map(notifs.map((n) => [`${n.sessionId}|${n.productId}`, n.docNo as string]));
+      const sessById = new Map(sessions.map((s2) => [s2.id, s2]));
       takeaways = takeScans.map((s) => {
         const c = s.session.customerId ? byId.get(s.session.customerId) : undefined;
+        const sess = sessById.get(s.session.id);
         // Bangkok calendar day (YYYY-MM-DD), matching the report windows — the ERP consumes this per-day.
         const day = new Date(s.scannedAt.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
+        const saleName = c?.salesPerson || "";
         return {
           date: day, docNo: docByKey.get(`${s.session.id}|${s.product.id}`) || "",
           customerCode: s.session.customerCode,
           customer: c?.fullName || s.session.customerCode, company: c?.company || "",
-          zone: c?.zone || "", project: c?.project || "",
+          contact: sess?.contactName || c?.fullName || "",
+          phone: c?.phone || "",
+          zone: c?.zone || "", project: sess?.project?.name || c?.project || "",
           productCode: s.product?.productCode || "", productName: s.product?.name || "",
           brand: s.product?.brand || "", category: s.product?.category || "",
-          qty: s.takeawayQty, sale: c?.salesPerson || "",
+          qty: s.takeawayQty, sale: saleName, saleCode: saleCodeByName.get(saleName) || "",
         };
       }).sort((a, b) => a.date.localeCompare(b.date) || a.docNo.localeCompare(b.docNo));
     }

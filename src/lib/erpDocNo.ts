@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-// ERP document numbers (TAK feedback slide 26): N{YY}{MM}{0001} per prep batch
+// ERP document numbers (TAK slide 26 + template on 27): NO{YY}{MM}{0001} per prep batch
 // (= one customer on one Bangkok day, takeaway lines only). Assigned once when the
 // first notification in the batch is marked COMPLETE and persisted on Notification.docNo,
 // so the number never shifts no matter what order notifications arrive or load in.
