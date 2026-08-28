@@ -1,5 +1,6 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
+import { ZoneCascade } from "@/components/ZoneCascade";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -270,11 +271,12 @@ export default function CustomerDetailPage() {
                 <input value={form.titleOther} onChange={(e) => setForm({ ...form, titleOther: e.target.value })} placeholder="Specify occupation"
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               )}
-              {/* Slide 3: sales territory */}
+              {/* Slide 3: reactive จังหวัด → เขต/อำเภอ cascade */}
               <label className="block">
-                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Zone (เขต)</span>
-                <input value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} placeholder="e.g. กรุงเทพฯ ตะวันออก"
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Zone (จังหวัด/เขต)</span>
+                <div className="mt-0.5">
+                  <ZoneCascade value={form.zone} onChange={(z) => setForm({ ...form, zone: z })} idPrefix="edit" />
+                </div>
               </label>
               {/* Item 2 + slide 28: Sales owner — searchable combobox of the Sale master
                   (name + ERP code in the suggestion), editable later */}
