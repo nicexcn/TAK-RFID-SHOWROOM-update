@@ -142,13 +142,22 @@ export async function GET(req: NextRequest) {
         bySession.set(s.session.id, e);
       }
       // Sessions with NO scans in the window still count as visits (a started-but-untouched visit).
+      // When a search is active, narrow to the matching customers so the visits list obeys the filter
+      // even when none of those visits scanned anything (empty bySession must still query directly).
+      const sessionQ = q
+        ? {
+            OR: [
+              { customerId: { in: [...matchIds!] } },
+              { customerCode: { in: [...matchCodes!] } },
+              { customerId: null, customerCode: { contains: qLower } }, // walk-in ad-hoc code (substring)
+            ],
+          }
+        : {};
       const sessionIds = [...bySession.keys()];
-      const extraSessions = sessionIds.length
-        ? await prisma.session.findMany({
-            where: { id: { notIn: sessionIds }, createdAt: { gte: from, lte: to } },
-            select: { id: true, customerCode: true, customerId: true, contactName: true, createdAt: true, interest: true, soNumber: true, status: true, projectId: true },
-          })
-        : [];
+      const extraSessions = await prisma.session.findMany({
+        where: { id: { notIn: sessionIds }, createdAt: { gte: from, lte: to }, ...sessionQ },
+        select: { id: true, customerCode: true, customerId: true, contactName: true, createdAt: true, interest: true, soNumber: true, status: true, projectId: true },
+      });
       const allSessions = sessionIds.length
         ? await prisma.session.findMany({
             where: { id: { in: sessionIds } },
