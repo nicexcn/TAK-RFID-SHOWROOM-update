@@ -444,8 +444,10 @@ function RFIDPageInner() {
           // nor projects — otherwise staff pick the person + project first.
           fetch(`/api/customers/search?q=${encodeURIComponent(preloadCode)}&type=code`)
             .then((r) => r.json())
-            .then(async (cust) => {
-              if (cust?.id) {
+            .then(async (results) => {
+              // /api/customers/search returns an ARRAY (multi-match, TAK 21/8) — take the first.
+              const cust = (Array.isArray(results) ? results : [results]).find((c) => c?.id);
+              if (cust) {
                 const [cs, ps] = await Promise.all([
                   fetch(`/api/customers/${cust.id}/contacts`).then((r) => r.json()).catch(() => []),
                   fetch(`/api/projects?customerId=${cust.id}`).then((r) => r.json()).catch(() => []),
