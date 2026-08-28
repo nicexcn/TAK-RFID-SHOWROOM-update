@@ -68,6 +68,9 @@ model Customer {
   // Distinguishes a TWC-invited customer (salesPerson = TWC rep) from a Walk-in (salesPerson =
   // showroom staff), and drives the "customer source" report category.
   source           String?
+  // TAK feedback 28/8/26: customer-level free-text remark shown on the profile page
+  // (per-project remarks live on Project.note).
+  remark           String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]
@@ -149,6 +152,11 @@ model Session {
   // (see src/lib/displays.ts). null = the default/unassigned screen, so single-TV deployments
   // (and any session sent before this field existed) keep working unchanged.
   displayId    String?
+  // TAK feedback 28/8/26: three manual-entry visit topics staff fill on the scan page —
+  // surfaced in the Reports visits export.
+  interest     String?   // what the customer is interested in on this visit (free text)
+  soNumber     String?   // SO number quoted/created for this visit
+  status       String?   // visit outcome, free text (e.g. "Quoted", "Follow up")
   createdAt    DateTime  @default(now())
   scans        Scan[]
 

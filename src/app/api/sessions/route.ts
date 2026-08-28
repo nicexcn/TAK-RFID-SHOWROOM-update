@@ -7,6 +7,9 @@ const sessionInclude = {
     include: { product: { include: { images: { orderBy: { order: "asc" as const } } } } },
     orderBy: { scannedAt: "desc" as const },
   },
+  // TAK 28/8: resolve the visit's project so the scan page can show its name
+  // (also correct after a reload/resume). A deleted project → null (SetNull).
+  project: { select: { id: true, name: true } },
 };
 
 // POST — open a session for a customer at a station.
@@ -17,7 +20,7 @@ const sessionInclude = {
 // Both writes run in one transaction; a partial unique index backstops the invariant.
 export async function POST(req: NextRequest) {
   try {
-    const { customerCode, customerId, deviceId, readerId, contactName, contactId, projectId } = await req.json();
+    const { customerCode, customerId, deviceId, readerId, contactName, contactId, projectId, interest, soNumber, status } = await req.json();
 
     // Resolve the customerId from the code when the client didn't supply one (e.g. staff
     // typed the customer ID directly instead of picking a search result). Otherwise the
@@ -57,6 +60,10 @@ export async function POST(req: NextRequest) {
           // visit belongs to. Kept alongside contactName so old clients keep working.
           contactId: String(contactId || "").trim() || null,
           projectId: String(projectId || "").trim() || null,
+          // Manual visit topics (TAK 28/8): staff fill these on the scan page; reports export them.
+          interest: String(interest || "").trim() || null,
+          soNumber: String(soNumber || "").trim() || null,
+          status: String(status || "").trim() || null,
           deviceId: deviceId || null,
           readerId: readerId ? String(readerId) : null,
           isActive: true,

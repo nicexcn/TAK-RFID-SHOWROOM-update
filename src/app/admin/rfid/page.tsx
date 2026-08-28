@@ -41,6 +41,11 @@ interface ScanItem {
 }
 interface Session {
   id: string; customerCode: string; customerId: string | null; scans: ScanItem[]; contactName?: string | null;
+  // TAK 28/8: resolved project of the visit (server include) + the manual visit topics.
+  project?: { id: string; name: string } | null;
+  interest?: string | null;
+  soNumber?: string | null;
+  status?: string | null;
   // When set, a physical reader is bound to this session and the SERVER persists its
   // scans (relay → /api/scan). The browser then shows scans live but does NOT POST them,
   // so there's no double-write. Empty = local/direct mode where the browser persists.
@@ -75,10 +80,11 @@ function RFIDPageInner() {
   const searchParams = useSearchParams();
   const preloadCode = searchParams.get("customer") || "";
   const preloadName = searchParams.get("name") || "";
+  const preloadProject = searchParams.get("project") || ""; // TAK 28/8: profile "Start Scan" names the project
 
   // Customer
   const [customerQuery, setCustomerQuery] = useState(preloadCode);
-  const [searchType, setSearchType] = useState<"code" | "name" | "phone" | "company">("code");
+  const [searchType, setSearchType] = useState<"code" | "name" | "phone" | "company">("company");
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(
     preloadCode && preloadName ? {
       id: "", customerCode: preloadCode, fullName: decodeURIComponent(preloadName),
@@ -433,20 +439,29 @@ function RFIDPageInner() {
         if (data?.id && data.customerCode === preloadCode) {
           applyLoadedSession(data);
         } else if (preloadCode) {
-          // Resolve the customer so the contact picker can be offered before starting. If they
-          // have extra contacts, show the Start screen with the picker (don't auto-start); with
-          // no contacts, keep the one-click auto-start.
+          // Resolve the customer so the contact/project pickers can be offered before
+          // starting (TAK 28/8). Auto-start ONLY when they have neither extra contacts
+          // nor projects — otherwise staff pick the person + project first.
           fetch(`/api/customers/search?q=${encodeURIComponent(preloadCode)}&type=code`)
             .then((r) => r.json())
             .then(async (cust) => {
               if (cust?.id) {
-                const cs = await fetch(`/api/customers/${cust.id}/contacts`).then((r) => r.json()).catch(() => []);
-                if (Array.isArray(cs) && cs.length > 0) {
-                  setCustomerInfo(cust); setContacts(cs); setContactName("");
-                  return; // wait for staff to pick a contact + press Start
+                const [cs, ps] = await Promise.all([
+                  fetch(`/api/customers/${cust.id}/contacts`).then((r) => r.json()).catch(() => []),
+                  fetch(`/api/projects?customerId=${cust.id}`).then((r) => r.json()).catch(() => []),
+                ]);
+                const contactArr = Array.isArray(cs) ? cs : [];
+                const projArr = Array.isArray(ps) ? ps : [];
+                setCustomerInfo(cust); setContacts(contactArr); setContactName("");
+                setProjects(projArr);
+                setProjectId(preloadProject && projArr.some((p) => p.id === preloadProject) ? preloadProject : "");
+                if (contactArr.length === 0 && projArr.length === 0) {
+                  handleStartSessionWith(preloadCode, cust.id);
                 }
+                // else: wait for staff to pick a contact/project + press Start
+                return;
               }
-              handleStartSessionWith(preloadCode, cust?.id || null);
+              handleStartSessionWith(preloadCode, null);
             })
             .catch(() => handleStartSessionWith(preloadCode, null));
         }
@@ -564,7 +579,11 @@ function RFIDPageInner() {
       const readerId = readerIdFromUrl(deviceIps[wsDeviceId] || "");
       const res = await fetch("/api/sessions", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerCode: code, customerId: custId, contactName: contact || undefined, deviceId: getDeviceId(), readerId }),
+        body: JSON.stringify({
+          customerCode: code, customerId: custId, contactName: contact || undefined,
+          projectId: projectId || undefined, // TAK 28/8: visit filed under the picked project
+          deviceId: getDeviceId(), readerId,
+        }),
       });
       const data = await res.json();
       // Guard: never enter the active-session branch with a missing id (would make
@@ -580,6 +599,9 @@ function RFIDPageInner() {
 
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]); // #8
   const [contactName, setContactName] = useState("");
+  // TAK 28/8: the visit is filed under one of the customer's projects (required when any exist).
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projectId, setProjectId] = useState("");
   // #5: when a name/company/phone search matches several customers, hold the list so
   // the picker can render a pick list (onPick → sets customerInfo).
   const [customerMatches, setCustomerMatches] = useState<CustomerInfo[]>([]);
@@ -601,6 +623,7 @@ function RFIDPageInner() {
       setContactName("");
       fetch(`/api/customers/${arr[0].id}/contacts`).then((r) => r.json())
         .then((cs) => { if (searchSeqRef.current === seq) setContacts(Array.isArray(cs) ? cs : []); }).catch(() => {});
+      loadProjects(arr[0].id, seq);
     } else if (arr.length === 0) {
       setSearchError("No matching member found");
     }
@@ -610,9 +633,22 @@ function RFIDPageInner() {
     setSearching(false);
   }
 
+  // TAK 28/8: load the customer's projects alongside their contacts (the Start screen
+  // needs both). Resets the picked project each time.
+  function loadProjects(custId: string, seq?: number, preselect?: string) {
+    fetch(`/api/projects?customerId=${custId}`).then((r) => r.json()).then((ps) => {
+      const arr = Array.isArray(ps) ? ps : [];
+      if (seq != null && searchSeqRef.current !== seq) return;
+      setProjects(arr);
+      setProjectId(preselect && arr.some((p) => p.id === preselect) ? preselect : "");
+    }).catch(() => setProjects([]));
+  }
+
   async function handleStartSession() {
     const code = customerInfo?.customerCode || customerQuery.trim();
     if (!code) { setError("Please enter a Customer ID"); return; }
+    // A customer with projects must have one chosen (the <select> defaults to "No project").
+    if (projects.length > 0 && !projectId) { setError("Please choose the project for this visit"); return; }
     await handleStartSessionWith(code, customerInfo?.id || null, contactName);
   }
 
@@ -624,6 +660,7 @@ function RFIDPageInner() {
     setContacts([]);
     fetch(`/api/customers/${c.id}/contacts`).then((r) => r.json())
       .then((cs) => setContacts(Array.isArray(cs) ? cs : [])).catch(() => {});
+    loadProjects(c.id);
   }
 
   // Persist a scan's prepare status / takeaway qty (customer req #2) — previously
@@ -883,12 +920,15 @@ function RFIDPageInner() {
             <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>Search a customer or enter an ID to start</p>
             <CustomerPicker
               searchType={searchType}
-              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); setCustomerMatches([]); }}
+              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); setCustomerMatches([]); setProjects([]); setProjectId(""); }}
               query={customerQuery} onQueryChange={setCustomerQuery} onSearch={handleSearchCustomer}
               searching={searching} searchError={searchError}
               customers={customerMatches} onPick={pickCustomer} selected={customerInfo}
-              contacts={contacts} contactName={contactName} onContactChange={setContactName}
+              contacts={contacts} selectedContact={contactName} onContactPick={setContactName}
+              projects={projects} selectedProject={projectId} onProjectChange={setProjectId}
+              projectHint={preloadProject ? undefined : "No project"}
               onStart={handleStartSession} starting={loading} startLabel="Start Session" startMode="footer"
+              allowWalkIn onWalkIn={() => handleStartSessionWith("WALK-IN", null)}
             />
             {error && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{error}</p>}
           </div>
@@ -904,13 +944,19 @@ function RFIDPageInner() {
               <p className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
                 {customerInfo?.fullName ? `${customerInfo.fullName} (${session.customerCode})` : session.customerCode}
               </p>
-              {session.contactName && <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Contact: {session.contactName}</p>}
+              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                {[session.contactName && `Contact: ${session.contactName}`, session.project?.name].filter(Boolean).join(" · ")}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Total Scans</p>
               <p className="text-base font-semibold" style={{ color: "var(--color-text-muted)" }}>{session.scans.length}</p>
             </div>
           </div>
+
+          {/* TAK 28/8: manual visit topics — staff fill Interest / SO No. / Status for the
+              reports visits export. Saves on blur; disabled once the session has ended. */}
+          <VisitTopics session={session} />
 
           {/* ── WebSocket Connection + Simulator ── */}
           <div className="rounded-xl overflow-hidden mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
@@ -1292,5 +1338,52 @@ export default function RFIDPage() {
     <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} /></div>}>
       <RFIDPageInner />
     </Suspense>
+  );
+}
+
+// TAK 28/8: the three manual visit topics (Interest / SO No. / Status) staff type per
+// visit — PATCHed to the session on blur, exported by Reports → "Export visits".
+function VisitTopics({ session }: { session: Session }) {
+  const [interest, setInterest] = useState(session.interest || "");
+  const [soNumber, setSoNumber] = useState(session.soNumber || "");
+  const [status, setStatus] = useState(session.status || "");
+  const [saved, setSaved] = useState(false);
+  // Re-hydrate when the session object changes (start/resume).
+  useEffect(() => {
+    setInterest(session.interest || ""); setSoNumber(session.soNumber || ""); setStatus(session.status || "");
+  }, [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function save(field: "interest" | "soNumber" | "status", value: string) {
+    try {
+      const res = await fetch(`/api/sessions/${session.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 1500); }
+    } catch { /* non-blocking: staff can retry on next blur */ }
+  }
+  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
+  const blur = (field: "interest" | "soNumber" | "status", value: string) =>
+    save(field, value.trim()); // only sends when blurred; empty → null server-side
+
+  return (
+    <div className="flex flex-wrap items-end gap-3 p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+      <div className="flex-1 min-w-[140px]">
+        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Interest</label>
+        <input value={interest} onChange={(e) => setInterest(e.target.value)} onBlur={(e) => blur("interest", e.target.value)}
+          placeholder="What are they interested in?" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
+      </div>
+      <div className="w-36">
+        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>SO No.</label>
+        <input value={soNumber} onChange={(e) => setSoNumber(e.target.value)} onBlur={(e) => blur("soNumber", e.target.value)}
+          placeholder="SO number" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
+      </div>
+      <div className="w-40">
+        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Status</label>
+        <input value={status} onChange={(e) => setStatus(e.target.value)} onBlur={(e) => blur("status", e.target.value)}
+          placeholder="e.g. Quoted, Follow up" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
+      </div>
+      <p className="text-[11px] mb-2 transition-opacity" style={{ color: "var(--color-success)", opacity: saved ? 1 : 0 }}>✓ saved</p>
+    </div>
   );
 }

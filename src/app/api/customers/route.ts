@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent, salesPerson, zone, project, source } = body;
   // Backstop: an "Other" occupation must be specified (the client also enforces this).
   if (title === "Other" && !String(titleOther || "").trim()) {
-    return NextResponse.json({ error: "Please specify the occupation when 'Other' is selected." }, { status: 400 });
+    return NextResponse.json({ error: "Please specify the segment when 'Other' is selected." }, { status: 400 });
   }
   // Customer code = type prefix + zero-padded running number, e.g. "Ar00001" (see src/lib/customerTypes).
   // Highest-number-per-prefix + 1 (survives deletes; low-concurrency showroom so the race is acceptable).

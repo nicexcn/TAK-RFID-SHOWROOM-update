@@ -11,8 +11,9 @@ export const ROLES = [
 ] as const;
 
 // Allowed /admin paths per role. "/admin" is the dashboard (exact match); others match by prefix.
-// /admin/loans (Borrow/Return) is in the sidebar and also linked from the Notifications page,
-// so every role that can see Notifications must also be allowed to open it.
+// TAK 28/8: Manual Scan merged into Surface Scan (/admin/manual-scan redirects) and Borrow/Return
+// retired (samples are given, not borrowed) — both paths removed from every role, so direct
+// navigation redirects to the role's landing page.
 // Per the customer's role matrix (post-demo doc, item 6):
 //  - Admin (Showroom Manager, "Administrator Limited") = Super Admin MINUS system Settings, user
 //    management, and customer-database export. So: no /admin/settings here (and /api/settings PUT,
@@ -20,11 +21,11 @@ export const ROLES = [
 //  - Basic (Presenter) must NOT view analytics: no "/admin" dashboard — they land on /admin/customers.
 //  - Only Super Admin may export the customer database (enforced in the UI export gates, not by path).
 const ACCESS: Record<string, string[]> = {
-  super_admin: ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans", "/admin/settings"],
-  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans"],
-  management:  ["/admin", "/admin/reports", "/admin/survey", "/admin/customers", "/admin/notifications", "/admin/loans"],
-  user:        ["/admin/customers", "/admin/rfid", "/admin/manual-scan", "/admin/notifications", "/admin/loans"],
-  prep:        ["/admin/notifications", "/admin/loans"], // takeaway-prep staff: prepare queue + returns
+  super_admin: ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/notifications", "/admin/settings"],
+  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/notifications"],
+  management:  ["/admin", "/admin/reports", "/admin/survey", "/admin/customers", "/admin/notifications"],
+  user:        ["/admin/customers", "/admin/rfid", "/admin/notifications"],
+  prep:        ["/admin/notifications"], // takeaway-prep staff: prepare queue (loans retired 28/8)
 };
 
 /** The paths a role may reach (falls back to the basic role for unknown roles). */

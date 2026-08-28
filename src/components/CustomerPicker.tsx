@@ -1,7 +1,6 @@
-// Shared customer search + select UI for the two scan entry points (Surface Scan / Manual
-// Scan), which had near-duplicate but drifting flows. This is a PRESENTATIONAL component:
-// each page keeps its own search/start LOGIC and state and passes it in, so behavior is
-// unchanged — only the markup is unified.
+// Shared customer search + select UI for the scan entry points, which had near-duplicate but
+// drifting flows. This is a PRESENTATIONAL component: each page keeps its own search/start
+// LOGIC and state and passes it in, so behavior is unchanged — only the markup is unified.
 //
 // Two start layouts via `startMode`:
 //   "card"   — Start button lives inside the result card (needs a selected customer). Manual Scan.
@@ -11,6 +10,11 @@
 // #5: search returns an ARRAY (a name/company can match several customers). When >1 match,
 // the list shows and staff click one to select (onPick). When exactly one, the caller
 // auto-selects it so the single-result card UX is preserved.
+//
+// TAK 28/8: the old contact <select> is GONE (redundant — the searched name IS the contact).
+// Instead, when the selected customer has extra contacts, a pick-list asks "who is the
+// contact person?" (onContactPick); when it has projects, a project <select> appears
+// (project props) so the visit is filed under one.
 
 export interface PickerCustomer {
   id: string;
@@ -20,20 +24,24 @@ export interface PickerCustomer {
   phone?: string | null;
 }
 export interface PickerContact { id: string; name: string }
+export interface PickerProject { id: string; name: string }
 export type CustomerSearchType = "code" | "name" | "phone" | "company";
 
+// Company first (TAK 28/8: staff search by company, then narrow to the person).
 const TABS: { key: CustomerSearchType; label: string }[] = [
+  { key: "company", label: "Company" },
   { key: "code", label: "ID" },
   { key: "name", label: "Name" },
   { key: "phone", label: "Phone" },
-  { key: "company", label: "Company" },
 ];
 
 export function CustomerPicker({
   searchType, onSearchTypeChange,
   query, onQueryChange, onSearch, searching, searchError,
   customers, onPick,
-  selected, contacts, contactName, onContactChange,
+  selected,
+  contacts, selectedContact, onContactPick,
+  projects, selectedProject, onProjectChange, projectHint,
   onStart, starting, startLabel = "Start", startMode = "card",
   allowWalkIn = false, onWalkIn,
 }: {
@@ -47,9 +55,16 @@ export function CustomerPicker({
   customers: PickerCustomer[];            // #5: all matches (was `customer: single | null`)
   onPick: (c: PickerCustomer) => void;    // #5: staff picks one from the list
   selected: PickerCustomer | null;        // the chosen customer (was `customer`)
-  contacts: PickerContact[];
-  contactName: string;
-  onContactChange: (v: string) => void;
+  // TAK 28/8: contact pick-list (replaces the old <select>). Empty contacts = the customer
+  // row itself is the person — nothing shows.
+  contacts?: PickerContact[];
+  selectedContact?: string;
+  onContactPick?: (name: string) => void;
+  // TAK 28/8: project picker — required when the customer has projects (Surface Scan passes these).
+  projects?: PickerProject[];
+  selectedProject?: string;
+  onProjectChange?: (id: string) => void;
+  projectHint?: string;
   onStart: () => void;
   starting: boolean;
   startLabel?: string;
@@ -64,7 +79,42 @@ export function CustomerPicker({
     : searchType === "company" ? "Company name"
     : "Phone number";
 
-  // Result card: the selected customer, with optional contact dropdown + Start.
+  // TAK 28/8: when the customer has extra contacts, staff pick the visiting person
+  // (the customer row itself stays the implicit "primary" choice).
+  const contactList = selected && contacts && contacts.length > 0 && onContactPick && (
+    <div className="mt-3">
+      <p className="text-[11px] mb-1.5" style={{ color: "var(--color-text-muted)" }}>Who is the contact person?</p>
+      <div className="space-y-1.5">
+        <button type="button" onClick={() => onContactPick("")}
+          className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+          style={{ background: !selectedContact ? "var(--color-primary-soft, #efe6d8)" : "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+          {selected.fullName} <span style={{ color: "var(--color-text-muted)" }}>(primary)</span>
+        </button>
+        {contacts.map((c) => (
+          <button key={c.id} type="button" onClick={() => onContactPick(c.name)}
+            className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+            style={{ background: selectedContact === c.name ? "var(--color-primary-soft, #efe6d8)" : "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+            {c.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // TAK 28/8: project picker — a visit must be filed under one of the customer's projects
+  // when any exist (Surface Scan enforces the requirement before calling onStart).
+  const projectPicker = selected && projects && projects.length > 0 && onProjectChange && (
+    <div className="mt-3">
+      <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Project</label>
+      <select aria-label="Project" value={selectedProject ?? ""} onChange={(e) => onProjectChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+        <option value="">{projectHint || "No project"}</option>
+        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+    </div>
+  );
+
+  // Result card: the selected customer, with the contact/project pickers + Start.
   const selectedCard = selected && (
     <div className="mt-4 p-4 rounded-xl" style={{ background: "var(--color-bg)" }}>
       <div className="flex items-center justify-between gap-3">
@@ -81,16 +131,8 @@ export function CustomerPicker({
           </button>
         )}
       </div>
-      {contacts.length > 0 && (
-        <div className="mt-3">
-          <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Contact</label>
-          <select aria-label="Contact" value={contactName} onChange={(e) => onContactChange(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-            <option value="">{selected.fullName} (primary)</option>
-            {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-          </select>
-        </div>
-      )}
+      {contactList}
+      {projectPicker}
     </div>
   );
 
@@ -105,9 +147,9 @@ export function CustomerPicker({
           className="w-full text-left p-3 rounded-lg flex items-center justify-between gap-3 transition-colors"
           style={{ background: selected?.id === c.id ? "var(--color-primary-soft, #efe6d8)" : "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{c.fullName} <span style={{ color: "var(--color-text-muted)" }}>· {c.customerCode}</span></p>
-            {(c.company || c.phone) && (
-              <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{[c.company, c.phone].filter(Boolean).join(" · ")}</p>
+            <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{c.company || c.fullName} <span style={{ color: "var(--color-text-muted)" }}>· {c.customerCode}</span></p>
+            {(c.fullName !== (c.company || c.fullName)) && (
+              <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>{[c.fullName, c.phone].filter(Boolean).join(" · ")}</p>
             )}
           </div>
           <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>Select</span>
@@ -148,13 +190,11 @@ export function CustomerPicker({
         </button>
       )}
 
-      {allowWalkIn && (
-        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
-          <button type="button" onClick={onWalkIn} disabled={starting}
-            className="text-sm underline disabled:opacity-50" style={{ color: "var(--color-text-muted)" }}>
-            Or start without a customer (Walk-in)
-          </button>
-        </div>
+      {allowWalkIn && onWalkIn && (
+        <button type="button" onClick={onWalkIn}
+          className="w-full mt-2 text-xs underline" style={{ color: "var(--color-text-muted)" }}>
+          Or start without a customer (Walk-in)
+        </button>
       )}
     </div>
   );

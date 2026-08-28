@@ -18,10 +18,8 @@ interface UnreadNotif { product?: { name?: string }; customer?: { fullName?: str
 const navGroups = [
   { section: "Operate", items: [
     { label: "Surface Scan",        href: "/admin/rfid" },
-    { label: "Manual Scan",         href: "/admin/manual-scan" },
     { label: "Customer Management", href: "/admin/customers" },
     { label: "Notifications",       href: "/admin/notifications" },
-    { label: "Borrow / Return",     href: "/admin/loans" },
   ] },
   { section: "Analyze", items: [
     { label: "Dashboard",           href: "/admin" },

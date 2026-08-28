@@ -6,12 +6,23 @@ import { broadcastDisplayChanged } from "@/lib/realtime";
 //  - bind a reader to this session (body { readerId }) — set when staff connect a relay
 //    reader after the session is already active (the reader picker only appears post-start),
 //    so the reader shows "in use"; enforces one active session per reader.
+//  - save the manual visit topics (body { interest | soNumber | status }) — staff type these
+//    on the scan page (TAK 28/8); reports export them.
 //  - close (end) the session (no body). F1: "End Session" must be server-authoritative,
 //    otherwise an ended/abandoned session stays isActive forever.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await req.json().catch(() => ({})) as { readerId?: string; clearReader?: boolean };
+    const body = await req.json().catch(() => ({})) as { readerId?: string; clearReader?: boolean; interest?: string; soNumber?: string; status?: string };
+
+    // Visit-topic edits (interest / SO number / status) — merge whichever strings arrived.
+    const visitData: { interest?: string | null; soNumber?: string | null; status?: string | null } = {};
+    for (const k of ["interest", "soNumber", "status"] as const)
+      if (typeof body[k] === "string") visitData[k] = (body[k] as string).trim() || null;
+    if (Object.keys(visitData).length) {
+      await prisma.session.update({ where: { id }, data: visitData });
+      return NextResponse.json({ ok: true });
+    }
 
     if (typeof body.readerId === "string" && body.readerId.trim()) {
       const readerId = body.readerId.trim();

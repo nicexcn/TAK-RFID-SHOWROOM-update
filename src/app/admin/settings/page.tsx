@@ -1302,31 +1302,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Borrow / Return period — drives the default due date + "overdue" flag */}
-                <div className="mt-6 pt-5" style={{ borderTop: "1px solid var(--color-border)" }}>
-                  <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Borrow period</p>
-                  <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>Default days a takeaway is due back — drives the due date &amp; “overdue” flag on the Borrow / Return page. A per-item due date still overrides this.</p>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Stepper value={borrowDays} onChange={setBorrowDays} min={1} max={365} ariaLabel="Borrow period in days" />
-                    <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>days</span>
-                  </div>
-                  <div>
-                    <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>Preset</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {[7, 14, 30, 60, 90].map((preset) => (
-                        <button key={preset} onClick={() => setBorrowDays(preset)}
-                          className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                          style={{
-                            background: borrowDays === preset ? "var(--color-primary)" : "var(--color-bg)",
-                            color: borrowDays === preset ? "var(--color-surface)" : "var(--color-text)",
-                            border: "1px solid " + (borrowDays === preset ? "var(--color-primary)" : "var(--color-border)"),
-                          }}>
-                          {preset}d
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                {/* Borrow period UI removed (TAK 28/8: samples are given, not borrowed) —
+                    borrowDays still loads/saves untouched so the hidden loans data stays consistent. */}
 
                 {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "var(--color-success)" }}>{takeawaySuccess}</p>}
                 <button disabled={savingTakeaway}

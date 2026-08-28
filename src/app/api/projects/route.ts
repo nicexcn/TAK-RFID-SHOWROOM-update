@@ -47,6 +47,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH: per-project remark (TAK 28/8 "Remark ... split by project") — edits an existing
+// project's note by id without re-supplying the name.
+export async function PATCH(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
+  try {
+    const { id, note } = await req.json();
+    if (!id) return NextResponse.json({ error: "Project id is required" }, { status: 400 });
+    const project = await prisma.project.update({
+      where: { id },
+      data: { note: String(note || "").trim() || null },
+    });
+    return NextResponse.json(project);
+  } catch {
+    return NextResponse.json({ error: "Could not save the project remark" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const guard = requireAccess(req, "/admin/settings");
   if ("response" in guard) return guard.response;

@@ -2,7 +2,6 @@
 import Breadcrumb from "@/components/Breadcrumb";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { SkeletonCard } from "@/components/Skeleton";
 import { subscribeNotifications } from "@/lib/notifChannel";
@@ -182,11 +181,7 @@ export default function NotificationsPage() {
           <Breadcrumb items={[{ label: "Home", href: "/admin" }, { label: "Notifications" }]} />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Link href="/admin/loans"
-            className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-            style={{ background: "var(--color-primary)" }}>
-            ↩ Borrow / Return
-          </Link>
+          {/* Borrow/Return link removed (TAK 28/8: samples are given, not borrowed). */}
           {unread > 0 && (
             <button onClick={markAllRead}
               className="px-4 py-2 rounded-xl text-sm"
@@ -354,7 +349,8 @@ function NotifCard({
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="font-semibold text-sm" style={{ color: "var(--color-text)" }}>{n.title}</p>
                 {!!n.takeawayQty && n.takeawayQty > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-md text-[11px] font-semibold"
+                  // TAK 28/8: enlarge the qty badge — the requested piece count must read at a glance.
+                  <span className="px-2.5 py-1 rounded-lg text-sm font-bold tabular-nums"
                     style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>×{n.takeawayQty}</span>
                 )}
                 {!n.isRead && <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-danger)" }} />}

@@ -128,6 +128,77 @@ export async function GET(req: NextRequest) {
     // Contact/project come from the visit's Session (contactId/projectId) with customer-level
     // fallbacks; Sales Dimension is the Sale master code, matched by the customer's sale name.
     let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[] | undefined;
+    // TAK 28/8: visits detail — ONE ROW PER SESSION (zero-scan visits included), with the
+    // manual visit topics (interest/soNumber/status), the codes taken home, and remarks.
+    let visits: { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; remark: string; sale: string }[] | undefined;
+    if (url.searchParams.get("detail") === "visits") {
+      const day = (d: Date) => new Date(d.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
+      // Group the window's scans by session, so each visit carries its taken codes + qty.
+      const bySession = new Map<string, { session: (typeof filtered)[number]["session"]; codes: string[]; qty: number }>();
+      for (const s of filtered) {
+        const e = bySession.get(s.session.id) || { session: s.session, codes: [], qty: 0 };
+        if ((s.takeawayQty || 0) > 0 && s.product?.productCode) e.codes.push(s.product.productCode);
+        e.qty += s.takeawayQty || 0;
+        bySession.set(s.session.id, e);
+      }
+      // Sessions with NO scans in the window still count as visits (a started-but-untouched visit).
+      const sessionIds = [...bySession.keys()];
+      const extraSessions = sessionIds.length
+        ? await prisma.session.findMany({
+            where: { id: { notIn: sessionIds }, createdAt: { gte: from, lte: to } },
+            select: { id: true, customerCode: true, customerId: true, contactName: true, createdAt: true, interest: true, soNumber: true, status: true, projectId: true },
+          })
+        : [];
+      const allSessions = sessionIds.length
+        ? await prisma.session.findMany({
+            where: { id: { in: sessionIds } },
+            select: { id: true, createdAt: true, interest: true, soNumber: true, status: true, projectId: true },
+          })
+        : [];
+      const meta = new Map(allSessions.map((s) => [s.id, s]));
+      for (const s of extraSessions) meta.set(s.id, s);
+      const custIds = [...new Set([...meta.values()].map((s) => ("customerId" in s ? s.customerId : null) || (bySession.get(s.id)?.session.customerId ?? null)).filter(Boolean) as string[])];
+      const custs = custIds.length
+        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, zone: true, project: true, remark: true } })
+        : [];
+      const byId = new Map(custs.map((c) => [c.id, c]));
+      const projIds = [...new Set([...meta.values()].map((s) => s.projectId).filter(Boolean) as string[])];
+      const projs = projIds.length ? await prisma.project.findMany({ where: { id: { in: projIds } }, select: { id: true, name: true } }) : [];
+      const projName = new Map(projs.map((p) => [p.id, p.name]));
+
+      const rows: NonNullable<typeof visits> = [];
+      for (const [sid, v] of bySession) {
+        const s = meta.get(sid)!;
+        const c = v.session.customerId ? byId.get(v.session.customerId) : undefined;
+        rows.push({
+          date: day(s.createdAt),
+          customerCode: v.session.customerCode,
+          customer: c?.fullName || v.session.customerCode, company: c?.company || "",
+          contact: v.session.customerCode === "WALK-IN" ? "" : c?.fullName || "",
+          zone: c?.zone || "",
+          project: (s.projectId ? projName.get(s.projectId) : "") || c?.project || "",
+          interest: s.interest || "", soNumber: s.soNumber || "", status: s.status || "",
+          productsTaken: v.codes.join(", "), totalQty: v.qty,
+          remark: c?.remark || "", sale: c?.salesPerson || "",
+        });
+      }
+      for (const s of extraSessions) {
+        const cid = "customerId" in s ? s.customerId : null;
+        const c = cid ? byId.get(cid) : undefined;
+        rows.push({
+          date: day(s.createdAt),
+          customerCode: s.customerCode,
+          customer: c?.fullName || s.customerCode, company: c?.company || "",
+          contact: s.contactName || c?.fullName || "",
+          zone: c?.zone || "",
+          project: (s.projectId ? projName.get(s.projectId) : "") || c?.project || "",
+          interest: s.interest || "", soNumber: s.soNumber || "", status: s.status || "",
+          productsTaken: "", totalQty: 0,
+          remark: c?.remark || "", sale: c?.salesPerson || "",
+        });
+      }
+      visits = rows.sort((a, b) => a.date.localeCompare(b.date) || a.customerCode.localeCompare(b.customerCode));
+    }
     if (url.searchParams.get("detail") === "takeaways") {
       const takeScans = filtered.filter((s) => (s.takeawayQty || 0) > 0);
       const custIds = [...new Set(takeScans.map((s) => s.session.customerId).filter(Boolean) as string[])];
@@ -216,6 +287,7 @@ export async function GET(req: NextRequest) {
       byType,
       satisfaction,
       takeaways,
+      visits,
     });
   } catch (error) {
     console.error("REPORTS GET ERROR:", error);

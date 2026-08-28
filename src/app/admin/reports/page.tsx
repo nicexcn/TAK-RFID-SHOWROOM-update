@@ -38,34 +38,56 @@ export default function ReportsPage() {
   const [data, setData] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportingErp, setExportingErp] = useState(false);
+  const [exportingVisits, setExportingVisits] = useState(false);
+  // TAK 28/8 (item J): preset period tabs OR a custom calendar range (the API already
+  // accepts from/to). Both exports use the same window.
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ period });
+      if (appliedRange) { params.set("from", appliedRange.from); params.set("to", appliedRange.to); }
       if (query.trim()) params.set("q", query.trim());
       const res = await fetch(`/api/reports?${params}`);
       setData(res.ok ? await res.json() : null);
     } catch { setData(null); }
     finally { setLoading(false); }
-  }, [period, query]);
+  }, [period, query, appliedRange]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Shared window params for every export (custom range wins over the preset period).
+  function windowParams(extra: Record<string, string> = {}) {
+    const params = new URLSearchParams({ period, ...extra });
+    if (appliedRange) { params.set("from", appliedRange.from); params.set("to", appliedRange.to); }
+    if (query.trim()) params.set("q", query.trim());
+    return params;
+  }
+
+  function applyRange() {
+    if (!customFrom || !customTo) return;
+    if (customFrom > customTo) { toast("Invalid range — 'from' is after 'to'.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
+    setAppliedRange({ from: customFrom, to: customTo });
+  }
 
   function exportCsv() {
     if (!data) return;
     const rows: (string | number)[][] = [
-      [`Report — ${PERIODS.find((p) => p.key === data.period.key)?.label || data.period.label}${query ? ` — "${query}"` : ""}`],
+      [`Report — ${appliedRange ? "Custom range" : PERIODS.find((p) => p.key === data.period.key)?.label || data.period.label}${query ? ` — "${query}"` : ""}`],
       [`${formatDate(data.period.from)} – ${formatDate(data.period.to)}`],
       [],
       ["Visits", data.summary.visits], ["Customers", data.summary.customers],
       ["Items scanned", data.summary.totalScans], ["Pieces taken home", data.summary.totalTaken], [],
       ["All scanned products"],
-      ["Product", "Code", "Brand", "Category", "Scans", "Taken home"],
+      ["Product", "Code", "Brand", "Category", "Scans", "Taken home (pcs)"],
       ...data.scannedProducts.map((r) => [r.product.name, r.product.productCode || "", r.product.brand || "", r.product.category || "", r.scanCount, r.takenQty]),
       [],
       ["Taken-home products"],
-      ["Product", "Code", "Brand", "Taken home"],
+      ["Product", "Code", "Brand", "Quantity (pcs)"], // TAK 28/8 (K): piece counts, not just counts
       ...data.takenHomeProducts.map((r) => [r.product.name, r.product.productCode || "", r.product.brand || "", r.takenQty]),
     ];
     const csv = toCsv(rows);
@@ -82,9 +104,7 @@ export default function ReportsPage() {
     if (exportingErp) return;
     setExportingErp(true);
     try {
-      const params = new URLSearchParams({ period, detail: "takeaways" });
-      if (query.trim()) params.set("q", query.trim());
-      const res = await fetch(`/api/reports?${params}`);
+      const res = await fetch(`/api/reports?${windowParams({ detail: "takeaways" })}`);
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
       const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[];
@@ -109,6 +129,35 @@ export default function ReportsPage() {
       a.click();
     } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
     finally { setExportingErp(false); }
+  }
+
+  // TAK 28/8 (item I): visits export — ONE ROW PER VISIT (session), including visits with
+  // nothing taken, with the staff-entered topics (Interest / SO No. / Status), item codes
+  // taken home, remark, and the visit's project.
+  async function exportVisits() {
+    if (exportingVisits) return;
+    setExportingVisits(true);
+    try {
+      const res = await fetch(`/api/reports?${windowParams({ detail: "visits" })}`);
+      if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
+      const d = await res.json();
+      const visits = (d.visits || []) as { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; remark: string; sale: string }[];
+      const rows: (string | number)[][] = [
+        ["Posting Date", "Customer Code", "Customer", "Company", "Contact", "Zone", "Project", "Interest", "SO No.", "Status", "Items Taken", "Total Qty", "Remark", "Sales"],
+        ...visits.map((v) => [
+          v.date.split("-").reverse().join("/"), // YYYY-MM-DD → dd/mm/yy, same convention as ERP
+          v.customerCode, v.customer, v.company, v.contact, v.zone, v.project,
+          v.interest, v.soNumber, v.status, v.productsTaken, v.totalQty, v.remark, v.sale,
+        ]),
+      ];
+      const csv = toCsv(rows);
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `visits_${appliedRange ? "custom" : period}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
+    finally { setExportingVisits(false); }
   }
 
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
@@ -174,20 +223,50 @@ export default function ReportsPage() {
               )}
               {exportingErp ? "Exporting…" : "Export for ERP"}
             </button>
+            <button onClick={exportVisits} disabled={!data || exportingVisits} title="One row per visit, incl. Interest / SO No. / Status"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
+              style={{ background: "var(--color-primary)" }}>
+              {exportingVisits ? (
+                <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
+              ) : (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              )}
+              {exportingVisits ? "Exporting…" : "Export visits"}
+            </button>
           </>
         }
       />
 
-      {/* Period tabs + search */}
+      {/* Period tabs + custom range (TAK 28/8 item J) + search */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="flex gap-1.5 flex-wrap">
           {PERIODS.map((p) => (
-            <button key={p.key} onClick={() => setPeriod(p.key)}
+            <button key={p.key} onClick={() => { setPeriod(p.key); setAppliedRange(null); }}
               className="px-3.5 py-2 rounded-xl text-sm"
-              style={{ background: period === p.key ? "var(--color-primary)" : "var(--color-surface)", color: period === p.key ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+              style={{ background: rangeMode === "preset" && period === p.key ? "var(--color-primary)" : "var(--color-surface)", color: rangeMode === "preset" && period === p.key ? "var(--color-surface)" : "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
               {p.label}
             </button>
           ))}
+          {/* TAK 28/8 (J): custom calendar range — mirrors the Dashboard's range toggle. */}
+          {rangeMode === "custom" ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
+              <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)}
+                className="bg-transparent text-sm outline-none" style={{ colorScheme: "dark light" }} aria-label="From date" />
+              <span className="text-xs">–</span>
+              <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)}
+                className="bg-transparent text-sm outline-none" style={{ colorScheme: "dark light" }} aria-label="To date" />
+              <button onClick={applyRange} disabled={!customFrom || !customTo}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium disabled:opacity-50"
+                style={{ background: "var(--color-surface)", color: "var(--color-text)" }}>Apply</button>
+              <button onClick={() => { setRangeMode("preset"); setAppliedRange(null); }}
+                className="text-xs underline" aria-label="Close custom range">✕</button>
+            </div>
+          ) : (
+            <button onClick={() => setRangeMode("custom")} title="Pick a custom date range"
+              className="px-3.5 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+              📅 Custom
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 px-4 py-2 rounded-xl flex-1 max-w-sm" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
           <svg width="14" height="14" fill="none" stroke="#9f886c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
@@ -209,6 +288,7 @@ export default function ReportsPage() {
         <div className="space-y-6">
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             {formatDate(data.period.from)} – {formatDate(data.period.to)}
+            {appliedRange && <> · custom range</>}
             {query && <> · search &quot;{query}&quot;</>}
           </p>
 
