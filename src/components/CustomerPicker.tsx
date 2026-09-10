@@ -58,8 +58,11 @@ export function CustomerPicker({
   // TAK 28/8: contact pick-list (replaces the old <select>). Empty contacts = the customer
   // row itself is the person — nothing shows.
   contacts?: PickerContact[];
-  selectedContact?: string;
-  onContactPick?: (name: string) => void;
+  selectedContact?: string; // the chosen contact's name (highlight)
+  // #8: pick the visiting contact. Receives the full contact (id + name) so the caller can
+  // persist the id — or null for the customer's own "primary" row. (Was (name) => void, which
+  // discarded the id and left Session.contactId forever null.)
+  onContactPick?: (contact: PickerContact | null) => void;
   // TAK 28/8: project picker — required when the customer has projects (Surface Scan passes these).
   projects?: PickerProject[];
   selectedProject?: string;
@@ -85,13 +88,13 @@ export function CustomerPicker({
     <div className="mt-3">
       <p className="text-[11px] mb-1.5" style={{ color: "var(--color-text-muted)" }}>Who is the contact person?</p>
       <div className="space-y-1.5">
-        <button type="button" onClick={() => onContactPick("")}
+        <button type="button" onClick={() => onContactPick(null)}
           className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
           style={{ background: !selectedContact ? "var(--color-primary-soft, #efe6d8)" : "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
           {selected.fullName} <span style={{ color: "var(--color-text-muted)" }}>(primary)</span>
         </button>
         {contacts.map((c) => (
-          <button key={c.id} type="button" onClick={() => onContactPick(c.name)}
+          <button key={c.id} type="button" onClick={() => onContactPick(c)}
             className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
             style={{ background: selectedContact === c.name ? "var(--color-primary-soft, #efe6d8)" : "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
             {c.name}

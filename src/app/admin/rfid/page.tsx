@@ -457,7 +457,7 @@ function RFIDPageInner() {
                 ]);
                 const contactArr = Array.isArray(cs) ? cs : [];
                 const projArr = Array.isArray(ps) ? ps : [];
-                setCustomerInfo(cust); setContacts(contactArr); setContactName("");
+                setCustomerInfo(cust); setContacts(contactArr); setContactName(""); setContactId(null);
                 setProjects(projArr);
                 setProjectId(preloadProject && projArr.some((p) => p.id === preloadProject) ? preloadProject : "");
                 if (contactArr.length === 0 && projArr.length === 0) {
@@ -586,6 +586,7 @@ function RFIDPageInner() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerCode: code, customerId: custId, contactName: contact || undefined,
+          contactId: contactId || undefined, // #8: tie the visit to the specific contact
           projectId: projectId || undefined, // TAK 28/8: visit filed under the picked project
           deviceId: getDeviceId(), readerId,
         }),
@@ -604,6 +605,10 @@ function RFIDPageInner() {
 
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]); // #8
   const [contactName, setContactName] = useState("");
+  // #8: the picked contact's id (paired with contactName). Persisted on the session so the visit
+  // is tied to the specific contact — one customer can have several. (contactName alone left
+  // Session.contactId null; the POST already accepts it.)
+  const [contactId, setContactId] = useState<string | null>(null);
   // TAK 28/8: the visit is filed under one of the customer's projects (required when any exist).
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [projectId, setProjectId] = useState("");
@@ -614,7 +619,7 @@ function RFIDPageInner() {
 
   async function handleSearchCustomer() {
     if (!customerQuery.trim()) return;
-    setSearching(true); setSearchError(""); setCustomerInfo(null); setContacts([]); setContactName("");
+    setSearching(true); setSearchError(""); setCustomerInfo(null); setContacts([]); setContactName(""); setContactId(null);
     const seq = ++searchSeqRef.current;
     const res = await fetch(`/api/customers/search?q=${encodeURIComponent(customerQuery.trim())}&type=${searchType}`);
     const data = await res.json();
@@ -625,7 +630,7 @@ function RFIDPageInner() {
     const arr: CustomerInfo[] = Array.isArray(data) ? data : (data ? [data] : []);
     if (arr.length === 1) {
       setCustomerInfo(arr[0]);
-      setContactName("");
+      setContactName(""); setContactId(null);
       fetch(`/api/customers/${arr[0].id}/contacts`).then((r) => r.json())
         .then((cs) => { if (searchSeqRef.current === seq) setContacts(Array.isArray(cs) ? cs : []); }).catch(() => {});
       loadProjects(arr[0].id, seq);
@@ -660,7 +665,7 @@ function RFIDPageInner() {
   // #5: staff pick one customer from a multi-match search list.
   function pickCustomer(c: CustomerInfo) {
     setCustomerInfo(c);
-    setContactName("");
+    setContactName(""); setContactId(null);
     setCustomerMatches([]);
     setContacts([]);
     fetch(`/api/customers/${c.id}/contacts`).then((r) => r.json())
@@ -808,7 +813,7 @@ function RFIDPageInner() {
       } catch { /* best-effort; UI still resets */ }
     }
     seenEpcsRef.current.clear();
-    setSession(null); setCustomerQuery(""); setCustomerInfo(null); setContactName(""); setContacts([]);
+    setSession(null); setCustomerQuery(""); setCustomerInfo(null); setContactName(""); setContactId(null); setContacts([]);
     setSearchError(""); setError(""); setTakeaway({}); setDeviceLogs([]); setUnknownTags([]);
     setConnectedDevices(new Set([1]));
   }
@@ -935,11 +940,12 @@ function RFIDPageInner() {
             <p className="text-sm mb-6 text-center" style={{ color: "var(--color-text-muted)" }}>Search a customer or enter an ID to start</p>
             <CustomerPicker
               searchType={searchType}
-              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContacts([]); setCustomerMatches([]); setProjects([]); setProjectId(""); }}
+              onSearchTypeChange={(t) => { setSearchType(t); setCustomerQuery(""); setSearchError(""); setCustomerInfo(null); setContactName(""); setContactId(null); setContacts([]); setCustomerMatches([]); setProjects([]); setProjectId(""); }}
               query={customerQuery} onQueryChange={setCustomerQuery} onSearch={handleSearchCustomer}
               searching={searching} searchError={searchError}
               customers={customerMatches} onPick={pickCustomer} selected={customerInfo}
-              contacts={contacts} selectedContact={contactName} onContactPick={setContactName}
+              contacts={contacts} selectedContact={contactName}
+              onContactPick={(c) => { setContactName(c?.name ?? ""); setContactId(c?.id ?? null); }}
               projects={projects} selectedProject={projectId} onProjectChange={setProjectId}
               projectHint={preloadProject ? undefined : "No project"}
               onStart={handleStartSession} starting={loading} startLabel="Start Session" startMode="footer"
