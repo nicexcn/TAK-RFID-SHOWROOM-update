@@ -9,8 +9,10 @@ export const notifInclude = {
   customer: {
     select: { id: true, customerCode: true, fullName: true, company: true, phone: true },
   },
-  // Phase 2 (slide 26): server-assigned ERP document number on the batch.
-  docNo: true,
+  // Phase 2 (slide 26): docNo is a SCALAR on Notification — it's returned on every row
+  // automatically, so it must NOT be in `include` (Prisma's include only accepts relation
+  // fields; putting a scalar here throws PrismaClientValidationError → 500 on every
+  // notification create/update, which silently broke "Prepare → notification" entirely).
 } as const;
 
 type HasSessionProduct = { sessionId: string | null; productId: string };
