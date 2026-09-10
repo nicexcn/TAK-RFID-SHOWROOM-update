@@ -79,7 +79,7 @@ export async function POST(
     // reconcile its optimistic "ws-" ids → real ids (id-based merges/PATCH then all match).
     const rows = await prisma.scan.findMany({
       where: { sessionId, productId: { in: [...finalIds] } },
-      select: { id: true, productId: true, prepareStatus: true, takeawayQty: true },
+      select: { id: true, productId: true, prepareStatus: true, takeawayQty: true, showOnDisplay: true },
     });
 
     return NextResponse.json(

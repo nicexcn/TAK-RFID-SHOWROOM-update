@@ -51,7 +51,10 @@ export async function GET(req: NextRequest) {
       where: { ...base, displayId: displayParam || null },
       orderBy: [{ displayedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
       include: {
+        // เพิ่มเติม.docx item [35]: only items staff left checked appear on the TV.
+        // Default true → all scans show unless staff uncheck (today's behaviour preserved).
         scans: {
+          where: { showOnDisplay: true },
           include: { product: { include: { images: { orderBy: { order: "asc" } } } } },
           orderBy: { scannedAt: "asc" },
         },

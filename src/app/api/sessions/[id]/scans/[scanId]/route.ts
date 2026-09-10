@@ -13,9 +13,9 @@ export async function PATCH(
 ) {
   try {
     const { id: sessionId, scanId } = await params;
-    const { prepareStatus, takeawayQty, productId } = await req.json();
+    const { prepareStatus, takeawayQty, productId, showOnDisplay } = await req.json();
 
-    const data: { prepareStatus?: string; takeawayQty?: number; isLoan?: boolean } = {};
+    const data: { prepareStatus?: string; takeawayQty?: number; isLoan?: boolean; showOnDisplay?: boolean } = {};
     if (prepareStatus !== undefined) {
       if (!PREPARE_STATES.includes(prepareStatus)) {
         return NextResponse.json({ error: "Invalid prepareStatus" }, { status: 400 });
@@ -28,6 +28,13 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid takeawayQty" }, { status: 400 });
       }
       data.takeawayQty = q;
+    }
+    // เพิ่มเติม.docx item [35]: toggle whether this item shows on the TV (/display).
+    if (showOnDisplay !== undefined) {
+      if (typeof showOnDisplay !== "boolean") {
+        return NextResponse.json({ error: "Invalid showOnDisplay" }, { status: 400 });
+      }
+      data.showOnDisplay = showOnDisplay;
     }
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });

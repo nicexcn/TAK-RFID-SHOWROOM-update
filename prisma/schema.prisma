@@ -184,6 +184,10 @@ model Scan {
   // image3: snapshot of Product.returnable AT TAKEAWAY TIME. Loan tracking keys on this (not the
   // live product flag) so flipping a product to give-away later can't orphan an outstanding loan.
   isLoan        Boolean @default(true)
+  // Staff opt-in per scanned item: should this item appear on the TV (/display)? Default true
+  // so the TV shows everything unless staff uncheck — เพิ่มเติม.docx item [35]: "หน้าสินค้าที่สแกนมา
+  // อยากให้มี checkbox เลือกได้ว่าอยากให้แสดงสินค้าชิ้นไหนขึ้นจอบ้าง". The display GET filters on this.
+  showOnDisplay Boolean @default(true)
   // Borrow/return tracking. returnedQty of takeawayQty have come back; returnedAt is set
   // when fully returned. dueDate is an OPTIONAL override — the effective due date is
   // (dueDate ?? scannedAt + BORROW_DAYS), so existing takeaways get a due date for free

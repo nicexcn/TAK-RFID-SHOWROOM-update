@@ -37,6 +37,9 @@ interface ScanItem {
   id: string; scannedAt: string; product: Product;
   prepareStatus: "NONE" | "PREPARING" | "COMPLETE";
   takeawayQty?: number;
+  // เพิ่มเติม.docx item [35]: should this item appear on the TV (/display)? Default true
+  // (server column Scan.showOnDisplay). Undefined = treat as true (legacy/optimistic rows).
+  showOnDisplay?: boolean;
   deviceId: number; // 1-4
 }
 interface Session {
@@ -284,7 +287,7 @@ function RFIDPageInner() {
 
     const fakeScan: ScanItem = {
       id: `ws-${Date.now()}-${epc}`, scannedAt: new Date().toISOString(),
-      product, prepareStatus: "NONE", deviceId,
+      product, prepareStatus: "NONE", showOnDisplay: true, deviceId,
     };
     // One scan per product — the DB is unique on (session, product), so two tags that
     // resolve to the same product must not become two rows (they'd later collapse to the
@@ -328,7 +331,7 @@ function RFIDPageInner() {
       // (productId resolved directly — no tag lookup needed for manual items).
       const fakeScan: ScanItem = {
         id: `manual-${Date.now()}-${p.id}`, scannedAt: new Date().toISOString(),
-        product: p, prepareStatus: "NONE", deviceId: 1,
+        product: p, prepareStatus: "NONE", showOnDisplay: true, deviceId: 1,
       };
       setSession((prev) => (prev ? { ...prev, scans: [fakeScan, ...prev.scans] } : prev));
       scanQueueRef.current.push({ productId: p.id, rfidTag: p.productCode || "" });
@@ -565,7 +568,7 @@ function RFIDPageInner() {
             if (!p || p.id !== sid) return p;
             return { ...p, scans: p.scans.map((s) => {
               const fresh = byId.get(s.id);
-              return fresh ? { ...s, prepareStatus: fresh.prepareStatus, takeawayQty: fresh.takeawayQty } : s;
+              return fresh ? { ...s, prepareStatus: fresh.prepareStatus, takeawayQty: fresh.takeawayQty, showOnDisplay: fresh.showOnDisplay } : s;
             }) };
           });
         }).catch(() => {});
@@ -667,7 +670,7 @@ function RFIDPageInner() {
 
   // Persist a scan's prepare status / takeaway qty (customer req #2) — previously
   // these lived only in React state and were lost on reload / unseen by other stations.
-  async function patchScan(scan: ScanItem, body: { prepareStatus?: string; takeawayQty?: number }): Promise<boolean> {
+  async function patchScan(scan: ScanItem, body: { prepareStatus?: string; takeawayQty?: number; showOnDisplay?: boolean }): Promise<boolean> {
     if (!session) return false;
     try {
       const res = await fetch(`/api/sessions/${session.id}/scans/${scan.id}`, {
@@ -746,6 +749,16 @@ function RFIDPageInner() {
   async function handleMarkComplete(scan: ScanItem) {
     setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, prepareStatus: "COMPLETE" } : s) } : p);
     await patchScan(scan, { prepareStatus: "COMPLETE" });
+  }
+
+  // เพิ่มเติม.docx item [35]: toggle whether this scanned item shows on the TV (/display).
+  // Optimistic flip + persist; the display GET filters on showOnDisplay, and patchScan fires
+  // broadcastDisplayChanged() so the TV updates live. Default true → unchecking hides it.
+  async function handleToggleDisplay(scan: ScanItem) {
+    const next = !(scan.showOnDisplay ?? true);
+    setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, showOnDisplay: next } : s) } : p);
+    const ok = await patchScan(scan, { showOnDisplay: next });
+    if (!ok) setSession((p) => p ? { ...p, scans: p.scans.map((s) => s.id === scan.id ? { ...s, showOnDisplay: !next } : s) } : p);
   }
 
   // Intentional disconnect (button) frees the reader for other stations; the session stays
@@ -1187,7 +1200,7 @@ function RFIDPageInner() {
                 <table className="w-full min-w-max text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
-                      {["Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
+                      {["Show","Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs"
                           style={{ color: "var(--color-text-muted)" }}>{h}</th>
                       ))}
@@ -1198,6 +1211,16 @@ function RFIDPageInner() {
                       const sCfg = STATUS_STYLE[scan.prepareStatus];
                       return (
                         <tr key={scan.id} style={{ borderBottom: "1px solid var(--color-bg)" }}>
+                          {/* Show on TV — เพิ่มเติม.docx item [35]. Default true (undefined→checked). */}
+                          <td className="px-4 py-3">
+                            <label className="flex items-center justify-center cursor-pointer" title={(scan.showOnDisplay ?? true) ? "Showing on display — uncheck to hide" : "Hidden — check to show on display"}>
+                              <input type="checkbox"
+                                checked={scan.showOnDisplay ?? true}
+                                onChange={() => handleToggleDisplay(scan)}
+                                className="w-4 h-4 cursor-pointer"
+                                style={{ accentColor: "var(--color-primary)" }} />
+                            </label>
+                          </td>
                           <td className="px-4 py-3">
                             {scan.product.imageUrl ? (
                               <Image src={scan.product.imageUrl} alt={scan.product.name}
