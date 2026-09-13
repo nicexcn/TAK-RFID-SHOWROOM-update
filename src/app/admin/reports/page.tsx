@@ -39,6 +39,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exportingErp, setExportingErp] = useState(false);
   const [exportingVisits, setExportingVisits] = useState(false);
+  const [exportingSurveys, setExportingSurveys] = useState(false);
   // TAK 28/8 (item J): preset period tabs OR a custom calendar range (the API already
   // accepts from/to). Both exports use the same window.
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
@@ -160,13 +161,44 @@ export default function ReportsPage() {
     finally { setExportingVisits(false); }
   }
 
+  // update-tak 13/9 [09]: per-response survey export — one row per SurveyResponse, answers flattened.
+  async function exportSurveys() {
+    if (exportingSurveys) return;
+    setExportingSurveys(true);
+    try {
+      const res = await fetch(`/api/reports?${windowParams({ detail: "surveys" })}`);
+      if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
+      const d = await res.json();
+      const rows = (d.surveys || []) as Record<string, string>[];
+      if (rows.length === 0) { toast("No survey responses in this period", { style: { background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)", borderRadius: "0.75rem" } }); return; }
+      // Dynamic columns: union of all answer keys across responses, preserving order.
+      const skipKeys = new Set(["date", "customerCode", "customer"]);
+      const answerKeys: string[] = Array.from(new Set(rows.flatMap((r) => Object.keys(r)))).filter((k) => !skipKeys.has(k));
+      const cols: string[] = ["Posting Date", "Customer Code", "Customer", ...answerKeys];
+      const csvRows: (string | number)[][] = [cols, ...rows.map((r) => cols.map((c): string | number => {
+        if (c === "Posting Date") return r.date ? r.date.split("-").reverse().join("/") : "";
+        if (c === "Customer Code") return r.customerCode || "";
+        if (c === "Customer") return r.customer || "";
+        return r[c] ?? "";
+      }))];
+      const csv = toCsv(csvRows);
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `survey_results_${appliedRange ? "custom" : period}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
+    finally { setExportingSurveys(false); }
+  }
+
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
   const maxCat = Math.max(1, ...(data?.byCategory || []).map((b) => b.count));
   const maxSource = Math.max(1, ...(data?.bySource || []).map((b) => b.count));
   const maxType = Math.max(1, ...(data?.byType || []).map((b) => b.count));
 
-  const card = (label: string, value: number, hint?: string) => (
-    <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+  const card = (label: string, value: number, hint?: string, tooltip?: string) => (
+    <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+      title={tooltip}>
       <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>{label}</p>
       <p className="text-3xl font-semibold" style={{ color: "var(--color-text)" }}>{value}</p>
       {hint && <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{hint}</p>}
@@ -233,6 +265,17 @@ export default function ReportsPage() {
               )}
               {exportingVisits ? "Exporting…" : "Export visits"}
             </button>
+            {/* update-tak 13/9 [09]: survey-results export (one row per response, answers flattened). */}
+            <button onClick={exportSurveys} disabled={!data || exportingSurveys} title="One row per survey response, all answers as columns"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
+              style={{ background: "var(--color-primary)" }}>
+              {exportingSurveys ? (
+                <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
+              ) : (
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              )}
+              {exportingSurveys ? "Exporting…" : "Export survey results"}
+            </button>
           </>
         }
       />
@@ -297,10 +340,10 @@ export default function ReportsPage() {
 
           {/* Total visitors + first-time vs returning */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {card("Total visitors", data.summary.visits, `${data.summary.customers} customers`)}
-            {card("Customers", data.summary.customers)}
-            {card("First-time", data.summary.firstTime, "visitors this period")}
-            {card("Returning", data.summary.returning, "visited before")}
+            {card("Total visitors", data.summary.visits, `${data.summary.customers} customers`, "Distinct sessions that scanned at least one item this period. Walk-in / zero-scan sessions are not counted.")}
+            {card("Customers", data.summary.customers, undefined, "Distinct registered customers (by Customer ID) who scanned this period. Walk-ins are excluded.")}
+            {card("First-time", data.summary.firstTime, "visitors this period", "Customers whose first-ever visit is within this period (no earlier scans).")}
+            {card("Returning", data.summary.returning, "visited before", "Customers who had scanned before this period began.")}
           </div>
 
           {/* By source (discovery channel) + by customer type + satisfaction */}

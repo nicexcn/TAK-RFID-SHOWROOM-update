@@ -113,9 +113,14 @@ export async function GET(req: NextRequest) {
     const takenHomeProducts = scannedProducts.filter((p) => p.takenQty > 0).sort((a, b) => b.takenQty - a.takenQty);
 
     const summary = {
+      // update-tak 13/9 [08]: "visits" = distinct sessions that scanned in the window.
+      // (Zero-scan/walk-in test sessions don't count as visits — only real scanning sessions.)
       visits: new Set(filtered.map((s) => s.session.id)).size,
-      // Distinct real customers by id; walk-ins (no id) fall back to their code. Blanks ignored.
-      customers: new Set(filtered.map((s) => s.session.customerId ?? (s.session.customerCode || null)).filter(Boolean)).size,
+      // [08] "customers" = distinct REAL customers (by customerId only). Walk-ins and ad-hoc
+      // codes (no Customer row) are excluded so the count matches the customer database,
+      // not inflated by junk/walk-in codes. Was `customerId ?? customerCode`, which counted
+      // walk-ins as separate customers.
+      customers: new Set(filtered.map((s) => s.session.customerId).filter(Boolean)).size,
       totalScans: filtered.length,
       totalTaken: filtered.reduce((sum, s) => sum + (s.takeawayQty || 0), 0),
       uniqueProducts: prodMap.size,
@@ -285,6 +290,33 @@ export async function GET(req: NextRequest) {
     };
     const satisfaction = { overall: avgOf("overall"), service: avgOf("service"), responses: surveys.length };
 
+    // update-tak 13/9 [09]: per-response survey export (detail=surveys) — one row per
+    // SurveyResponse, answers JSON flattened into columns dynamically (arrays joined with "; ").
+    let surveyRows: { date: string; customerCode: string; customer: string; [k: string]: string }[] | undefined;
+    if (url.searchParams.get("detail") === "surveys") {
+      const raw = await prisma.surveyResponse.findMany({
+        where: { createdAt: { gte: from, lte: to }, ...(q ? { customerId: { in: visitingIds } } : {}) },
+        select: { id: true, customerId: true, answers: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const sCustIds = [...new Set(raw.map((r) => r.customerId).filter(Boolean) as string[])];
+      const sCusts = sCustIds.length ? await prisma.customer.findMany({ where: { id: { in: sCustIds } }, select: { id: true, customerCode: true, fullName: true } }) : [];
+      const sById = new Map(sCusts.map((c) => [c.id, c]));
+      surveyRows = raw.map((r) => {
+        const c = r.customerId ? sById.get(r.customerId) : undefined;
+        const base: { date: string; customerCode: string; customer: string; [k: string]: string } = {
+          date: r.createdAt.toISOString(),
+          customerCode: c?.customerCode || "",
+          customer: c?.fullName || "",
+        };
+        const ans = (r.answers && typeof r.answers === "object") ? (r.answers as Record<string, unknown>) : {};
+        for (const [k, v] of Object.entries(ans)) {
+          base[k] = Array.isArray(v) ? v.join("; ") : String(v ?? "");
+        }
+        return base;
+      });
+    }
+
     return NextResponse.json({
       period: { from, to, label, key: period },
       summary: { ...summary, firstTime, returning },
@@ -297,6 +329,7 @@ export async function GET(req: NextRequest) {
       satisfaction,
       takeaways,
       visits,
+      surveys: surveyRows, // update-tak 13/9 [09]: per-response survey export (detail=surveys)
     });
   } catch (error) {
     console.error("REPORTS GET ERROR:", error);
