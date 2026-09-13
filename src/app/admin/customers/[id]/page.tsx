@@ -227,7 +227,6 @@ export default function CustomerDetailPage() {
     ["Zone (เขต)", customer.zone || "—"],
     ["Project", customer.project || "—"],
     ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
-    ["Remark", customer.remark || "—"],
     ["Created", formatDateTime(customer.createdAt)],
   ];
   const contactFields: [string, string][] = [
@@ -275,7 +274,6 @@ export default function CustomerDetailPage() {
               {([
                 ["Company", "company"],
                 ["Project", "project"],
-                ["Remark", "remark"],
               ] as [string, keyof EditForm][]).map(([label, key]) => (
                 <label key={key} className="block">
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</span>
@@ -537,7 +535,7 @@ export default function CustomerDetailPage() {
   );
 }
 
-// One project row in the Projects card: name + zone + inline editable remark (Project.note).
+// One project row in the Projects card: name + zone + inline editable description (Project.note).
 // PATCHes /api/projects {id, note} and reports the new value up via onSaved.
 function ProjectRowCard({ project, canEdit, onSaved }: { project: ProjectRow; canEdit: boolean; onSaved: (note: string | null) => void }) {
   const [open, setOpen] = useState(false);
@@ -564,14 +562,14 @@ function ProjectRowCard({ project, canEdit, onSaved }: { project: ProjectRow; ca
         </div>
         {canEdit && (
           <button onClick={() => { setNote(project.note || ""); setOpen(!open); }} className="text-xs flex-shrink-0" style={{ color: "var(--color-primary)" }}>
-            {open ? "Close" : "✎ Remark"}
+            {open ? "Close" : "✎ Description"}
           </button>
         )}
       </div>
       {open && (
         <div className="mt-2 flex gap-2">
           <input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()}
-            placeholder="Remark for this project…" autoFocus
+            placeholder="Description for this project…" autoFocus
             className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
           <button onClick={save} disabled={saving} className="px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>Save</button>
         </div>

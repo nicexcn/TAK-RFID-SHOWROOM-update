@@ -955,10 +955,6 @@ function RFIDPageInner() {
             </div>
           </div>
 
-          {/* TAK 28/8: manual visit topics — staff fill Interest / SO No. / Status for the
-              reports visits export. Saves on blur; disabled once the session has ended. */}
-          <VisitTopics session={session} />
-
           {/* ── WebSocket Connection + Simulator ── */}
           <div className="rounded-xl overflow-hidden mb-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
@@ -1039,7 +1035,13 @@ function RFIDPageInner() {
                   <span className="px-2.5 py-1 rounded-lg text-sm font-semibold inline-flex items-center gap-1.5"
                     style={{ background: "#e8f5e9", color: "#2e7d32" }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    {readerIdFromUrl(deviceIps[wsDeviceId]) || "LAN (direct)"}
+                    {/* update-tak 13/9 [02]: show the reader's NAME (from the registry) when
+                        connected, falling back to the mac only when unnamed/LAN-direct. */}
+                    {(() => {
+                      const tag = readerIdFromUrl(deviceIps[wsDeviceId]);
+                      const named = tag ? savedReaders.find((r) => r.device === tag) : undefined;
+                      return named?.name ? `${named.name} (${tag})` : (tag || "LAN (direct)");
+                    })()}
                   </span>
                   <button onClick={handleDisconnect}
                     className="px-4 py-1.5 rounded-lg text-xs font-medium"
@@ -1349,52 +1351,5 @@ export default function RFIDPage() {
     <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent" }} /></div>}>
       <RFIDPageInner />
     </Suspense>
-  );
-}
-
-// TAK 28/8: the three manual visit topics (Interest / SO No. / Status) staff type per
-// visit — PATCHed to the session on blur, exported by Reports → "Export visits".
-function VisitTopics({ session }: { session: Session }) {
-  const [interest, setInterest] = useState(session.interest || "");
-  const [soNumber, setSoNumber] = useState(session.soNumber || "");
-  const [status, setStatus] = useState(session.status || "");
-  const [saved, setSaved] = useState(false);
-  // Re-hydrate when the session object changes (start/resume).
-  useEffect(() => {
-    setInterest(session.interest || ""); setSoNumber(session.soNumber || ""); setStatus(session.status || "");
-  }, [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function save(field: "interest" | "soNumber" | "status", value: string) {
-    try {
-      const res = await fetch(`/api/sessions/${session.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 1500); }
-    } catch { /* non-blocking: staff can retry on next blur */ }
-  }
-  const inputStyle = { background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" };
-  const blur = (field: "interest" | "soNumber" | "status", value: string) =>
-    save(field, value.trim()); // only sends when blurred; empty → null server-side
-
-  return (
-    <div className="flex flex-wrap items-end gap-3 p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-      <div className="flex-1 min-w-[140px]">
-        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Interest</label>
-        <input value={interest} onChange={(e) => setInterest(e.target.value)} onBlur={(e) => blur("interest", e.target.value)}
-          placeholder="What are they interested in?" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
-      </div>
-      <div className="w-36">
-        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>SO No.</label>
-        <input value={soNumber} onChange={(e) => setSoNumber(e.target.value)} onBlur={(e) => blur("soNumber", e.target.value)}
-          placeholder="SO number" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
-      </div>
-      <div className="w-40">
-        <label className="block text-[11px] mb-1" style={{ color: "var(--color-text-muted)" }}>Status</label>
-        <input value={status} onChange={(e) => setStatus(e.target.value)} onBlur={(e) => blur("status", e.target.value)}
-          placeholder="e.g. Quoted, Follow up" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} />
-      </div>
-      <p className="text-[11px] mb-2 transition-opacity" style={{ color: "var(--color-success)", opacity: saved ? 1 : 0 }}>✓ saved</p>
-    </div>
   );
 }

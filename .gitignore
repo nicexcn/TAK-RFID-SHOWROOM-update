@@ -52,3 +52,7 @@ test-manual-scan.mjs
 cleanup_qa.mjs
 scripts/.tag-backup.json
 *.bak
+
+# local debug script + supabase CLI link artifact (not app code)
+scripts/check-db-state.ts
+supabase/

@@ -39,13 +39,13 @@ const DROPDOWN_TYPES = [
   { key: "brand", label: "Brand" },
   { key: "materialType", label: "Material Type" },
   { key: "category", label: "Category" },
-  { key: "sales", label: "Salesperson" },
 ];
 
 const TABS = [
   { key: "dashboard", label: "Dashboard" },
   { key: "account",   label: "Account" },
   { key: "product",   label: "Product Management" },
+  { key: "sales",     label: "Sale Management" },
   { key: "media",     label: "Media" },
   { key: "takeaway",  label: "Takeaway Limit" },
 ];
@@ -771,53 +771,6 @@ export default function SettingsPage() {
           {activeTab === "product" && (
             <div style={cardStyle}>
               <h2 className="text-base font-semibold mb-4" style={{ color: "var(--color-text)" }}>Dropdown Options</h2>
-              {/* Salesperson now manages the real Sale master (ERP code + name) — slide 28 */}
-              {activeType === "sales" && (
-                <div className="mb-5 rounded-xl p-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-                  <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>
-                    Sales master — TWC staff with ERP codes. Customers reference these by name; the list also feeds the customer form picker.
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <input id="sale-code" placeholder="Code (e.g. B0002)" className="w-32 px-3 py-1.5 rounded-lg outline-none text-sm"
-                      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-                    <input id="sale-name" placeholder="Full name" className="flex-1 min-w-40 px-3 py-1.5 rounded-lg outline-none text-sm"
-                      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-                    <button onClick={async () => {
-                      const code = (document.getElementById("sale-code") as HTMLInputElement)?.value.trim();
-                      const name = (document.getElementById("sale-name") as HTMLInputElement)?.value.trim();
-                      if (!code || !name) return;
-                      setDropdownLoading(true);
-                      await fetch("/api/sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name }) });
-                      if (document.getElementById("sale-code")) (document.getElementById("sale-code") as HTMLInputElement).value = "";
-                      if (document.getElementById("sale-name")) (document.getElementById("sale-name") as HTMLInputElement).value = "";
-                      // refresh list from the sale master
-                      fetch("/api/sales").then((r) => r.json()).then((rows) => {
-                        setSalesMaster(Array.isArray(rows) ? rows : []);
-                        setOptions(rows.map((r: { id: string; name: string }) => ({ id: r.id, type: "sales", value: r.name, createdAt: "" })));
-                      }).catch(() => {});
-                      setDropdownLoading(false);
-                    }} disabled={dropdownLoading}
-                      className="px-4 py-1.5 rounded-lg text-sm font-medium"
-                      style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>+ Add</button>
-                  </div>
-                  {options.length > 0 && options[0]?.type === "sales" && (
-                    <div className="space-y-1 max-h-64 overflow-y-auto">
-                      {salesMaster.map((s) => {
-                        const opt = options.find((o) => o.id === s.id);
-                        return (
-                          <div key={s.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-surface)" }}>
-                            <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{s.code}</span>
-                            <span className="text-sm flex-1 truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
-                            <button onClick={() => handleDeleteSale(s.id)} disabled={deletingOptionId === s.id}
-                              className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40"
-                              style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === s.id ? "…" : "Delete"}</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
                   {DROPDOWN_TYPES.map((type) => (
@@ -859,6 +812,51 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Sale Management (update-tak 13/9 [11]) — split out of Product Management.
+              Manages the Sale master (ERP code + name) that the customer-form picker reads. */}
+          {activeTab === "sales" && (
+            <div style={cardStyle}>
+              <h2 className="text-base font-semibold mb-2" style={{ color: "var(--color-text)" }}>Sale Management</h2>
+              <p className="text-xs mb-4" style={{ color: "var(--color-text-muted)" }}>
+                Sales master — TWC staff with ERP codes. Customers reference these by name; the list also feeds the customer form picker.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <input id="sale-code" placeholder="Code (e.g. B0002)" className="w-32 px-3 py-1.5 rounded-lg outline-none text-sm"
+                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                <input id="sale-name" placeholder="Full name" className="flex-1 min-w-40 px-3 py-1.5 rounded-lg outline-none text-sm"
+                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                <button onClick={async () => {
+                  const code = (document.getElementById("sale-code") as HTMLInputElement)?.value.trim();
+                  const name = (document.getElementById("sale-name") as HTMLInputElement)?.value.trim();
+                  if (!code || !name) return;
+                  setDropdownLoading(true);
+                  await fetch("/api/sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name }) });
+                  if (document.getElementById("sale-code")) (document.getElementById("sale-code") as HTMLInputElement).value = "";
+                  if (document.getElementById("sale-name")) (document.getElementById("sale-name") as HTMLInputElement).value = "";
+                  fetch("/api/sales").then((r) => r.json()).then((rows) => {
+                    setSalesMaster(Array.isArray(rows) ? rows : []);
+                  }).catch(() => {});
+                  setDropdownLoading(false);
+                }} disabled={dropdownLoading}
+                  className="px-4 py-1.5 rounded-lg text-sm font-medium"
+                  style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>+ Add</button>
+              </div>
+              <div className="space-y-1 max-h-96 overflow-y-auto">
+                {salesMaster.length === 0 ? (
+                  <p className="text-sm text-center py-6" style={{ color: "var(--color-text-subtle)" }}>No salespeople yet</p>
+                ) : salesMaster.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-surface)" }}>
+                    <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{s.code}</span>
+                    <span className="text-sm flex-1 truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
+                    <button onClick={() => handleDeleteSale(s.id)} disabled={deletingOptionId === s.id}
+                      className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40"
+                      style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === s.id ? "…" : "Delete"}</button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
