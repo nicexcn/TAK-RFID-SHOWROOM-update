@@ -38,7 +38,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 const ALLOWED = [
   "fullName", "title", "titleOther", "company", "phone",
   "email", "lineId", "knowChannel", "knowChannelOther", "pdpaConsent",
-  "salesPerson", "zone", "project", "source", "remark",
+  "salesPerson", "zone", "project", "source",
 ];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +53,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if ("zone" in data) data.zone = String(data.zone || "").trim() || null;
     if ("project" in data) data.project = String(data.project || "").trim() || null;
     if ("source" in data) data.source = String(data.source || "").trim() || null;
-    if ("remark" in data) data.remark = String(data.remark || "").trim() || null;
     const updated = await prisma.customer.update({ where: { id }, data });
     return NextResponse.json(updated);
   } catch (error) {

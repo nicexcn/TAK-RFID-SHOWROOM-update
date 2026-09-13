@@ -40,6 +40,12 @@ export default function ReportsPage() {
   const [exportingErp, setExportingErp] = useState(false);
   const [exportingVisits, setExportingVisits] = useState(false);
   const [exportingSurveys, setExportingSurveys] = useState(false);
+  const [exportingCustomers, setExportingCustomers] = useState(false);
+  // update-tak 13/9 [07]: the customer-database export (moved here from Customer Management)
+  // is super-admin only — it exposes the full customer list.
+  const [role, setRole] = useState("");
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }); }, []);
+  const canExportCustomers = role === "super_admin";
   // TAK 28/8 (item J): preset period tabs OR a custom calendar range (the API already
   // accepts from/to). Both exports use the same window.
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
@@ -142,13 +148,13 @@ export default function ReportsPage() {
       const res = await fetch(`/api/reports?${windowParams({ detail: "visits" })}`);
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
-      const visits = (d.visits || []) as { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; remark: string; sale: string }[];
+      const visits = (d.visits || []) as { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; description: string; sale: string }[];
       const rows: (string | number)[][] = [
-        ["Posting Date", "Customer Code", "Customer", "Company", "Contact", "Zone", "Project", "Interest", "SO No.", "Status", "Items Taken", "Total Qty", "Remark", "Sales"],
+        ["Posting Date", "Customer Code", "Customer", "Company", "Contact", "Zone", "Project", "Interest", "SO No.", "Status", "Items Taken", "Total Qty", "Description", "Sales"],
         ...visits.map((v) => [
           v.date.split("-").reverse().join("/"), // YYYY-MM-DD → dd/mm/yy, same convention as ERP
           v.customerCode, v.customer, v.company, v.contact, v.zone, v.project,
-          v.interest, v.soNumber, v.status, v.productsTaken, v.totalQty, v.remark, v.sale,
+          v.interest, v.soNumber, v.status, v.productsTaken, v.totalQty, v.description, v.sale,
         ]),
       ];
       const csv = toCsv(rows);
@@ -189,6 +195,30 @@ export default function ReportsPage() {
       a.click();
     } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
     finally { setExportingSurveys(false); }
+  }
+
+  // update-tak 13/9 [07]: customer-database export (moved from Customer Management).
+  // Super-admin only — the full customer list is sensitive. Not window-scoped (all customers).
+  async function exportCustomers() {
+    if (exportingCustomers) return;
+    setExportingCustomers(true);
+    try {
+      const res = await fetch("/api/customers");
+      const data2 = await res.json();
+      if (!Array.isArray(data2) || data2.length === 0) { toast("No customers to export", { style: { background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)", borderRadius: "0.75rem" } }); return; }
+      const rows: (string | number)[][] = [
+        ["Code", "Full Name", "Segment", "Company", "Phone", "Email", "Channels", "Sales", "Registered"],
+        ...data2.map((c: { customerCode: string; fullName: string; title: string; company: string; phone: string; email: string; knowChannel: string[]; salesPerson?: string | null; createdAt: string }) =>
+          [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, (c.knowChannel || []).join(";"), c.salesPerson ?? "", formatDate(c.createdAt)]),
+      ];
+      const csv = toCsv(rows);
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `customer_database_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    } catch { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); }
+    finally { setExportingCustomers(false); }
   }
 
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
@@ -276,6 +306,19 @@ export default function ReportsPage() {
               )}
               {exportingSurveys ? "Exporting…" : "Export survey results"}
             </button>
+            {/* update-tak 13/9 [07]: customer-database export moved here from Customer Management (super-admin only). */}
+            {canExportCustomers && (
+              <button onClick={exportCustomers} disabled={exportingCustomers} title="Full customer database (all customers)"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
+                style={{ background: "var(--color-primary)" }}>
+                {exportingCustomers ? (
+                  <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" /></svg>
+                ) : (
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                )}
+                {exportingCustomers ? "Exporting…" : "Export customer database"}
+              </button>
+            )}
           </>
         }
       />

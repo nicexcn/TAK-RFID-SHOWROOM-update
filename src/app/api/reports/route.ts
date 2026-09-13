@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
     let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[] | undefined;
     // TAK 28/8: visits detail — ONE ROW PER SESSION (zero-scan visits included), with the
     // manual visit topics (interest/soNumber/status), the codes taken home, and remarks.
-    let visits: { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; remark: string; sale: string }[] | undefined;
+    let visits: { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; description: string; sale: string }[] | undefined;
     if (url.searchParams.get("detail") === "visits") {
       const day = (d: Date) => new Date(d.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
       // Group the window's scans by session, so each visit carries its taken codes + qty.
@@ -173,12 +173,13 @@ export async function GET(req: NextRequest) {
       for (const s of extraSessions) meta.set(s.id, s);
       const custIds = [...new Set([...meta.values()].map((s) => ("customerId" in s ? s.customerId : null) || (bySession.get(s.id)?.session.customerId ?? null)).filter(Boolean) as string[])];
       const custs = custIds.length
-        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, zone: true, project: true, remark: true } })
+        ? await prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, fullName: true, company: true, salesPerson: true, zone: true, project: true } })
         : [];
       const byId = new Map(custs.map((c) => [c.id, c]));
       const projIds = [...new Set([...meta.values()].map((s) => s.projectId).filter(Boolean) as string[])];
-      const projs = projIds.length ? await prisma.project.findMany({ where: { id: { in: projIds } }, select: { id: true, name: true } }) : [];
+      const projs = projIds.length ? await prisma.project.findMany({ where: { id: { in: projIds } }, select: { id: true, name: true, note: true } }) : [];
       const projName = new Map(projs.map((p) => [p.id, p.name]));
+      const projNote = new Map(projs.map((p) => [p.id, p.note || ""]));
 
       const rows: NonNullable<typeof visits> = [];
       for (const [sid, v] of bySession) {
@@ -193,7 +194,7 @@ export async function GET(req: NextRequest) {
           project: (s.projectId ? projName.get(s.projectId) : "") || c?.project || "",
           interest: s.interest || "", soNumber: s.soNumber || "", status: s.status || "",
           productsTaken: v.codes.join(", "), totalQty: v.qty,
-          remark: c?.remark || "", sale: c?.salesPerson || "",
+          description: (s.projectId ? projNote.get(s.projectId) : "") || "", sale: c?.salesPerson || "",
         });
       }
       for (const s of extraSessions) {
@@ -208,7 +209,7 @@ export async function GET(req: NextRequest) {
           project: (s.projectId ? projName.get(s.projectId) : "") || c?.project || "",
           interest: s.interest || "", soNumber: s.soNumber || "", status: s.status || "",
           productsTaken: "", totalQty: 0,
-          remark: c?.remark || "", sale: c?.salesPerson || "",
+          description: (s.projectId ? projNote.get(s.projectId) : "") || "", sale: c?.salesPerson || "",
         });
       }
       visits = rows.sort((a, b) => a.date.localeCompare(b.date) || a.customerCode.localeCompare(b.customerCode));

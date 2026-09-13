@@ -68,9 +68,6 @@ model Customer {
   // Distinguishes a TWC-invited customer (salesPerson = TWC rep) from a Walk-in (salesPerson =
   // showroom staff), and drives the "customer source" report category.
   source           String?
-  // TAK feedback 28/8/26: customer-level free-text remark shown on the profile page
-  // (per-project remarks live on Project.note).
-  remark           String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]

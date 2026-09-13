@@ -22,7 +22,6 @@ const CAN_DELETE_ROLES = ["super_admin"];
 type EditForm = {
   fullName: string; title: string; titleOther: string; company: string; phone: string;
   email: string; lineId: string; salesPerson: string; zone: string; project: string; source: string;
-  remark: string; // TAK 28/8: customer-level remark
 };
 interface ProjectRow { id: string; name: string; zone?: string | null; salesName?: string | null; note?: string | null; }
 
@@ -39,6 +38,7 @@ interface SessionRow {
   id: string;
   createdAt: string;
   isActive: boolean;
+  projectId?: string | null; // update-tak 13/9 [03]: which project this visit was filed under
   scans: ScanRow[];
 }
 interface Contact { id: string; name: string; phone: string; note?: string | null; }
@@ -46,7 +46,6 @@ interface Customer {
   id: string; customerCode: string; fullName: string; title: string; titleOther?: string | null;
   company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; zone?: string | null; project?: string | null; source?: string | null;
   knowChannel: string[]; knowChannelOther?: string | null; pdpaConsent: boolean; createdAt: string;
-  remark?: string | null;
   sessions: SessionRow[]; contacts?: Contact[]; projects?: ProjectRow[];
 }
 
@@ -77,6 +76,11 @@ export default function CustomerDetailPage() {
   const [scanPickerOpen, setScanPickerOpen] = useState(false);
   const [scanProject, setScanProject] = useState(""); // project id or "" = no project
   const [newProjectName, setNewProjectName] = useState("");
+  // update-tak 13/9 [03]: project-scoped scan view + add/hide projects.
+  const [selectedProject, setSelectedProject] = useState<string | null>(null); // project id, or null = all
+  const [hiddenProjects, setHiddenProjects] = useState<Set<string>>(new Set());
+  const [addingProject, setAddingProject] = useState(false);
+  const [newProjName, setNewProjName] = useState("");
   const canEdit = CAN_EDIT_ROLES.includes(role);
   const canDelete = CAN_DELETE_ROLES.includes(role);
 
@@ -97,6 +101,22 @@ export default function CustomerDetailPage() {
     const params = new URLSearchParams({ customer: customer.customerCode, name: customer.fullName || "" });
     if (pid) params.set("project", pid);
     router.push(`/admin/rfid?${params.toString()}`);
+  }
+
+  // update-tak 13/9 [03]: add a new project from the Projects card (without starting a scan).
+  async function addProjectFromCard() {
+    if (!customer || !newProjName.trim()) return;
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: customer.id, name: newProjName.trim() }),
+      });
+      if (res.ok) {
+        const p = await res.json();
+        setCustomer({ ...customer, projects: [...(customer.projects || []), { id: p.id, name: p.name || newProjName.trim(), zone: null, salesName: null, note: null }] });
+        setNewProjName(""); setAddingProject(false);
+      }
+    } catch { /* non-blocking */ }
   }
 
   useEffect(() => {
@@ -130,7 +150,6 @@ export default function CustomerDetailPage() {
       company: customer.company || "", phone: customer.phone || "", email: customer.email || "",
       lineId: customer.lineId || "", salesPerson: customer.salesPerson || "", zone: customer.zone || "",
       project: customer.project || "", source: customer.source || "",
-      remark: customer.remark || "",
     });
     setEditing(true);
   }
@@ -214,7 +233,11 @@ export default function CustomerDetailPage() {
     </div>
   );
 
-  const allScans = customer.sessions.flatMap((s) => s.scans);
+  // update-tak 13/9 [03]: when a project is selected, show only that project's visits' scans.
+  const visibleSessions = selectedProject
+    ? customer.sessions.filter((s) => s.projectId === selectedProject)
+    : customer.sessions;
+  const allScans = visibleSessions.flatMap((s) => s.scans);
   const uniqueProducts = new Map(allScans.map((s) => [s.product.id, s]));
   // TAK 28/8: the profile splits into COMPANY-level (this card) and PERSON-level
   // (Contact Info card) — one Customer row, two display groupings.
@@ -238,7 +261,8 @@ export default function CustomerDetailPage() {
   ];
   // Item 6: the basic Presenter "cannot access sales information" — hide the sales/assignment fields.
   const visibleCompanyFields = role === "user" ? companyFields.filter(([l]) => !["Source", "Sales", "Project"].includes(l)) : companyFields;
-  const projects = customer.projects || [];
+  // update-tak 13/9 [03]: hide finished/archived projects (toggle per project, client-side).
+  const projects = (customer.projects || []).filter((p) => !hiddenProjects.has(p.id));
 
   return (
     <div>
@@ -408,24 +432,69 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* TAK 28/8: Projects — one row per project with an inline remark (Project.note),
-            plus quick add. Start Scan picks from this list. */}
+        {/* update-tak 13/9 [03]: Projects — click a project to filter Scan history to its
+            visits; add a project; hide finished projects. Per-project description = Project.note. */}
         {!editing && (
           <div className="p-5" style={card}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Projects</h2>
-              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{projects.length}</span>
+              <div className="flex items-center gap-2">
+                {selectedProject && (
+                  <button onClick={() => setSelectedProject(null)} className="text-xs px-2 py-1 rounded-lg"
+                    style={{ background: "var(--color-bg)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
+                    Show all visits
+                  </button>
+                )}
+                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  {projects.length}{hiddenProjects.size ? ` (${hiddenProjects.size} hidden)` : ""}
+                </span>
+              </div>
             </div>
             <div className="space-y-2">
-              {projects.length === 0 ? (
+              {projects.length === 0 && hiddenProjects.size === 0 ? (
                 <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No projects yet</p>
-              ) : projects.map((p) => (
-                <ProjectRowCard key={p.id} project={p} canEdit={canEdit} onSaved={(note) => {
-                  if (!customer) return;
-                  setCustomer({ ...customer, projects: (customer.projects || []).map((x) => x.id === p.id ? { ...x, note } : x) });
-                }} />
-              ))}
+              ) : projects.map((p) => {
+                const isSel = selectedProject === p.id;
+                return (
+                  <div key={p.id} className="rounded-xl" style={{ background: isSel ? "var(--color-primary-soft, #efe6d8)" : "var(--color-bg)" }}>
+                    <div className="flex items-center justify-between gap-2 px-3 py-1">
+                      <button onClick={() => setSelectedProject(isSel ? null : p.id)} className="flex-1 text-left min-w-0"
+                        title="Click to show this project's visits in Scan history">
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{p.name}</p>
+                        <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
+                          {[p.zone, p.salesName, p.note].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                      </button>
+                      <button onClick={() => setHiddenProjects((s) => { const n = new Set(s); n.add(p.id); return n; })}
+                        title="Hide this project (finished)"
+                        className="text-xs flex-shrink-0 px-1.5 py-0.5 rounded" style={{ color: "var(--color-text-subtle)" }}>hide</button>
+                    </div>
+                    {/* inline description editor (Project.note) */}
+                    <ProjectRowCard project={p} canEdit={canEdit} onSaved={(note) => {
+                      if (!customer) return;
+                      setCustomer({ ...customer, projects: (customer.projects || []).map((x) => x.id === p.id ? { ...x, note } : x) });
+                    }} />
+                  </div>
+                );
+              })}
+              {hiddenProjects.size > 0 && (
+                <button onClick={() => setHiddenProjects(new Set())}
+                  className="text-xs underline" style={{ color: "var(--color-text-subtle)" }}>
+                  Show {hiddenProjects.size} hidden project{hiddenProjects.size > 1 ? "s" : ""}
+                </button>
+              )}
             </div>
+            {canEdit && (addingProject ? (
+              <div className="mt-3 flex gap-2">
+                <input value={newProjName} onChange={(e) => setNewProjName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addProjectFromCard()}
+                  placeholder="Project name" autoFocus
+                  className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                <button onClick={addProjectFromCard} className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "var(--color-primary)" }}>Add</button>
+                <button onClick={() => { setAddingProject(false); setNewProjName(""); }} className="px-2 py-2 rounded-lg text-sm" style={{ color: "var(--color-text-muted)" }}>Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => setAddingProject(true)} className="mt-3 text-xs flex items-center gap-1" style={{ color: "var(--color-primary)" }}>+ Add project</button>
+            ))}
           </div>
         )}
 
@@ -458,14 +527,16 @@ export default function CustomerDetailPage() {
         </div>
         </div>
 
-        {/* Interest history */}
+        {/* Scan history (filtered to the selected project's visits when one is chosen — [03]) */}
         <div className="lg:col-span-2 p-5" style={card}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Scan history</h2>
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{uniqueProducts.size} items · {customer.sessions.length} sessions</span>
+            <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
+              Scan history{selectedProject ? " · filtered" : ""}
+            </h2>
+            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{uniqueProducts.size} items · {visibleSessions.length} sessions</span>
           </div>
           {uniqueProducts.size === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: "var(--color-text-subtle)" }}>No scan history yet</p>
+            <p className="text-sm py-6 text-center" style={{ color: "var(--color-text-subtle)" }}>{selectedProject ? "No scans for this project yet" : "No scan history yet"}</p>
           ) : (
             <div className="space-y-2">
               {[...uniqueProducts.values()].map((scan) => {

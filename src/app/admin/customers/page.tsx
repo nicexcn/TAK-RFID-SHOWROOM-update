@@ -9,7 +9,6 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toCsv } from "@/lib/csv";
 import { CUSTOMER_TYPES, customerTypeLabel, customerTypeColor } from "@/lib/customerTypes";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
@@ -52,11 +51,7 @@ export default function CustomersPage() {
   const [total, setTotal] = useState(0);
   const [byTitle, setByTitle] = useState<{ title: string; count: number }[]>([]);
   const [startingSession, setStartingSession] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
-  const [role, setRole] = useState("");
   const reqSeq = useRef(0);
-  // Item 6: ONLY Super Admin may export the customer database.
-  const canExport = role === "super_admin";
   // The Type filter is a real column filter (keyed by the "title" column id).
   const filterTitle = (columnFilters.find((f) => f.id === "title")?.value as string) ?? "all";
 
@@ -64,7 +59,6 @@ export default function CustomersPage() {
   // Filter/sort changes reset to page 1; paging alone must not.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setPage(1); }, [globalFilter, columnFilters, sorting]);
-  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }); }, []);
 
   async function fetchCustomers() {
     const seq = ++reqSeq.current;
@@ -88,30 +82,6 @@ export default function CustomersPage() {
       if (seq === reqSeq.current) { setLoadError(true); setCustomers([]); }
     } finally {
       if (seq === reqSeq.current) setLoading(false);
-    }
-  }
-
-  async function handleExport() {
-    if (exporting) return;
-    setExporting(true);
-    try {
-      // No ?page → the API returns the full array (all customers), for the CSV.
-      const res = await fetch("/api/customers");
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) { toast("No data to export", errorToast); return; }
-      const rows = [
-        ["Code", "Full Name", "Segment", "Company", "Phone", "Email", "Channels", "Sales", "Registered"],
-        ...data.map((c: Customer) => [c.customerCode, c.fullName, c.title, c.company, c.phone, c.email, c.knowChannel.join(";"), c.salesPerson ?? "", formatDate(c.createdAt)]),
-      ];
-      const csv = toCsv(rows);
-      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast("Export failed. Please try again.", errorToast);
-    } finally {
-      setExporting(false);
     }
   }
 
@@ -188,27 +158,7 @@ export default function CustomersPage() {
         title="Customer Management"
         crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]}
         actions={<>
-          {canExport && (
-            <button onClick={handleExport} disabled={exporting}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-              {exporting ? (
-                <>
-                  <svg className="animate-spin" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
-                  </svg>
-                  Exporting…
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Export CSV
-                </>
-              )}
-            </button>
-          )}
+          {/* update-tak 13/9 [07]: customer-database export moved to the Reports page. */}
           <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
