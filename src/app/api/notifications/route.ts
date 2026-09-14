@@ -61,22 +61,32 @@ export async function POST(req: NextRequest) {
         });
 
     // update-tak 13/9: reserve the document number AT PREPARE TIME (user request — showing
-    // "—" until Complete was confusing). One session = one document: the first Prepare of a
-    // session stamps NO{YY}{MM}{seq} on that session's takeaway notifications; later items
-    // of the same session join the same number. Idempotent — already-numbered rows are
-    // skipped, and assignDocNumbers only touches takeaway (qty>0) lines.
+    // "—" until Complete was confusing). One session = one document: the FIRST Prepare of a
+    // session stamps NO{YY}{MM}{seq} on that session's notifications; every later item of
+    // the SAME session joins that existing number (found below), never a fresh one.
     if (!existing && sessionId && !row.docNo) {
-      const BKK_OFFSET_MS = 7 * 3600 * 1000;
-      const bkkDay = new Date(row.createdAt.getTime() + BKK_OFFSET_MS);
-      const prefix = `NO${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
-      const dayStartUtc = new Date(Date.UTC(bkkDay.getUTCFullYear(), bkkDay.getUTCMonth(), bkkDay.getUTCDate()) - BKK_OFFSET_MS);
-      const docNo = await assignDocNumbers(prefix, { sessionId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
-      if (docNo) {
-        row.docNo = docNo;
-        // assignDocNumbers stamped the DB rows in bulk; re-read this one so the response
-        // and broadcast carry the number.
-        const fresh = await prisma.notification.findUnique({ where: { id: row.id }, include: notifInclude });
-        if (fresh) Object.assign(row, fresh);
+      // If any notification of this session already carries a docNo, reuse it —
+      // assignDocNumbers would only see the new un-numbered row and stamp a NEW number.
+      const sessionDoc = await prisma.notification.findFirst({
+        where: { sessionId, docNo: { not: null } },
+        select: { docNo: true },
+      });
+      if (sessionDoc) {
+        await prisma.notification.update({ where: { id: row.id }, data: { docNo: sessionDoc.docNo } });
+        row.docNo = sessionDoc.docNo;
+      } else {
+        const BKK_OFFSET_MS = 7 * 3600 * 1000;
+        const bkkDay = new Date(row.createdAt.getTime() + BKK_OFFSET_MS);
+        const prefix = `NO${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
+        const dayStartUtc = new Date(Date.UTC(bkkDay.getUTCFullYear(), bkkDay.getUTCMonth(), bkkDay.getUTCDate()) - BKK_OFFSET_MS);
+        const docNo = await assignDocNumbers(prefix, { sessionId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
+        if (docNo) {
+          row.docNo = docNo;
+          // assignDocNumbers stamped the DB rows in bulk; re-read this one so the response
+          // and broadcast carry the number.
+          const fresh = await prisma.notification.findUnique({ where: { id: row.id }, include: notifInclude });
+          if (fresh) Object.assign(row, fresh);
+        }
       }
     }
 
