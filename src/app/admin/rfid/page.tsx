@@ -700,7 +700,10 @@ function RFIDPageInner() {
     const scans = (data.scans || []).map((s) => ({ ...s, deviceId: 1 as const }));
     setSession({ ...(data as unknown as Session), scans });
     const tk: Record<string, number> = {};
-    for (const s of scans) tk[s.id] = s.takeawayQty || 1;
+    // Takeaway default = 1 (update-tak 13/9) — but a PERSISTED 0 is a deliberate
+    // "not taking this home" and must NOT resurrect as 1 after reload (S4 T4.5).
+    // `?? 1` keeps the default for null/undefined while preserving an explicit 0.
+    for (const s of scans) tk[s.id] = s.takeawayQty ?? 1;
     setTakeaway(tk);
   }
 
