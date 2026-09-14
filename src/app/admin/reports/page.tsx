@@ -227,9 +227,22 @@ export default function ReportsPage() {
   const maxType = Math.max(1, ...(data?.byType || []).map((b) => b.count));
 
   const card = (label: string, value: number, hint?: string, tooltip?: string) => (
-    <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-      title={tooltip}>
-      <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>{label}</p>
+    <div className="p-4 rounded-xl relative" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+      <div className="flex items-center gap-1 mb-1">
+        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</p>
+        {tooltip && (
+          <span className="group relative inline-flex items-center cursor-help" tabIndex={0}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: "var(--color-text-muted)" }}>
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-[11px] leading-snug w-max max-w-[240px] z-20 pointer-events-none opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+              style={{ background: "var(--color-text)", color: "var(--color-surface)" }}>
+              {tooltip}
+            </span>
+          </span>
+        )}
+      </div>
       <p className="text-3xl font-semibold" style={{ color: "var(--color-text)" }}>{value}</p>
       {hint && <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{hint}</p>}
     </div>
@@ -378,14 +391,14 @@ export default function ReportsPage() {
             {query && <> · search &quot;{query}&quot;</>}
           </p>
 
-          {/* ── A. Visitor & Customer Insights ─────────────────────────────── */}
-          {sectionHeader("Visitor & Customer Insights", "ข้อมูลผู้เข้าชมและลูกค้า")}
+          {/* ── A. Visit & Customer Insights ─────────────────────────────── */}
+          {sectionHeader("Visit & Customer Insights", "ข้อมูลการเข้าชมและลูกค้า")}
 
-          {/* Total visitors + first-time vs returning */}
+          {/* Total visits + first-time vs returning */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {card("Total visitors", data.summary.visits, `${data.summary.customers} customers`, "Distinct sessions that scanned at least one item this period. Walk-in / zero-scan sessions are not counted.")}
+            {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "Distinct sessions that scanned at least one item this period. A customer with multiple scanning sessions counts as multiple visits. Walk-in / zero-scan sessions are not counted.")}
             {card("Customers", data.summary.customers, undefined, "Distinct registered customers (by Customer ID) who scanned this period. Walk-ins are excluded.")}
-            {card("First-time", data.summary.firstTime, "visitors this period", "Customers whose first-ever visit is within this period (no earlier scans).")}
+            {card("First-time", data.summary.firstTime, "customers this period", "Customers whose first-ever scan is within this period (no earlier scans).")}
             {card("Returning", data.summary.returning, "visited before", "Customers who had scanned before this period began.")}
           </div>
 

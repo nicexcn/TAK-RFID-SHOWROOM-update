@@ -7,7 +7,7 @@ import { createColumnHelper, type SortingState, type ColumnFiltersState } from "
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CUSTOMER_TYPES, customerTypeLabel, customerTypeColor } from "@/lib/customerTypes";
 import { formatDate } from "@/lib/formatDate";
@@ -28,6 +28,9 @@ const columnHelper = createColumnHelper<Customer>();
 
 export default function CustomersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // update-tak 13/9 [16]: company-profile view — ?company=Name filters to one company's customers.
+  const companyFilter = searchParams.get("company") || "";
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -118,7 +121,16 @@ export default function CustomersPage() {
       const t = i.getValue();
       return <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: `${customerTypeColor(t)}20`, color: customerTypeColor(t) }}>{customerTypeLabel(t)}</span>;
     } }),
-    columnHelper.accessor("company", { header: "Company", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text)" }}>{i.getValue()}</span> }),
+    columnHelper.accessor("company", { header: "Company", cell: (i) => {
+      const val = i.getValue();
+      // update-tak 13/9 [16]: clickable company → company view (all customers in that company).
+      return val ? (
+        <button onClick={() => router.push(`/admin/customers?company=${encodeURIComponent(val)}`)}
+          className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
+          {val}
+        </button>
+      ) : <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>—</span>;
+    } }),
     columnHelper.accessor("phone", { header: "Phone", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
     columnHelper.accessor("email", { header: "Email", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
     columnHelper.display({ id: "channels", header: "Channels", cell: ({ row }) => {
@@ -152,18 +164,25 @@ export default function CustomersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [startingSession]);
 
+  // update-tak 13/9 [16]: company-profile view — filter customers to one company.
+  const visibleCustomers = companyFilter
+    ? customers.filter((c) => c.company === companyFilter)
+    : customers;
+
   return (
     <div>
       <PageHeader
-        title="Customer Management"
-        crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management" }]}
+        title={companyFilter ? companyFilter : "Customer Management"}
+        crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: companyFilter ? "/admin/customers" : undefined }, ...(companyFilter ? [{ label: companyFilter }] : [])]}
         actions={<>
           {/* update-tak 13/9 [07]: customer-database export moved to the Reports page. */}
-          <Link href="/admin/customers/add" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>
+          {/* update-tak 13/9 [16]: when viewing a company, the Add button pre-fills the company. */}
+          <Link href={companyFilter ? `/admin/customers/add?company=${encodeURIComponent(companyFilter)}` : "/admin/customers/add"}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "var(--color-primary)" }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add Customer
+            {companyFilter ? `Add to ${companyFilter}` : "Add Customer"}
           </Link>
         </>}
       />
@@ -250,7 +269,7 @@ export default function CustomersPage() {
       <DataTable
         tableId="customers"
         columns={columns}
-        data={customers}
+        data={visibleCustomers}
         loading={loading}
         error={loadError}
         onRetry={fetchCustomers}

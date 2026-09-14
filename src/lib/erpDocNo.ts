@@ -16,12 +16,19 @@ export function bkkDayOf(d: Date): string {
  * Stamp doc numbers on every not-yet-numbered takeaway notification for one customer-day.
  * Idempotent: notifications already carrying a docNo are left alone. Sequence continues
  * from the highest existing number for the same {YY}{MM} prefix (across all customers).
+ *
+ * update-tak 13/9 [15]: walk-in sessions (customerId null) are grouped by their customerCode
+ * instead, so they also get a docNo — previously the customerId guard skipped them entirely,
+ * leaving walk-in prep notifications showing "—" forever even when marked Complete.
  */
-export async function assignDocNumbers(prefix: string, window: { customerId: string; from: Date; to: Date }) {
+export async function assignDocNumbers(prefix: string, window: { customerId: string | null; from: Date; to: Date }) {
   // Takeaway lines only: a notification qualifies when its (sessionId, productId) scan has
   // takeawayQty > 0. Notifications for display-only scans (no takeaway) get no doc number.
+  // Group by customerId when available, else by customerCode (walk-ins).
   const candidates = await prisma.notification.findMany({
-    where: { customerId: window.customerId, createdAt: { gte: window.from, lt: window.to }, docNo: null },
+    where: window.customerId
+      ? { customerId: window.customerId, createdAt: { gte: window.from, lt: window.to }, docNo: null }
+      : { customerId: null, createdAt: { gte: window.from, lt: window.to }, docNo: null },
     select: { id: true, sessionId: true, productId: true },
   });
   if (candidates.length === 0) return;

@@ -4,7 +4,7 @@ import { Spinner } from "@/components/Spinner";
 import { ZoneCascade } from "@/components/ZoneCascade";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => ({ value: t.value, label: `${t.label} / ${t.labelTh}` }));
@@ -17,6 +17,9 @@ const KNOW_CHANNELS = [
 ] as const;
 
 export default function AddCustomerPage() {
+  const searchParams = useSearchParams();
+  // update-tak 13/9 [16]: pre-fill company from ?company= (the "add to this company" flow).
+  const presetCompany = searchParams.get("company") || "";
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +30,7 @@ export default function AddCustomerPage() {
   const [fullName, setFullName] = useState("");
   const [title, setTitle] = useState<TitleType | "">("");
   const [titleOther, setTitleOther] = useState("");
-  const [company, setCompany] = useState("");
+  const [company, setCompany] = useState(presetCompany);
   const [phone, setPhone] = useState("");
   const [lineId, setLineId] = useState("");
   const [email, setEmail] = useState("");

@@ -38,7 +38,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // of that batch (mockup: NO26080001). Persisted server-side so numbers are stable across
     // reloads — replacing the old client-side recomputation that drifted when older
     // notifications arrived later.
-    if (status === "COMPLETE" && !updated.docNo && updated.customerId) {
+    // update-tak 13/9 [15]: walk-ins (customerId null) also get docNo now — was skipped before.
+    if (status === "COMPLETE" && !updated.docNo) {
       const BKK_OFFSET_MS = 7 * 3600 * 1000;
       const bkkDay = new Date(updated.createdAt.getTime() + BKK_OFFSET_MS);
       const prefix = `NO${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
