@@ -18,8 +18,9 @@ const KNOW_CHANNELS = [
 
 export default function AddCustomerPage() {
   const searchParams = useSearchParams();
-  // update-tak 13/9 [16]: pre-fill company from ?company= (the "add to this company" flow).
+  // update-tak 13/9 [16]: pre-fill company from ?company= OR ?companyId= (the "add to this company" flow).
   const presetCompany = searchParams.get("company") || "";
+  const presetCompanyId = searchParams.get("companyId") || "";
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +44,15 @@ export default function AddCustomerPage() {
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
+
+  // update-tak 13/9 [16]: when ?companyId= is set (from the company profile's "Add customer"),
+  // fetch the company name to pre-fill the company field.
+  useEffect(() => {
+    if (!presetCompanyId) return;
+    fetch(`/api/companies/${presetCompanyId}`).then((r) => r.json()).then((d) => {
+      if (d.name) setCompany(d.name);
+    }).catch(() => {});
+  }, [presetCompanyId]);
 
   // Refs to move the user to the first missing required field on submit.
   const fullNameRef = useRef<HTMLInputElement>(null);
@@ -109,6 +119,7 @@ export default function AddCustomerPage() {
           fullName, title,
           titleOther: title === "Other" ? titleOther : undefined,
           company, phone, email,
+          companyId: presetCompanyId || undefined, // update-tak 13/9 [16]: link to company
           lineId: lineId || undefined,
           knowChannel: channels,
           knowChannelOther: channels.includes("Other") ? channelOther : undefined,

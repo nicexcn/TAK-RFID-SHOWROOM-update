@@ -22,6 +22,7 @@ const TITLE_ORDER = new Map<string, number>(CUSTOMER_TYPES.map((t, i) => [t.valu
 interface Customer {
   id: string; customerCode: string; fullName: string; title: string;
   company: string; phone: string; email: string; knowChannel: string[]; createdAt: string; salesPerson?: string | null; source?: string | null;
+  companyId?: string | null;
 }
 
 const columnHelper = createColumnHelper<Customer>();
@@ -70,6 +71,8 @@ export default function CustomersPage() {
     const params = new URLSearchParams({ page: String(page) });
     if (globalFilter) params.set("search", globalFilter);
     if (filterTitle !== "all") params.set("title", filterTitle);
+    // update-tak 13/9 [16]: server-side company filter (robust for >10 customers per company).
+    if (companyFilter) params.set("company", companyFilter);
     const s = sorting[0];
     if (s) { params.set("sort", s.id); params.set("dir", s.desc ? "desc" : "asc"); }
     try {
@@ -123,13 +126,16 @@ export default function CustomersPage() {
     } }),
     columnHelper.accessor("company", { header: "Company", cell: (i) => {
       const val = i.getValue();
-      // update-tak 13/9 [16]: clickable company → company view (all customers in that company).
-      return val ? (
-        <button onClick={() => router.push(`/admin/customers?company=${encodeURIComponent(val)}`)}
-          className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
+      const row = i.row.original as Customer;
+      // update-tak 13/9 [16]: clickable company → company profile page (when companyId exists),
+      // fallback to the ?company=Name filtered list for legacy customers.
+      if (!val) return <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>—</span>;
+      const href = row.companyId ? `/admin/companies/${row.companyId}` : `/admin/customers?company=${encodeURIComponent(val)}`;
+      return (
+        <Link href={href} className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
           {val}
-        </button>
-      ) : <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>—</span>;
+        </Link>
+      );
     } }),
     columnHelper.accessor("phone", { header: "Phone", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
     columnHelper.accessor("email", { header: "Email", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
@@ -164,10 +170,8 @@ export default function CustomersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [startingSession]);
 
-  // update-tak 13/9 [16]: company-profile view — filter customers to one company.
-  const visibleCustomers = companyFilter
-    ? customers.filter((c) => c.company === companyFilter)
-    : customers;
+  // update-tak 13/9 [16]: company filter is now server-side (?company=X in the API call),
+  // so we no longer filter client-side — all matching customers come back regardless of page size.
 
   return (
     <div>
@@ -269,7 +273,7 @@ export default function CustomersPage() {
       <DataTable
         tableId="customers"
         columns={columns}
-        data={visibleCustomers}
+        data={customers}
         loading={loading}
         error={loadError}
         onRetry={fetchCustomers}

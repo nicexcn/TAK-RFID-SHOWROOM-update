@@ -27,6 +27,7 @@ const navGroups = [
     { label: "Survey Results",      href: "/admin/survey" },
   ] },
   { section: "Manage", items: [
+    { label: "Companies",           href: "/admin/companies" },
     { label: "Product Management",  href: "/admin/products" },
     { label: "Settings",            href: "/admin/settings" },
   ] },

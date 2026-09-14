@@ -68,11 +68,34 @@ model Customer {
   // Distinguishes a TWC-invited customer (salesPerson = TWC rep) from a Walk-in (salesPerson =
   // showroom staff), and drives the "customer source" report category.
   source           String?
+  // update-tak 13/9 [16]: links this customer to a Company entity (company-profile page).
+  // Nullable — legacy customers are backfilled; new ones get it from the add form.
+  // `company` String stays as a denormalized field for the ERP export / reports / scan search.
+  companyId        String?
+  companyRef       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   notifications    Notification[]
   contacts         Contact[]
   projects         Project[]
+}
+
+// update-tak 13/9 [16]: Company entity — groups customers under one company, carries
+// company-level info (contact, address, zone). Replaces the free-text `company` String for
+// grouping/profile purposes (the String stays as a denorm field). Sales stays per-customer.
+model Company {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  phone       String?
+  email       String?
+  address     String?
+  zone        String?
+  note        String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  customers   Customer[]
+
+  @@index([name])
 }
 
 // Sales master (TAK feedback slides 3+28): the real TWC salesforce (~62 people with ERP

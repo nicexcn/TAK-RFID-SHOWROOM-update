@@ -6,6 +6,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const title = searchParams.get("title") || "";
+  // update-tak 13/9 [16]: server-side company filter — when ?company=X is present, filter to
+  // that company's customers exactly (not the free-text search). Robust for companies with
+  // more customers than one page (the old client-side filter only saw the current page's 10).
+  const companyFilter = searchParams.get("company") || "";
   // Optional registered-date range (YYYY-MM-DD) for the dashboard export; 'to' includes the whole day.
   const fromP = searchParams.get("from");
   const toP = searchParams.get("to");
@@ -19,6 +23,7 @@ export async function GET(req: NextRequest) {
     AND: [
       title ? { title } : {},
       createdAt ? { createdAt } : {},
+      companyFilter ? { company: companyFilter } : {},
       search ? { OR: [
         { fullName: { contains: search, mode: "insensitive" as const } },
         { customerCode: { contains: search, mode: "insensitive" as const } },
@@ -54,7 +59,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent, salesPerson, zone, project, source } = body;
+  const { fullName, title, titleOther, company, phone, email, lineId, knowChannel, knowChannelOther, pdpaConsent, salesPerson, zone, project, source, companyId } = body;
   // Backstop: an "Other" occupation must be specified (the client also enforces this).
   if (title === "Other" && !String(titleOther || "").trim()) {
     return NextResponse.json({ error: "Please specify the segment when 'Other' is selected." }, { status: 400 });
@@ -82,6 +87,7 @@ export async function POST(req: NextRequest) {
       zone: String(zone || "").trim() || null,
       project: String(project || "").trim() || null,
       source: String(source || "").trim() || null,
+      companyId: companyId || null, // update-tak 13/9 [16]: link to Company
     },
   });
   return NextResponse.json(customer, { status: 201 });
