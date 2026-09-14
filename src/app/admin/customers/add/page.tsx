@@ -353,9 +353,7 @@ export default function AddCustomerPage() {
                 {title !== "Contractor" && me && !salesOptions.some((s) => s.name === me) ? <option value={me} /> : null}
               </datalist>
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                {title === "Contractor"
-                  ? "Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only."
-                  : "Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management"}
+                Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management
               </p>
             </div>
             <div>

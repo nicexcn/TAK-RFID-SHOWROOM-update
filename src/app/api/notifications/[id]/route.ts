@@ -34,17 +34,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // ERP document number (TAK slide 26 + template on slide 27): the FIRST completion in a
-    // (customer, Bangkok-day) prep batch stamps NO{YY}{MM}{seq} on every takeaway notification
-    // of that batch (mockup: NO26080001). Persisted server-side so numbers are stable across
-    // reloads — replacing the old client-side recomputation that drifted when older
-    // notifications arrived later.
-    // update-tak 13/9 [15]: walk-ins (customerId null) also get docNo now — was skipped before.
-    if (status === "COMPLETE" && !updated.docNo) {
+    // session's prep batch stamps NO{YY}{MM}{seq} on every takeaway notification of that
+    // visit (mockup: NO26080001). Persisted server-side so numbers are stable across reloads.
+    // update-tak 13/9: grouped per SESSION (one visit = one document). The old customer-day
+    // grouping merged every walk-in session of the day into one document. Walk-ins included.
+    if (status === "COMPLETE" && !updated.docNo && updated.sessionId) {
       const BKK_OFFSET_MS = 7 * 3600 * 1000;
       const bkkDay = new Date(updated.createdAt.getTime() + BKK_OFFSET_MS);
       const prefix = `NO${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
       const dayStartUtc = new Date(Date.UTC(bkkDay.getUTCFullYear(), bkkDay.getUTCMonth(), bkkDay.getUTCDate()) - BKK_OFFSET_MS);
-      const docNo = await assignDocNumbers(prefix, { customerId: updated.customerId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
+      const docNo = await assignDocNumbers(prefix, { sessionId: updated.sessionId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
       if (docNo) {
         await broadcastNotifications({ type: "update", notification: { ...updated, docNo } });
       }

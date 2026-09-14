@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
-// ERP document numbers (TAK slide 26 + template on 27): NO{YY}{MM}{0001} per prep batch
-// (= one customer on one Bangkok day, takeaway lines only). Assigned once when the
-// first notification in the batch is marked COMPLETE and persisted on Notification.docNo,
-// so the number never shifts no matter what order notifications arrive or load in.
+// ERP document numbers (TAK slide 26 + template on 27): NO{YY}{MM}{0001} per prep batch,
+// assigned once when the first notification of the batch is marked COMPLETE and persisted
+// on Notification.docNo, so the number never shifts.
+//
+// update-tak 13/9: a "batch" is ONE SESSION (= one customer visit), not one customer-day.
+// The old customer-day grouping merged every walk-in session of the same day (all share
+// customerId=null) into one document — a new session after "End Session" kept appending to
+// the previous document. Grouping per session makes each visit its own document.
 export const BKK_OFFSET_MS = 7 * 3600 * 1000;
 
 /** Bangkok calendar day of a timestamp: "2026-08-27" */
@@ -13,33 +17,29 @@ export function bkkDayOf(d: Date): string {
 }
 
 /**
- * Stamp doc numbers on every not-yet-numbered takeaway notification for one customer-day.
- * Idempotent: notifications already carrying a docNo are left alone. Sequence continues
- * from the highest existing number for the same {YY}{MM} prefix (across all customers).
+ * Stamp a doc number on every not-yet-numbered takeaway notification of ONE session
+ * (all items prepared during the same visit share the document). Idempotent: rows
+ * already carrying a docNo are left alone. The sequence continues from the highest
+ * existing number for the same {YY}{MM} prefix.
  *
- * update-tak 13/9 [15]: walk-in sessions (customerId null) are grouped by their customerCode
- * instead, so they also get a docNo — previously the customerId guard skipped them entirely,
- * leaving walk-in prep notifications showing "—" forever even when marked Complete.
+ * update-tak 13/9 [15]: walk-in sessions (customerId null) are included — previously
+ * the customerId guard skipped them, leaving walk-in prep notifications showing "—".
  */
-export async function assignDocNumbers(prefix: string, window: { customerId: string | null; from: Date; to: Date }) {
+export async function assignDocNumbers(prefix: string, window: { sessionId: string; from: Date; to: Date }) {
   // Takeaway lines only: a notification qualifies when its (sessionId, productId) scan has
   // takeawayQty > 0. Notifications for display-only scans (no takeaway) get no doc number.
-  // Group by customerId when available, else by customerCode (walk-ins).
   const candidates = await prisma.notification.findMany({
-    where: window.customerId
-      ? { customerId: window.customerId, createdAt: { gte: window.from, lt: window.to }, docNo: null }
-      : { customerId: null, createdAt: { gte: window.from, lt: window.to }, docNo: null },
-    select: { id: true, sessionId: true, productId: true },
+    where: { sessionId: window.sessionId, createdAt: { gte: window.from, lt: window.to }, docNo: null },
+    select: { id: true, productId: true },
   });
   if (candidates.length === 0) return;
 
-  const takeaways = new Set<string>();
   const scanKeys = await prisma.scan.findMany({
-    where: { sessionId: { in: candidates.map((c) => c.sessionId).filter((s): s is string => !!s) }, takeawayQty: { gt: 0 } },
-    select: { sessionId: true, productId: true },
+    where: { sessionId: window.sessionId, takeawayQty: { gt: 0 } },
+    select: { productId: true },
   });
-  for (const s of scanKeys) takeaways.add(`${s.sessionId}|${s.productId}`);
-  const ids = candidates.filter((c) => c.sessionId && takeaways.has(`${c.sessionId}|${c.productId}`)).map((c) => c.id);
+  const takeawayProducts = new Set(scanKeys.map((s) => s.productId));
+  const ids = candidates.filter((c) => takeawayProducts.has(c.productId)).map((c) => c.id);
   if (ids.length === 0) return;
 
   const last = await prisma.notification.findFirst({

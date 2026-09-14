@@ -10,6 +10,7 @@ interface Notif {
   id: string; title: string; message: string; status: string; isRead: boolean; createdAt: string;
   takeawayQty?: number | null;
   docNo?: string | null; // server-assigned ERP document no. of the prep batch (slide 26)
+  sessionId?: string | null; // update-tak 13/9: doc grouping = one session (visit) = one document
   // Visit context (Phase 2): the session's chosen contact + project (slides 9+11)
   contactName?: string | null;
   project?: { id: string; name: string; zone: string | null; salesName: string | null } | null;
@@ -46,18 +47,18 @@ interface DocGroup {
   docNo: string;
 }
 
-// Group take-home notifications into one Document per (customer + day).
-// customerCode is the primary key so walk-ins (empty company) never merge
-// different customers into one document. (Notification customers carry no
-// project field, so project is not part of the key — a customer is one job
-// per day, matching the ERP mockup where a doc = one customer's day.)
+// Group take-home notifications into one Document per SESSION (= one visit).
+// update-tak 13/9: the old (customer + day) grouping merged every walk-in session of the
+// same day into ONE document (walk-ins share customerCode "WALK-IN") — a new session after
+// End Session kept appending to the previous document. Grouping per sessionId makes each
+// visit its own document, matching the docNo assignment (one session = one NO number).
 function groupNotifs(notifs: Notif[]): DocGroup[] {
   const map = new Map<string, Notif[]>();
   for (const n of notifs) {
     if (!(n.takeawayQty && n.takeawayQty > 0)) continue; // ERP doc = taken-home lines only
-    const date = bkkDay(n.createdAt);
-    const code = n.customer?.customerCode || n.customer?.fullName || "WALK-IN";
-    const key = `${code}|${date}`;
+    // Key by session; notifications without a session (legacy/manual) fall back to
+    // customer+day so they still group visibly.
+    const key = n.sessionId || `${n.customer?.customerCode || n.customer?.fullName || "WALK-IN"}|${bkkDay(n.createdAt)}`;
     const arr = map.get(key) || [];
     arr.push(n);
     map.set(key, arr);

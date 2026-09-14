@@ -358,11 +358,6 @@ export default function CustomerDetailPage() {
                   ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
                   {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
-                {form.title === "Contractor" && (
-                  <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>
-                    Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only.
-                  </p>
-                )}
               </label>
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
@@ -438,11 +433,6 @@ export default function CustomerDetailPage() {
                   ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
                   {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
-                {form.title === "Contractor" && (
-                  <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>
-                    Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only.
-                  </p>
-                )}
               </label>
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
