@@ -19,6 +19,9 @@ const errorToast = { style: { background: "var(--color-danger-soft)", color: "va
 // prep staff can view/register but not modify; deleting is limited further to admins.
 const CAN_EDIT_ROLES = ["super_admin", "admin", "management"];
 const CAN_DELETE_ROLES = ["super_admin"];
+// update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): a Contractor customer is handled by the
+// contractor sales cell ONLY — these 3 people (by ERP code). Other segments see the full list.
+const CONTRACTOR_SALES_CODES = ["C0120", "C0108", "C0117"]; // ไก่ / รัตน์ / เขม
 // Item 2: fields staff may edit after registration.
 type EditForm = {
   fullName: string; title: string; titleOther: string; company: string; phone: string;
@@ -349,9 +352,17 @@ export default function CustomerDetailPage() {
                   autoComplete="off"
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 <datalist id="edit-sales-options">
-                  {salesOptions.map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                  {form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
+                  {(form.title === "Contractor"
+                    ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
+                    : salesOptions
+                  ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
+                  {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
+                {form.title === "Contractor" && (
+                  <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>
+                    Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only.
+                  </p>
+                )}
               </label>
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
@@ -421,9 +432,17 @@ export default function CustomerDetailPage() {
                   autoComplete="off"
                   className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 <datalist id="edit-sales-options">
-                  {salesOptions.map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                  {form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
+                  {(form.title === "Contractor"
+                    ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
+                    : salesOptions
+                  ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
+                  {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
+                {form.title === "Contractor" && (
+                  <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>
+                    Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only.
+                  </p>
+                )}
               </label>
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>

@@ -10,6 +10,10 @@ import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => ({ value: t.value, label: `${t.label} / ${t.labelTh}` }));
 type TitleType = string;
 
+// update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): a Contractor customer is handled by the
+// contractor sales cell ONLY — these 3 people (by ERP code). Other segments see the full list.
+const CONTRACTOR_SALES_CODES = ["C0120", "C0108", "C0117"]; // ไก่ / รัตน์ / เขม
+
 const KNOW_CHANNELS = [
   "Facebook","Instagram","Website","Google search","Friend or colleague",
   "Designer / Architect recommendation","Sales recommendation",
@@ -342,11 +346,16 @@ export default function AddCustomerPage() {
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm"
                 style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <datalist id="sales-options">
-                {salesOptions.map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                {me && !salesOptions.some((s) => s.name === me) ? <option value={me} /> : null}
+                {(title === "Contractor"
+                  ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
+                  : salesOptions
+                ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
+                {title !== "Contractor" && me && !salesOptions.some((s) => s.name === me) ? <option value={me} /> : null}
               </datalist>
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Product Management → Salesperson
+                {title === "Contractor"
+                  ? "Contractor customers are handled by the contractor sales cell (ไก่ / รัตน์ / เขม) only."
+                  : "Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management"}
               </p>
             </div>
             <div>

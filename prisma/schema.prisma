@@ -105,6 +105,11 @@ model Sale {
   id        String   @id @default(cuid())
   code      String   @unique // ERP personnel code, e.g. "B0002"
   name      String
+  // update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): the coverage area — เขต (Bangkok
+  // districts) and จังหวัด (provinces), comma-separated as provided by TWC. Null = this
+  // person is a section manager / role-based entry, not a zone-assigned salesperson.
+  zone      String?  // เขตที่ดูแล, e.g. "สาทร,ยานนาวา,บางคอแหลม"
+  province  String?  // จังหวัด, e.g. "กรุงเทพ,สมุทรปราการ"
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }

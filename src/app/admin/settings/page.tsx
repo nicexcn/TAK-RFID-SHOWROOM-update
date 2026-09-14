@@ -104,7 +104,7 @@ export default function SettingsPage() {
   const [dropdownMessage, setDropdownMessage] = useState("");
   // Sales master (slide 28): the real TWC list with ERP codes, managed instead of
   // free-text dropdown options when activeType === "sales".
-  const [salesMaster, setSalesMaster] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [salesMaster, setSalesMaster] = useState<{ id: string; code: string; name: string; zone?: string | null; province?: string | null }[]>([]);
 
   // ── Account / User Management ──────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState({ id: "", username: "", role: "" });
@@ -431,7 +431,7 @@ export default function SettingsPage() {
     let live = true;
     fetch("/api/sales").then((r) => r.json()).then((rows) => {
       if (!live || !Array.isArray(rows)) return;
-      setSalesMaster(rows.map((r: { id: string; code: string; name: string }) => ({ id: r.id, code: r.code, name: r.name })));
+      setSalesMaster(rows.map((r: { id: string; code: string; name: string; zone?: string | null; province?: string | null }) => ({ id: r.id, code: r.code, name: r.name, zone: r.zone ?? null, province: r.province ?? null })));
       setOptions(rows.map((r: { id: string; name: string }) => ({ id: r.id, type: "sales", value: r.name, createdAt: "" })));
     }).catch(() => {});
     return () => { live = false; };
@@ -853,9 +853,15 @@ export default function SettingsPage() {
                 ) : salesMaster.map((s) => (
                   <div key={s.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-surface)" }}>
                     <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{s.code}</span>
-                    <span className="text-sm flex-1 truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
+                    <span className="text-sm truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
+                    {/* update-tak 13/9: zone coverage (เขต/จังหวัด) from the Sale master */}
+                    {s.province && (
+                      <span className="text-[11px] truncate flex-1 text-right" style={{ color: "var(--color-text-muted)" }} title={s.zone ? `เขต: ${s.zone}` : undefined}>
+                        {s.province}
+                      </span>
+                    )}
                     <button onClick={() => handleDeleteSale(s.id)} disabled={deletingOptionId === s.id}
-                      className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40"
+                      className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40 flex-shrink-0"
                       style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === s.id ? "…" : "Delete"}</button>
                   </div>
                 ))}
