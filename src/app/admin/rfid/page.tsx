@@ -298,6 +298,9 @@ function RFIDPageInner() {
       if (p.scans.some((s) => s.product.id === product.id)) return p;
       return { ...p, scans: [fakeScan, ...p.scans] };
     });
+    // Takeaway default = 1 (update-tak 13/9): the stepper reads the `takeaway` map, not
+    // scan.takeawayQty — seed it so new scans show 1 immediately.
+    setTakeaway((p) => ({ ...p, [fakeScan.id]: 1 }));
 
     // Always persist from the browser. (Server-side ingest via /api/scan only attributes
     // when the scan's device_id matches the session's readerId; readers that send a generic
@@ -336,6 +339,8 @@ function RFIDPageInner() {
         takeawayQty: 1,
       };
       setSession((prev) => (prev ? { ...prev, scans: [fakeScan, ...prev.scans] } : prev));
+      // Takeaway default = 1 (update-tak 13/9): seed the stepper map like the ws- path.
+      setTakeaway((prev) => ({ ...prev, [fakeScan.id]: 1 }));
       scanQueueRef.current.push({ productId: p.id, rfidTag: p.productCode || "" });
       if (!flushTimerRef.current) flushTimerRef.current = setTimeout(flushScans, 200);
       setPickerOpen(false);

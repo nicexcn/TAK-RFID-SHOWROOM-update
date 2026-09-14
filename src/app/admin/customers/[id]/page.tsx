@@ -466,24 +466,14 @@ export default function CustomerDetailPage() {
               ) : projects.map((p) => {
                 const isSel = selectedProject === p.id;
                 return (
-                  <div key={p.id} className="rounded-xl" style={{ background: isSel ? "var(--color-primary-soft, #efe6d8)" : "var(--color-bg)" }}>
-                    <div className="flex items-center justify-between gap-2 px-3 py-1">
-                      <button onClick={() => setSelectedProject(isSel ? null : p.id)} className="flex-1 text-left min-w-0"
-                        title="Click to show this project's visits in Scan history">
-                        <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{p.name}</p>
-                        <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
-                          {[p.zone, p.salesName, p.note].filter(Boolean).join(" · ") || "—"}
-                        </p>
-                      </button>
-                      <button onClick={() => setHiddenProjects((s) => { const n = new Set(s); n.add(p.id); return n; })}
-                        title="Hide this project (finished)"
-                        className="text-xs flex-shrink-0 px-1.5 py-0.5 rounded" style={{ color: "var(--color-text-subtle)" }}>hide</button>
-                    </div>
-                    {/* inline description editor (Project.note) */}
-                    <ProjectRowCard project={p} canEdit={canEdit} onSaved={(note) => {
-                      if (!customer) return;
-                      setCustomer({ ...customer, projects: (customer.projects || []).map((x) => x.id === p.id ? { ...x, note } : x) });
-                    }} />
+                  <div key={p.id}>
+                    <ProjectRowCard project={p} canEdit={canEdit} selected={isSel}
+                      onSelect={() => setSelectedProject(isSel ? null : p.id)}
+                      onHide={() => setHiddenProjects((s) => { const n = new Set(s); n.add(p.id); return n; })}
+                      onSaved={(note) => {
+                        if (!customer) return;
+                        setCustomer({ ...customer, projects: (customer.projects || []).map((x) => x.id === p.id ? { ...x, note } : x) });
+                      }} />
                   </div>
                 );
               })}
@@ -647,9 +637,13 @@ export default function CustomerDetailPage() {
   );
 }
 
-// One project row in the Projects card: name + zone + inline editable description (Project.note).
+// One project row in the Projects card: clickable name row (select → Scan history filters to
+// this project's visits) + per-project hide + inline editable remark (Project.note).
 // PATCHes /api/projects {id, note} and reports the new value up via onSaved.
-function ProjectRowCard({ project, canEdit, onSaved }: { project: ProjectRow; canEdit: boolean; onSaved: (note: string | null) => void }) {
+function ProjectRowCard({ project, canEdit, selected, onSelect, onHide, onSaved }: {
+  project: ProjectRow; canEdit: boolean; selected?: boolean;
+  onSelect?: () => void; onHide?: () => void; onSaved: (note: string | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState(project.note || "");
   const [saving, setSaving] = useState(false);
@@ -664,19 +658,26 @@ function ProjectRowCard({ project, canEdit, onSaved }: { project: ProjectRow; ca
     } finally { setSaving(false); }
   }
   return (
-    <div className="p-3 rounded-xl" style={{ background: "var(--color-bg)" }}>
+    <div className="p-3 rounded-xl" style={{ background: selected ? "var(--color-primary-soft, #efe6d8)" : "var(--color-bg)" }}>
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
+        <button type="button" onClick={onSelect} className="flex-1 text-left min-w-0"
+          title="Click to show this project's visits in Scan history">
           <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{project.name}</p>
           <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
             {[project.zone, project.salesName, project.note].filter(Boolean).join(" · ") || "—"}
           </p>
+        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onHide && (
+            <button type="button" onClick={onHide} title="Hide this project (finished)"
+              className="text-xs px-1.5 py-0.5 rounded" style={{ color: "var(--color-text-subtle)" }}>hide</button>
+          )}
+          {canEdit && (
+            <button onClick={() => { setNote(project.note || ""); setOpen(!open); }} className="text-xs" style={{ color: "var(--color-primary)" }}>
+              {open ? "Close" : "✎ Remark"}
+            </button>
+          )}
         </div>
-        {canEdit && (
-          <button onClick={() => { setNote(project.note || ""); setOpen(!open); }} className="text-xs flex-shrink-0" style={{ color: "var(--color-primary)" }}>
-            {open ? "Close" : "✎ Remark"}
-          </button>
-        )}
       </div>
       {open && (
         <div className="mt-2 flex gap-2">

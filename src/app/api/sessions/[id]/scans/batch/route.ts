@@ -61,11 +61,13 @@ export async function POST(
 
     // Race-proof insert: the @@unique([sessionId, productId]) backstop means
     // concurrent batches can't double-insert; skipDuplicates handles tags
-    // already scanned in this session.
+    // already scanned in this session. takeawayQty starts at 1 (update-tak 13/9:
+    // the customer takes one home by default — staff dial it down to 0 if not).
     const result = await prisma.scan.createMany({
       data: [...finalIds].map((productId) => ({
         productId,
         sessionId,
+        takeawayQty: 1,
       })),
       skipDuplicates: true,
     });
