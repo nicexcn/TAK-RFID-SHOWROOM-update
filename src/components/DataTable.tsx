@@ -63,6 +63,8 @@ export interface DataTableProps<T> {
   totalPages?: number;
   onPageChange?: (page: number) => void;
   rowStyle?: (row: T) => React.CSSProperties | undefined;
+  // update-tak 13/9: optional row click handler — makes the whole row clickable.
+  onRowClick?: (row: T) => void;
   getRowId?: (row: T) => string;
   enableColumnHiding?: boolean;
   enableColumnReorder?: boolean;
@@ -176,6 +178,7 @@ export function DataTable<T>({
   totalPages = 1,
   onPageChange,
   rowStyle,
+  onRowClick,
   getRowId,
   enableColumnHiding = true,
   enableColumnReorder = true,
@@ -356,7 +359,9 @@ export function DataTable<T>({
                 <tr><td colSpan={visibleCols} className="text-center py-10" style={{ color: "var(--color-text-subtle)" }}>{emptyMessage}</td></tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} style={{ borderBottom: "1px solid var(--color-bg)", ...(rowStyle?.(row.original) ?? {}) }}>
+                  <tr key={row.id}
+                    onClick={() => onRowClick?.(row.original)}
+                    style={{ borderBottom: "1px solid var(--color-bg)", cursor: onRowClick ? "pointer" : undefined, ...(rowStyle?.(row.original) ?? {}) }}>
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3 whitespace-nowrap align-middle">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -51,6 +51,7 @@ export default function AddCustomerPage() {
     if (!presetCompanyId) return;
     fetch(`/api/companies/${presetCompanyId}`).then((r) => r.json()).then((d) => {
       if (d.name) setCompany(d.name);
+      if (d.zone) setZone(d.zone); // pre-fill zone from the company
     }).catch(() => {});
   }, [presetCompanyId]);
 
@@ -153,6 +154,15 @@ export default function AddCustomerPage() {
       />
 
       <div className="rounded-xl p-8 space-y-8" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        {/* update-tak 13/9 [16]: banner when adding to an existing company */}
+        {presetCompanyId && (
+          <div className="rounded-xl p-4" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
+            <p className="text-sm" style={{ color: "var(--color-text)" }}>
+              Adding a new contact to <span className="font-semibold">{presetCompany || company}</span>
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Company field is locked — change it on the company profile if needed.</p>
+          </div>
+        )}
         {/* Personal */}
         <section>
           <h2 className="text-base font-semibold mb-5" style={{ color: "var(--color-text)" }}>Personal Information</h2>
@@ -218,7 +228,8 @@ export default function AddCustomerPage() {
                 onChange={(e) => { setCompany(e.target.value); clearFieldError("company"); }}
                 aria-invalid={!!fieldErrors.company}
                 placeholder="Company / organisation name"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.company ? { ...inputStyle, ...errorRing } : inputStyle} />
+                disabled={!!presetCompanyId}
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.company ? { ...inputStyle, ...errorRing } : presetCompanyId ? { ...inputStyle, opacity: 0.6 } : inputStyle} />
               {fieldErrors.company && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.company}</p>}
             </div>
             <div>

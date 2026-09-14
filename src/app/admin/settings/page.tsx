@@ -39,6 +39,8 @@ const DROPDOWN_TYPES = [
   { key: "brand", label: "Brand" },
   { key: "materialType", label: "Material Type" },
   { key: "category", label: "Category" },
+  { key: "size", label: "Size" },
+  { key: "colour", label: "Colour" },
 ];
 
 const TABS = [

@@ -274,6 +274,7 @@ export default function CustomersPage() {
         tableId="customers"
         columns={columns}
         data={customers}
+        onRowClick={(c) => router.push(`/admin/customers/${c.id}`)}
         loading={loading}
         error={loadError}
         onRetry={fetchCustomers}

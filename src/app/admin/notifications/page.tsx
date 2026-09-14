@@ -32,18 +32,7 @@ function bkkDay(iso: string) {
   return new Date(new Date(iso).getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-// URL-safe base64 (uses -_ instead of +/, no padding) for passing the items JSON to
-// /print/erp-doc. Raw JSON in the query string trips the on-prem ModSecurity WAF (the
-// {" ":""} syntax looks like injection); base64 is opaque to it. Decoded in the print page.
-function urlSafeB64(s: string) {
-  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-function fromUrlSafeB64(s: string) {
-  try {
-    const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
-    return decodeURIComponent(escape(atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad)));
-  } catch { return ""; }
-}
+// URL-safe base64 helpers removed (print slip + sticker buttons removed per update-tak 13/9).
 
 interface DocGroup {
   key: string;
@@ -245,17 +234,6 @@ function DocGroups({
         const totalQty = g.items.reduce((s, n) => s + (n.takeawayQty || 0), 0);
         const dateDisplay = new Date(g.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
         // Items payload excludes imageUrl — it's ~130 chars/item and pushes the URL past
-        // IIS's query-string limit (a 7-item doc was already 2051 chars > 2048). The slip
-        // design (3.jfif) shows only Item No./Description/Quantity anyway. base64 keeps the
-        // JSON off the on-prem WAF (raw JSON in a query param 403s).
-        const itemsParam = urlSafeB64(JSON.stringify(g.items.map((n) => ({
-          code: n.product.productCode || "", name: n.product.name, qty: n.takeawayQty || 0,
-          brand: n.product.brand || "",
-        }))));
-        const printHref = `/print/erp-doc?${new URLSearchParams({
-          doc: g.docNo, date: g.date, company: g.company, contact: g.contact,
-          phone: g.phone, project: g.project, customerCode: g.customerCode, items: itemsParam,
-        }).toString()}`;
         return (
           <div key={g.key}>
             {/* Document header */}
@@ -279,22 +257,7 @@ function DocGroups({
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                 {g.items.length} item{g.items.length !== 1 ? "s" : ""} · {totalQty} pcs
               </span>
-              <a href={printHref} target="_blank" rel="noopener noreferrer" title="Print requisition slip (ใบเบิกรายการ)"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ml-auto"
-                style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
-                🖨 Print slip
-              </a>
-              {/* Envelope sticker — ONE per document (TAK feedback slide 12): the sticker
-                  carries only customer/project info (no product code), so printing per item
-                  was redundant. Prints once for the whole prepared batch. */}
-              {g.customerCode && (
-                <a href={`/print/sticker?${new URLSearchParams({ company: g.company || "", contact: g.contact || "", phone: g.phone || "", requester: g.contact || "", code: g.customerCode || "" }).toString()}`}
-                  target="_blank" rel="noopener noreferrer" title="Print envelope sticker (one per prepared batch)"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
-                  🖨 Print sticker
-                </a>
-              )}
+              {/* update-tak 13/9: Print slip + Print sticker removed from Notifications per feedback. */}
             </div>
             {/* Per-item prep cards */}
             <div className="space-y-3 pl-4" style={{ borderLeft: "2px solid var(--color-border)" }}>
