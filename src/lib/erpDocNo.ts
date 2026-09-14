@@ -26,8 +26,10 @@ export function bkkDayOf(d: Date): string {
  * the customerId guard skipped them, leaving walk-in prep notifications showing "—".
  */
 export async function assignDocNumbers(prefix: string, window: { sessionId: string; from: Date; to: Date }) {
-  // Takeaway lines only: a notification qualifies when its (sessionId, productId) scan has
-  // takeawayQty > 0. Notifications for display-only scans (no takeaway) get no doc number.
+  // Prefer takeaway lines (scan qty > 0). update-tak 13/9: numbers are now reserved at
+  // PREPARE time, when the scan may not be flushed to the DB yet (optimistic UI) — in that
+  // case fall back to numbering all of the session's un-numbered notifications. A staff-
+  // pressed "Prepare" always means the item is taken home, so this is the right set.
   const candidates = await prisma.notification.findMany({
     where: { sessionId: window.sessionId, createdAt: { gte: window.from, lt: window.to }, docNo: null },
     select: { id: true, productId: true },
@@ -39,8 +41,8 @@ export async function assignDocNumbers(prefix: string, window: { sessionId: stri
     select: { productId: true },
   });
   const takeawayProducts = new Set(scanKeys.map((s) => s.productId));
-  const ids = candidates.filter((c) => takeawayProducts.has(c.productId)).map((c) => c.id);
-  if (ids.length === 0) return;
+  let ids = candidates.filter((c) => takeawayProducts.has(c.productId)).map((c) => c.id);
+  if (ids.length === 0) ids = candidates.map((c) => c.id); // scan not persisted yet — number all
 
   const last = await prisma.notification.findFirst({
     where: { docNo: { startsWith: prefix } },

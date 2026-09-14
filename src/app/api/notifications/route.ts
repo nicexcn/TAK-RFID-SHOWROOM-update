@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { broadcastNotifications } from "@/lib/realtime";
 import { notifInclude, attachTakeaway, attachTakeawayMany, attachVisitInfoMany } from "@/lib/notifDetails";
+import { assignDocNumbers } from "@/lib/erpDocNo";
 
 export async function GET(req: NextRequest) {
   try {
@@ -58,6 +59,26 @@ export async function POST(req: NextRequest) {
           },
           include: notifInclude,
         });
+
+    // update-tak 13/9: reserve the document number AT PREPARE TIME (user request — showing
+    // "—" until Complete was confusing). One session = one document: the first Prepare of a
+    // session stamps NO{YY}{MM}{seq} on that session's takeaway notifications; later items
+    // of the same session join the same number. Idempotent — already-numbered rows are
+    // skipped, and assignDocNumbers only touches takeaway (qty>0) lines.
+    if (!existing && sessionId && !row.docNo) {
+      const BKK_OFFSET_MS = 7 * 3600 * 1000;
+      const bkkDay = new Date(row.createdAt.getTime() + BKK_OFFSET_MS);
+      const prefix = `NO${String(bkkDay.getUTCFullYear()).slice(2)}${String(bkkDay.getUTCMonth() + 1).padStart(2, "0")}`;
+      const dayStartUtc = new Date(Date.UTC(bkkDay.getUTCFullYear(), bkkDay.getUTCMonth(), bkkDay.getUTCDate()) - BKK_OFFSET_MS);
+      const docNo = await assignDocNumbers(prefix, { sessionId, from: dayStartUtc, to: new Date(dayStartUtc.getTime() + 24 * 3600 * 1000) });
+      if (docNo) {
+        row.docNo = docNo;
+        // assignDocNumbers stamped the DB rows in bulk; re-read this one so the response
+        // and broadcast carry the number.
+        const fresh = await prisma.notification.findUnique({ where: { id: row.id }, include: notifInclude });
+        if (fresh) Object.assign(row, fresh);
+      }
+    }
 
     const notification = await attachTakeaway(row); // include the takeaway quantity
     // Carry the row in the broadcast so subscribers update instantly without a refetch.
