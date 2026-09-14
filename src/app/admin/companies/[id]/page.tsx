@@ -71,10 +71,13 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
           {!editing ? (
             <button onClick={() => setEditing(true)} className="px-4 py-2 rounded-xl text-sm"
               style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>✎ Edit</button>
-          ) : (
+          ) : (<>
             <button onClick={save} className="px-4 py-2 rounded-xl text-sm font-medium text-white"
               style={{ background: "var(--color-primary)" }}>Save</button>
-          )}
+            <button onClick={() => { setEditing(false); setForm({ name: company.name || "", phone: company.phone || "", email: company.email || "", address: company.address || "", zone: company.zone || "", note: company.note || "" }); }}
+              className="px-4 py-2 rounded-xl text-sm"
+              style={{ background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
+          </>)}
         </>}
       />
 

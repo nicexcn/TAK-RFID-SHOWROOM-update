@@ -1188,7 +1188,20 @@ function RFIDPageInner() {
                 <table className="w-full min-w-max text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-bg)" }}>
-                      {["Show","Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
+                      <th className="px-4 py-3 text-center">
+                        <label className="flex items-center justify-center cursor-pointer" title="Select all / deselect all">
+                          <input type="checkbox"
+                            checked={visibleScans.length > 0 && visibleScans.every((s) => s.showOnDisplay ?? true)}
+                            ref={(el) => { if (el) el.indeterminate = visibleScans.some((s) => !(s.showOnDisplay ?? true)) && visibleScans.some((s) => s.showOnDisplay ?? true); }}
+                            onChange={() => {
+                              const allShown = visibleScans.every((s) => s.showOnDisplay ?? true);
+                              visibleScans.forEach((s) => { if ((s.showOnDisplay ?? true) === allShown) handleToggleDisplay(s); });
+                            }}
+                            className="w-4 h-4 cursor-pointer"
+                            style={{ accentColor: "var(--color-primary)" }} />
+                        </label>
+                      </th>
+                      {["Image","Code","Name","Location","Material","Category","Status","Takeaway","Action"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap text-xs"
                           style={{ color: "var(--color-text-muted)" }}>{h}</th>
                       ))}
