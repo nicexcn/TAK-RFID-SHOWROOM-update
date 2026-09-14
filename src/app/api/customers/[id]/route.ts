@@ -11,8 +11,17 @@ const CAN_DELETE_CUSTOMER = ["super_admin"];
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const customer = await prisma.customer.findUnique({ where: { id }, include: { contacts: { orderBy: { createdAt: "asc" } }, projects: { orderBy: { createdAt: "asc" } } } });
+    const customer = await prisma.customer.findUnique({ where: { id }, include: { contacts: { orderBy: { createdAt: "asc" } }, projects: { orderBy: { createdAt: "asc" } }, companyRef: true } });
     if (!customer) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // update-tak 13/9 [16]: fetch other customers in the same company (for the "other contacts" card).
+    const companyCustomers = customer.companyId
+      ? await prisma.customer.findMany({
+          where: { companyId: customer.companyId, id: { not: id } },
+          select: { id: true, customerCode: true, fullName: true, title: true, phone: true, email: true, company: true },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
 
     // Interest history: which products this customer scanned, across their sessions
     // (customer req #3: track which customer scanned which product, when).
@@ -26,7 +35,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
         },
       },
     });
-    return NextResponse.json({ ...customer, sessions });
+    return NextResponse.json({ ...customer, companyCustomers, sessions });
   } catch (error) {
     console.error("CUSTOMER GET ERROR:", error);
     return NextResponse.json({ error: "Failed to load customer" }, { status: 500 });

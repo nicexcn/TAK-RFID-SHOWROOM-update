@@ -288,6 +288,7 @@ function RFIDPageInner() {
     const fakeScan: ScanItem = {
       id: `ws-${Date.now()}-${epc}`, scannedAt: new Date().toISOString(),
       product, prepareStatus: "NONE", showOnDisplay: true, deviceId,
+      takeawayQty: 1,
     };
     // One scan per product — the DB is unique on (session, product), so two tags that
     // resolve to the same product must not become two rows (they'd later collapse to the
@@ -332,6 +333,7 @@ function RFIDPageInner() {
       const fakeScan: ScanItem = {
         id: `manual-${Date.now()}-${p.id}`, scannedAt: new Date().toISOString(),
         product: p, prepareStatus: "NONE", showOnDisplay: true, deviceId: 1,
+        takeawayQty: 1,
       };
       setSession((prev) => (prev ? { ...prev, scans: [fakeScan, ...prev.scans] } : prev));
       scanQueueRef.current.push({ productId: p.id, rfidTag: p.productCode || "" });
@@ -693,7 +695,7 @@ function RFIDPageInner() {
     const scans = (data.scans || []).map((s) => ({ ...s, deviceId: 1 as const }));
     setSession({ ...(data as unknown as Session), scans });
     const tk: Record<string, number> = {};
-    for (const s of scans) if (s.takeawayQty) tk[s.id] = s.takeawayQty;
+    for (const s of scans) tk[s.id] = s.takeawayQty || 1;
     setTakeaway(tk);
   }
 

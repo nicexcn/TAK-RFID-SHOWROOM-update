@@ -4,6 +4,7 @@ import { ZoneCascade } from "@/components/ZoneCascade";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
 import { formatDateTime } from "@/lib/formatDate";
@@ -47,6 +48,10 @@ interface Customer {
   company: string; phone: string; email: string; lineId?: string | null; salesPerson?: string | null; zone?: string | null; project?: string | null; source?: string | null;
   knowChannel: string[]; knowChannelOther?: string | null; pdpaConsent: boolean; createdAt: string;
   sessions: SessionRow[]; contacts?: Contact[]; projects?: ProjectRow[];
+  companyId?: string | null;
+  companyRef?: { id: string; name: string; phone?: string | null; email?: string | null; address?: string | null; zone?: string | null; note?: string | null } | null;
+  // update-tak 13/9 [16]: other Customer rows in the same company (for the "other contacts" card).
+  companyCustomers?: { id: string; customerCode: string; fullName: string; title: string; phone: string; email: string; company: string }[];
 }
 
 const card = { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 16 };
@@ -266,9 +271,9 @@ export default function CustomerDetailPage() {
 
   return (
     <div>
-      {/* Header */}
+      {/* Header — update-tak 13/9: company name as title, person name as subtitle */}
       <PageHeader
-        title={customer.fullName || customer.customerCode}
+        title={customer.company || customer.fullName || customer.customerCode}
         crumbs={[{ label: "Home", href: "/admin" }, { label: "Customer Management", href: "/admin/customers" }, { label: customer.customerCode }]}
         actions={<>
           <button onClick={() => router.push("/admin/customers")} className="px-4 py-2 rounded-xl text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>← Back</button>
@@ -287,6 +292,11 @@ export default function CustomerDetailPage() {
           )}
         </>}
       />
+
+      {/* update-tak 13/9 [16]: person subtitle (company name is now the title) */}
+      <p className="text-sm mb-4" style={{ color: "var(--color-text-muted)" }}>
+        {customer.fullName} · {customer.customerCode}
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 space-y-4">
@@ -525,6 +535,37 @@ export default function CustomerDetailPage() {
             <button onClick={addContact} className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "var(--color-primary)" }}>Add</button>
           </div>
         </div>
+
+        {/* update-tak 13/9 [16]: other Customer rows in the same company */}
+        {customer.companyCustomers && customer.companyCustomers.length > 0 && (
+          <div className="p-5" style={card}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Others in {customer.company}</h2>
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{customer.companyCustomers.length}</span>
+            </div>
+            <div className="space-y-2">
+              {customer.companyCustomers.map((c) => (
+                <Link key={c.id} href={`/admin/customers/${c.id}`}
+                  className="block p-3 rounded-xl transition-colors hover:opacity-80"
+                  style={{ background: "var(--color-bg)" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{c.fullName || c.customerCode}</p>
+                      <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
+                        {[customerTypeLabel(c.title), c.phone].filter(Boolean).join(" · ") || c.customerCode}
+                      </p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)" }}>{c.customerCode}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {customer.companyId && (
+              <Link href={`/admin/customers/add?companyId=${customer.companyId}`}
+                className="mt-3 inline-block text-xs flex items-center gap-1" style={{ color: "var(--color-primary)" }}>+ Add contact to this company</Link>
+            )}
+          </div>
+        )}
         </div>
 
         {/* Scan history (filtered to the selected project's visits when one is chosen — [03]) */}
@@ -633,14 +674,14 @@ function ProjectRowCard({ project, canEdit, onSaved }: { project: ProjectRow; ca
         </div>
         {canEdit && (
           <button onClick={() => { setNote(project.note || ""); setOpen(!open); }} className="text-xs flex-shrink-0" style={{ color: "var(--color-primary)" }}>
-            {open ? "Close" : "✎ Description"}
+            {open ? "Close" : "✎ Remark"}
           </button>
         )}
       </div>
       {open && (
         <div className="mt-2 flex gap-2">
           <input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()}
-            placeholder="Description for this project…" autoFocus
+            placeholder="Remark for this project…" autoFocus
             className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
           <button onClick={save} disabled={saving} className="px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>Save</button>
         </div>
