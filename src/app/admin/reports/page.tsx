@@ -115,17 +115,20 @@ export default function ReportsPage() {
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
       const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[];
-      // Column set follows the TAK ERP template (slide 27). Posting Date as dd/mm/yy.
+      // Column set follows the updated TAK ERP template (Template_CSV_ERP.xlsx, 13/9):
+      // Posting Date | Document No. | Item No. | Quantity | Customer Name (COMPANY) |
+      // Contact Person (name + phone) | Project Name. Sales columns dropped — sales is
+      // per-customer, not part of this export. Posting Date as dd/mm/yy.
       const posting = (iso: string) => {
         const [y, m, d2] = iso.split("-");
         return `${d2}/${m}/${y.slice(2)}`;
       };
       const rows: (string | number)[][] = [
-        ["Posting Date", "Document No.", "Item No.", "Quantity", "Customer Name", "Contact Person", "Project Name", "Sales Name", "Sales Dimension"],
+        ["Posting Date", "Document No.", "Item No.", "Quantity", "Customer Name", "Contact Person", "Project Name"],
         ...takeaways.map((t) => [
           posting(t.date), t.docNo, // t.date is a Bangkok YYYY-MM-DD string
-          t.productCode, t.qty, t.customer, [t.contact, t.phone].filter(Boolean).join(" "),
-          t.project, t.sale, t.saleCode,
+          t.productCode, t.qty, t.company || t.customer, [t.contact, t.phone].filter(Boolean).join(" "),
+          t.project,
         ]),
       ];
       const csv = toCsv(rows);
