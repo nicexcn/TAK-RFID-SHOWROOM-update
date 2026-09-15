@@ -26,8 +26,12 @@ interface BulkResult {
 
 const UPLOAD_CONCURRENCY = 4;
 
+// Normalize a product code / filename base for matching. Real TAK product codes contain
+// spaces ("DXP 1380XM" — see Template_CSV_ERP.xlsx), but staff may save photos without
+// them ("DXP1380XM.jpg"). Strip ALL whitespace on BOTH sides so either spelling matches.
+// Dashes are KEPT because the -N / _N image-suffix matching below relies on them.
 function norm(s: string) {
-  return s.trim().toLowerCase();
+  return s.trim().toLowerCase().replace(/\s+/g, "");
 }
 
 function baseName(name: string) {
