@@ -360,7 +360,13 @@ export function DataTable<T>({
               ) : (
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id}
-                    onClick={() => onRowClick?.(row.original)}
+                    // Row click → onRowClick, EXCEPT when the click landed on an interactive
+                    // element inside a cell (a link, button…) — that element handles its own
+                    // action; without this guard the row's navigation races and clobbers it.
+                    onClick={(e) => {
+                      if (e.target instanceof Element && e.target.closest("a,button,[role=button],input,select,textarea")) return;
+                      onRowClick?.(row.original);
+                    }}
                     style={{ borderBottom: "1px solid var(--color-bg)", cursor: onRowClick ? "pointer" : undefined, ...(rowStyle?.(row.original) ?? {}) }}>
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3 whitespace-nowrap align-middle">
