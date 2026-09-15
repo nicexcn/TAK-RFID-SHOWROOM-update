@@ -306,7 +306,9 @@ export async function GET(req: NextRequest) {
       surveyRows = raw.map((r) => {
         const c = r.customerId ? sById.get(r.customerId) : undefined;
         const base: { date: string; customerCode: string; customer: string; [k: string]: string } = {
-          date: r.createdAt.toISOString(),
+          // Bangkok-local YYYY-MM-DD (same convention as visits/takeaways) — the CSV export
+          // formats this as dd/mm/yyyy, so a raw ISO timestamp would mangle the column.
+          date: new Date(r.createdAt.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10),
           customerCode: c?.customerCode || "",
           customer: c?.fullName || "",
         };
