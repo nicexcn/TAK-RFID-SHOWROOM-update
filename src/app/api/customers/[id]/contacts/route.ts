@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAccess } from "@/lib/permissions";
 
 // #8: a customer's contacts (Contact Name A/B/C/D). GET list · POST add · DELETE by { contactId }.
+// All three self-guard on /admin/customers (prep role has no customer access at all).
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const contacts = await prisma.contact.findMany({ where: { customerId: id }, orderBy: { createdAt: "asc" } });
@@ -15,6 +19,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const { name, phone, note } = await req.json();
@@ -33,6 +39,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const { contactId } = await req.json().catch(() => ({}));

@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { customerTypePrefix } from "@/lib/customerTypes";
 import { resolveCompany } from "@/lib/resolveCompany";
+import { requireAccess } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
+  // Self-guard (found by the P2-5 role-matrix run): every caller of this list maps to a page
+  // under /admin/customers (or higher) — user/management/admin/super. Prep staff (Notifications
+  // only) must not be able to pull the customer database via the API.
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const title = searchParams.get("title") || "";

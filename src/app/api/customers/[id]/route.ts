@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/permissions";
+import { requireRole, requireAccess } from "@/lib/permissions";
 import { resolveCompany } from "@/lib/resolveCompany";
 
 // Who may modify a customer profile (customer spec item 6). Management + Admin get "Create/Edit
@@ -9,7 +9,11 @@ import { resolveCompany } from "@/lib/resolveCompany";
 const CAN_EDIT_CUSTOMER = ["super_admin", "admin", "management"];
 const CAN_DELETE_CUSTOMER = ["super_admin"];
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Self-guard: the profile returns the full customer record incl. company peers + scan
+  // history — restricted to roles that can reach the customer/scan pages (not prep).
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   try {
     const { id } = await params;
     const customer = await prisma.customer.findUnique({ where: { id }, include: { contacts: { orderBy: { createdAt: "asc" } }, projects: { orderBy: { createdAt: "asc" } }, companyRef: true } });

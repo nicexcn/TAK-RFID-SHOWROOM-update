@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAccess } from "@/lib/permissions";
 
 // Customer search for the scan entry points (Surface Scan / Manual Scan).
 // Returns an ARRAY (cap 20): a name/company match can hit several customers,
@@ -7,6 +8,9 @@ import { prisma } from "@/lib/prisma";
 // "duplicate-name shows only one" bug). The caller auto-selects when there's
 // exactly one (e.g. a code/phone match) and shows a list when there are more.
 export async function GET(req: NextRequest) {
+  // Self-guard: only roles that can reach the scan/customer pages may search (prep cannot).
+  const guard = requireAccess(req, "/admin/customers");
+  if ("response" in guard) return guard.response;
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
   const type = searchParams.get("type") || "code";
