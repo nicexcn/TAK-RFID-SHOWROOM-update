@@ -59,10 +59,14 @@ export default function CustomersPage() {
   // The Type filter is a real column filter (keyed by the "title" column id).
   const filterTitle = (columnFilters.find((f) => f.id === "title")?.value as string) ?? "all";
 
-  useEffect(() => { fetchCustomers(); }, [globalFilter, columnFilters, sorting, page]);
+  // companyFilter is a dep: the company-column Link navigates within this page (client-side),
+  // so the ?company= change must refetch — not just on a hard load. eslint-disable because
+  // fetchCustomers closes over filter state.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchCustomers(); }, [globalFilter, columnFilters, sorting, page, companyFilter]);
   // Filter/sort changes reset to page 1; paging alone must not.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setPage(1); }, [globalFilter, columnFilters, sorting]);
+  useEffect(() => { setPage(1); }, [globalFilter, columnFilters, sorting, companyFilter]);
 
   async function fetchCustomers() {
     const seq = ++reqSeq.current;
