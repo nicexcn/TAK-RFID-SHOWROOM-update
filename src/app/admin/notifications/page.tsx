@@ -258,7 +258,18 @@ function DocGroups({
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
                 {g.items.length} item{g.items.length !== 1 ? "s" : ""} · {totalQty} pcs
               </span>
-              {/* update-tak 13/9: Print slip + Print sticker removed from Notifications per feedback. */}
+              {/* update-tak 13/9: Print slip removed. Print sticker is back (15/9 feedback round 3):
+                  envelope sticker — ONE per document (slide 12): it carries only customer/project
+                  info (no product code), so one button for the whole prepared batch. Walk-in
+                  groups (no customerCode) get no sticker — nothing to label. */}
+              {g.customerCode && (
+                <a href={`/print/sticker?${new URLSearchParams({ company: g.company || "", contact: g.contact || "", phone: g.phone || "", requester: g.contact || "", code: g.customerCode || "" }).toString()}`}
+                  target="_blank" rel="noopener noreferrer" title="Print envelope sticker (one per prepared batch)"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
+                  🖨 Print sticker
+                </a>
+              )}
             </div>
             {/* Per-item prep cards */}
             <div className="space-y-3 pl-4" style={{ borderLeft: "2px solid var(--color-border)" }}>

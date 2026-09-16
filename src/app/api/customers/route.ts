@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { customerTypePrefix } from "@/lib/customerTypes";
+import { resolveCompany } from "@/lib/resolveCompany";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -23,7 +24,9 @@ export async function GET(req: NextRequest) {
     AND: [
       title ? { title } : {},
       createdAt ? { createdAt } : {},
-      companyFilter ? { company: companyFilter } : {},
+      // Case-insensitive: company names may be stored with mixed historical spellings
+      // ("home connect" vs "Home Connect") — one click must surface them all.
+      companyFilter ? { company: { equals: companyFilter, mode: "insensitive" as const } } : {},
       search ? { OR: [
         { fullName: { contains: search, mode: "insensitive" as const } },
         { customerCode: { contains: search, mode: "insensitive" as const } },
@@ -74,11 +77,15 @@ export async function POST(req: NextRequest) {
   });
   const lastNum = last ? parseInt(last.customerCode.slice(prefix.length), 10) || 0 : 0;
   const customerCode = `${prefix}${String(lastNum + 1).padStart(5, "0")}`;
+  // Feedback round 3 (15/9): resolve the typed company string to a Company row
+  // case-insensitively (canonical name + link). Prevents "home connect" vs "Home Connect"
+  // from forking two companies; first sight of a genuinely new name creates the row.
+  const { name: companyName, companyId: resolvedCompanyId } = await resolveCompany(company);
   const customer = await prisma.customer.create({
     data: {
       customerCode, fullName, title,
       titleOther: title === "Other" ? titleOther : null,
-      company, phone, email,
+      company: companyName, phone, email,
       lineId: lineId || null,
       knowChannel: knowChannel || [],
       knowChannelOther: knowChannel?.includes("Other") ? knowChannelOther : null,
@@ -87,7 +94,7 @@ export async function POST(req: NextRequest) {
       zone: String(zone || "").trim() || null,
       project: String(project || "").trim() || null,
       source: String(source || "").trim() || null,
-      companyId: companyId || null, // update-tak 13/9 [16]: link to Company
+      companyId: resolvedCompanyId || companyId || null,
     },
   });
   return NextResponse.json(customer, { status: 201 });

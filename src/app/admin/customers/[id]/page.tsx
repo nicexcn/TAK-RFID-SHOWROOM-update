@@ -71,15 +71,15 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [contacts, setContacts] = useState<Contact[]>([]); // #8
-  const [cName, setCName] = useState("");
-  const [cPhone, setCPhone] = useState("");
   const [role, setRole] = useState("");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
+  // Feedback round 3 (15/9): existing company names as datalist suggestions on the Company
+  // field, so staff pick "Home Connect" instead of typing a case variant.
+  const [companyOptions, setCompanyOptions] = useState<string[]>([]);
   // TAK 28/8: Start Scan asks which project this visit belongs to (F).
   const [scanPickerOpen, setScanPickerOpen] = useState(false);
   const [scanProject, setScanProject] = useState(""); // project id or "" = no project
@@ -130,11 +130,16 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     fetch(`/api/customers/${id}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("not found"))))
-      .then((d) => { setCustomer(d); setContacts(d.contacts || []); })
+      .then((d) => { setCustomer(d); })
       .catch(() => setError("Customer not found"))
       .finally(() => setLoading(false));
   }, [id]);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }); }, []);
+  useEffect(() => {
+    fetch("/api/companies").then((r) => r.json())
+      .then((d) => setCompanyOptions((Array.isArray(d) ? d : []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, []);
   // Item 2: the "Sales owner" picker is a real dropdown fed from Settings → Salesperson.
   // Sale master first (name + ERP code), legacy dropdown options as fallback entries.
   useEffect(() => {
@@ -191,28 +196,6 @@ export default function CustomerDetailPage() {
     } finally {
       setDeleting(false);
     }
-  }
-
-  async function addContact() {
-    if (!cName.trim()) return;
-    try {
-      const res = await fetch(`/api/customers/${id}/contacts`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: cName.trim(), phone: cPhone.trim() }),
-      });
-      if (res.ok) { const c = await res.json(); setContacts((p) => [...p, c]); setCName(""); setCPhone(""); }
-      else toast("Failed to add contact", errorToast);
-    } catch { toast("Failed to add contact", errorToast); }
-  }
-  async function removeContact(cid: string) {
-    const prev = contacts;
-    setContacts((p) => p.filter((c) => c.id !== cid)); // optimistic
-    try {
-      const res = await fetch(`/api/customers/${id}/contacts`, {
-        method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId: cid }),
-      });
-      if (!res.ok && res.status !== 404) setContacts(prev); // 404 = already gone (idempotent); roll back only real failures
-    } catch { setContacts(prev); }
   }
 
   if (loading) return (
@@ -315,9 +298,13 @@ export default function CustomerDetailPage() {
                 <label key={key} className="block">
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</span>
                   <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    list={key === "company" ? "edit-company-options" : undefined} autoComplete="off"
                     className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
                 </label>
               ))}
+              <datalist id="edit-company-options">
+                {companyOptions.map((c) => <option key={c} value={c} />)}
+              </datalist>
               {/* Customer Segment (was "Occupation" — renamed per TAK feedback slide 22) */}
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Customer Segment</span>
@@ -451,6 +438,70 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
+        {/* Feedback round 3 (15/9): the company profile page was removed — its Customers card
+            lives HERE now, right after this person's Contact Info, so staff see who else is
+            at the company. The current person is included at the top and highlighted. */}
+        {customer.company && (
+          <div className="p-5" style={card}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Everyone at {customer.company}</h2>
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{1 + (customer.companyCustomers?.length || 0)}</span>
+            </div>
+            <div className="space-y-2">
+              {/* current person first, highlighted */}
+              <div className="block p-3 rounded-xl" style={{ background: "var(--color-primary-soft, #efe6d8)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>
+                      {customer.fullName || customer.customerCode}
+                      <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)" }}>this contact</span>
+                    </p>
+                    <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
+                      {[customerTypeLabel(customer.title), customer.phone].filter(Boolean).join(" · ") || customer.customerCode}
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)" }}>{customer.customerCode}</span>
+                </div>
+              </div>
+              {(customer.companyCustomers || []).map((c) => (
+                <Link key={c.id} href={`/admin/customers/${c.id}`}
+                  className="block p-3 rounded-xl transition-colors hover:opacity-80"
+                  style={{ background: "var(--color-bg)" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{c.fullName || c.customerCode}</p>
+                      <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
+                        {[customerTypeLabel(c.title), c.phone].filter(Boolean).join(" · ") || c.customerCode}
+                      </p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)" }}>{c.customerCode}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feedback round 3 (15/9): the old Contacts card (inline name+phone rows) became a
+            single Add button — a new contact is a full Customer row at the same company, so
+            it goes through the add-customer page with the company info prefilled. */}
+        {customer.company && (
+          <div className="p-5" style={card}>
+            <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>Add another contact at this company</h2>
+            <p className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>
+              Opens the add-customer form with {customer.company}'s details prefilled.
+            </p>
+            <Link
+              href={customer.companyId
+                ? `/admin/customers/add?companyId=${customer.companyId}`
+                : `/admin/customers/add?company=${encodeURIComponent(customer.company)}`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white"
+              style={{ background: "var(--color-primary)" }}>
+              + Add
+            </Link>
+          </div>
+        )}
+
         {/* update-tak 13/9 [03]: Projects — click a project to filter Scan history to its
             visits; add a project; hide finished projects. Per-project description = Project.note. */}
         {!editing && (
@@ -507,64 +558,6 @@ export default function CustomerDetailPage() {
           </div>
         )}
 
-        {/* #8: contacts — one customer, multiple contact people */}
-        <div className="p-5" style={card}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Contacts</h2>
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{contacts.length}</span>
-          </div>
-          <div className="space-y-2 mb-3">
-            {contacts.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>No extra contacts yet</p>
-            ) : contacts.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm truncate" style={{ color: "var(--color-text)" }}>{c.name}</p>
-                  {c.phone && <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{c.phone}</p>}
-                </div>
-                <button onClick={() => removeContact(c.id)} aria-label="Remove contact" className="text-base px-2 leading-none" style={{ color: "var(--color-danger-soft)" }}>×</button>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input value={cName} onChange={(e) => setCName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addContact()}
-              placeholder="Contact name" className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-            <input value={cPhone} onChange={(e) => setCPhone(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addContact()}
-              placeholder="Phone" className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-            <button onClick={addContact} className="px-3 py-2 rounded-lg text-sm text-white" style={{ background: "var(--color-primary)" }}>Add</button>
-          </div>
-        </div>
-
-        {/* update-tak 13/9 [16]: other Customer rows in the same company */}
-        {customer.companyCustomers && customer.companyCustomers.length > 0 && (
-          <div className="p-5" style={card}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Others in {customer.company}</h2>
-              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{customer.companyCustomers.length}</span>
-            </div>
-            <div className="space-y-2">
-              {customer.companyCustomers.map((c) => (
-                <Link key={c.id} href={`/admin/customers/${c.id}`}
-                  className="block p-3 rounded-xl transition-colors hover:opacity-80"
-                  style={{ background: "var(--color-bg)" }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>{c.fullName || c.customerCode}</p>
-                      <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
-                        {[customerTypeLabel(c.title), c.phone].filter(Boolean).join(" · ") || c.customerCode}
-                      </p>
-                    </div>
-                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)" }}>{c.customerCode}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            {customer.companyId && (
-              <Link href={`/admin/customers/add?companyId=${customer.companyId}`}
-                className="mt-3 inline-block text-xs flex items-center gap-1" style={{ color: "var(--color-primary)" }}>+ Add contact to this company</Link>
-            )}
-          </div>
-        )}
         </div>
 
         {/* Scan history (filtered to the selected project's visits when one is chosen — [03]) */}

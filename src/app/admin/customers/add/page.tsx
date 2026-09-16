@@ -48,6 +48,9 @@ export default function AddCustomerPage() {
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
+  // Feedback round 3 (15/9): existing company names as datalist suggestions, so staff pick
+  // "Home Connect" instead of typing "home connect" and forking a case-variant company.
+  const [companyOptions, setCompanyOptions] = useState<string[]>([]);
 
   // update-tak 13/9 [16]: when ?companyId= is set (from the company profile's "Add customer"),
   // fetch the company name to pre-fill the company field.
@@ -90,6 +93,11 @@ export default function AddCustomerPage() {
     });
   }, []);
   useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.username) setMe(d.username); }).catch(() => {}); }, []);
+  useEffect(() => {
+    fetch("/api/companies").then((r) => r.json())
+      .then((d) => setCompanyOptions((Array.isArray(d) ? d : []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, []);
 
   // #2: the "Sales Showroom person in charge" defaults to the logged-in staff (editable later).
   // Only auto-fills when the field is still empty, so we never clobber a name the staff picked.
@@ -164,7 +172,7 @@ export default function AddCustomerPage() {
             <p className="text-sm" style={{ color: "var(--color-text)" }}>
               Adding a new contact to <span className="font-semibold">{presetCompany || company}</span>
             </p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Company field is locked — change it on the company profile if needed.</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Company field is locked — the new contact joins the same company.</p>
           </div>
         )}
         {/* Personal */}
@@ -232,8 +240,15 @@ export default function AddCustomerPage() {
                 onChange={(e) => { setCompany(e.target.value); clearFieldError("company"); }}
                 aria-invalid={!!fieldErrors.company}
                 placeholder="Company / organisation name"
+                list="company-options" autoComplete="off"
                 disabled={!!presetCompanyId}
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={fieldErrors.company ? { ...inputStyle, ...errorRing } : presetCompanyId ? { ...inputStyle, opacity: 0.6 } : inputStyle} />
+              <datalist id="company-options">
+                {companyOptions.map((c) => <option key={c} value={c} />)}
+              </datalist>
+              {!presetCompanyId && (
+                <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>Pick an existing company when possible — matching ignores letter case.</p>
+              )}
               {fieldErrors.company && <p className="text-xs mt-1" style={{ color: "var(--color-danger)" }}>{fieldErrors.company}</p>}
             </div>
             <div>

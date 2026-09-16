@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
+import { resolveCompany } from "@/lib/resolveCompany";
 
 // Who may modify a customer profile (customer spec item 6). Management + Admin get "Create/Edit
 // visitor records"; only Super Admin gets "Create/Edit/DELETE all records". The basic Presenter
@@ -62,6 +63,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if ("zone" in data) data.zone = String(data.zone || "").trim() || null;
     if ("project" in data) data.project = String(data.project || "").trim() || null;
     if ("source" in data) data.source = String(data.source || "").trim() || null;
+    // Feedback round 3 (15/9): editing the company field re-resolves it case-insensitively —
+    // "home connect" snaps to the existing "Home Connect" row (canonical name + relink),
+    // so renaming a customer's company can't fork a case-variant duplicate.
+    if ("company" in data) {
+      const resolved = await resolveCompany(data.company);
+      data.company = resolved.name;
+      data.companyId = resolved.companyId;
+    }
     const updated = await prisma.customer.update({ where: { id }, data });
     return NextResponse.json(updated);
   } catch (error) {

@@ -126,13 +126,12 @@ export default function CustomersPage() {
     } }),
     columnHelper.accessor("company", { header: "Company", cell: (i) => {
       const val = i.getValue();
-      const row = i.row.original as Customer;
-      // update-tak 13/9 [16]: clickable company → company profile page (when companyId exists),
-      // fallback to the ?company=Name filtered list for legacy customers.
+      // Feedback round 3 (15/9): company pages removed — clicking the company filters the
+      // customer list to that company (?company= is case-insensitive server-side, so
+      // historical spelling variants all surface).
       if (!val) return <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>—</span>;
-      const href = row.companyId ? `/admin/companies/${row.companyId}` : `/admin/customers?company=${encodeURIComponent(val)}`;
       return (
-        <Link href={href} className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
+        <Link href={`/admin/customers?company=${encodeURIComponent(val)}`} className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
           {val}
         </Link>
       );

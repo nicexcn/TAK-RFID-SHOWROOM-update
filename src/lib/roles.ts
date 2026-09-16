@@ -21,9 +21,9 @@ export const ROLES = [
 //  - Basic (Presenter) must NOT view analytics: no "/admin" dashboard — they land on /admin/customers.
 //  - Only Super Admin may export the customer database (enforced in the UI export gates, not by path).
 const ACCESS: Record<string, string[]> = {
-  super_admin: ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/companies", "/admin/rfid", "/admin/notifications", "/admin/settings"],
-  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/companies", "/admin/rfid", "/admin/notifications"],
-  management:  ["/admin", "/admin/reports", "/admin/survey", "/admin/customers", "/admin/companies", "/admin/notifications"],
+  super_admin: ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/notifications", "/admin/settings"],
+  admin:       ["/admin", "/admin/reports", "/admin/survey", "/admin/products", "/admin/customers", "/admin/rfid", "/admin/notifications"],
+  management:  ["/admin", "/admin/reports", "/admin/survey", "/admin/customers", "/admin/notifications"],
   user:        ["/admin/customers", "/admin/rfid", "/admin/notifications"],
   prep:        ["/admin/notifications"], // takeaway-prep staff: prepare queue (loans retired 28/8)
 };
