@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { THAI_GEO } from "@/lib/thaiGeo";
 
 // 16/9: soft two-way suggestions between the Sales picker and the Zone cascade.
 // Neither direction is forced — they are hints staff may click or ignore.
@@ -53,7 +54,15 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
   const [showAll, setShowAll] = useState(false);
   const districts = showAll ? allDistricts : allDistricts.slice(0, 8);
   const hidden = allDistricts.length - districts.length;
-  const province = (picked.province || "").split(",")[0].trim(); // first province for the chip value
+  // The TWC sheet lists a sale's districts across ALL their provinces in one flat list
+  // (ทราย: พระโขนง…พระนคร are กทม, บางพลี is สมุทรปราการ). Look each district up in
+  // THAI_GEO for its REAL province instead of assuming the sale's first province —
+  // otherwise the chip produces "กรุงเทพมหานคร / บางพลี", which the cascade rejects.
+  const fallbackProvince = normalizeProvince((picked.province || "").split(",")[0].trim());
+  const provinceOf = (district: string): string => {
+    const found = THAI_GEO.find((g) => g.d.includes(district));
+    return found ? found.p : fallbackProvince;
+  };
   return (
     <div className="mt-1">
       <p className="text-[11px]" style={{ color: zp.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
@@ -63,14 +72,17 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
       {onPickZone && allDistricts.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
           <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>{zp.length ? "เปลี่ยนโซนเป็นเขตของ sale นี้:" : "ตั้งโซนจากเขตที่ดูแล:"}</span>
-          {districts.map((d) => (
-            <button key={d} type="button" onClick={() => onPickZone(province ? `${normalizeProvince(province)} / ${d}` : d)}
-              title={`ตั้งโซน ${normalizeProvince(province)} / ${d}`}
-              className="px-2 py-0.5 rounded-lg text-[11px] transition-colors hover:opacity-80"
-              style={{ background: "rgba(114,108,90,0.12)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
-              {d}
-            </button>
-          ))}
+          {districts.map((d) => {
+            const p = provinceOf(d);
+            return (
+              <button key={d} type="button" onClick={() => onPickZone(`${p} / ${d}`)}
+                title={`ตั้งโซน ${p} / ${d}`}
+                className="px-2 py-0.5 rounded-lg text-[11px] transition-colors hover:opacity-80"
+                style={{ background: "rgba(114,108,90,0.12)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+                {d}
+              </button>
+            );
+          })}
           {hidden > 0 && (
             <button type="button" onClick={() => setShowAll(true)}
               className="px-2 py-0.5 rounded-lg text-[11px]"
