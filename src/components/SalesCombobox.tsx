@@ -176,8 +176,10 @@ export default function SalesCombobox({ options, value, onChange, placeholder = 
             </li>
           ) : ordered.map((o, i) => {
             const showGroup = o.group && o.group !== lastGroup;
-            const groupEnded = !o.group && lastGroup; // first ungrouped item after the group
-            lastGroup = o.group || lastGroup;
+            const groupEnded = !o.group && !!lastGroup; // first ungrouped item after the group
+            // Reset after leaving a group — otherwise `lastGroup` stays sticky and every
+            // subsequent ungrouped item renders its own separator line.
+            lastGroup = o.group || "";
             return (
               <div key={o.name}>
                 {showGroup && (
