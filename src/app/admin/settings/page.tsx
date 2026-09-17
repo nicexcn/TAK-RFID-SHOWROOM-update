@@ -425,14 +425,18 @@ export default function SettingsPage() {
     }
   }
 
-  // When the Salesperson list is opened, load the Sale master instead of dropdown options.
+  // When a sales list is opened, load the Sale master instead of dropdown options. Two entry
+  // points: the Sale Management tab (activeTab === "sales") and the legacy Product Management
+  // dropdown editor with type "sales". The former previously never matched here, leaving the
+  // tab stuck on "No salespeople yet" even though /api/sales had the full master.
   useEffect(() => {
-    if (activeTab !== "product" || activeType !== "sales") return;
+    const isSalesTab = activeTab === "sales";
+    if (!isSalesTab && (activeTab !== "product" || activeType !== "sales")) return;
     let live = true;
     fetch("/api/sales").then((r) => r.json()).then((rows) => {
       if (!live || !Array.isArray(rows)) return;
       setSalesMaster(rows.map((r: { id: string; code: string; name: string; zone?: string | null; province?: string | null }) => ({ id: r.id, code: r.code, name: r.name, zone: r.zone ?? null, province: r.province ?? null })));
-      setOptions(rows.map((r: { id: string; name: string }) => ({ id: r.id, type: "sales", value: r.name, createdAt: "" })));
+      if (!isSalesTab) setOptions(rows.map((r: { id: string; name: string }) => ({ id: r.id, type: "sales", value: r.name, createdAt: "" })));
     }).catch(() => {});
     return () => { live = false; };
   }, [activeTab, activeType]);

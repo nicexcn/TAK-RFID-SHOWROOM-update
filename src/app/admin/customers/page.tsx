@@ -59,9 +59,8 @@ export default function CustomersPage() {
   // The Type filter is a real column filter (keyed by the "title" column id).
   const filterTitle = (columnFilters.find((f) => f.id === "title")?.value as string) ?? "all";
 
-  // companyFilter is a dep: the company-column Link navigates within this page (client-side),
-  // so the ?company= change must refetch — not just on a hard load. eslint-disable because
-  // fetchCustomers closes over filter state.
+  // companyFilter is a dep so a ?company= change refetches even on client-side navigation
+  // (the column link was removed 16/9, but ?company= URLs still arrive via history/back).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchCustomers(); }, [globalFilter, columnFilters, sorting, page, companyFilter]);
   // Filter/sort changes reset to page 1; paging alone must not.
@@ -130,15 +129,10 @@ export default function CustomersPage() {
     } }),
     columnHelper.accessor("company", { header: "Company", cell: (i) => {
       const val = i.getValue();
-      // Feedback round 3 (15/9): company pages removed — clicking the company filters the
-      // customer list to that company (?company= is case-insensitive server-side, so
-      // historical spelling variants all surface).
-      if (!val) return <span className="text-xs" style={{ color: "var(--color-text-subtle)" }}>—</span>;
-      return (
-        <Link href={`/admin/customers?company=${encodeURIComponent(val)}`} className="text-xs underline underline-offset-2 hover:opacity-70" style={{ color: "var(--color-primary)" }}>
-          {val}
-        </Link>
-      );
+      // Feedback round 3 follow-up (16/9): plain text — the clickable ?company= filter
+      // confused staff (looked like a link to something more). Row click still opens the
+      // customer profile, where "Everyone at {company}" shows the whole company.
+      return <span className="text-xs" style={{ color: val ? "var(--color-text-muted)" : "var(--color-text-subtle)" }}>{val || "—"}</span>;
     } }),
     columnHelper.accessor("phone", { header: "Phone", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
     columnHelper.accessor("email", { header: "Email", cell: (i) => <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{i.getValue()}</span> }),
