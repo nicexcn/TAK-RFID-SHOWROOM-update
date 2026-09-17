@@ -21,6 +21,9 @@ model User {
 
 model Product {
   id            String         @id @default(cuid())
+  // PRIMARY tag (denormalized display value — shown in UI, used by image-import matching).
+  // The full tag set (a physical item can carry several chips, e.g. door panels with EPC1+EPC2)
+  // lives in RfidTag; every lookup path must resolve through that table, not this column.
   rfidTag       String?        @unique // nullable: non-RFID items (catalogs) have no tag; multiple NULLs are allowed by Postgres
   brand         String?
   materialType  String?
@@ -41,6 +44,21 @@ model Product {
   scans         Scan[]
   images        ProductImage[]
   notifications Notification[]
+  tags          RfidTag[]
+}
+
+// 16/9 (door-panel import): one physical product can carry MULTIPLE RFID chips. A separate
+// tag table keeps EPC globally unique and lets any chip resolve to the same product —
+// scanning a door panel reads EPC1 AND EPC2, which must dedup to ONE item.
+model RfidTag {
+  id        String   @id @default(cuid())
+  epc       String   @unique
+  label     String?  // optional origin, e.g. "EPC1" / "EPC2" from the TagNo sheet
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 model Customer {

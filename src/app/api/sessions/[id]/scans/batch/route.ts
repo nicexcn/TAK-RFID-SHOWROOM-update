@@ -29,22 +29,22 @@ export async function POST(
     // F2b: heartbeat — scan activity keeps the session alive (resets the idle TTL)
     await prisma.session.update({ where: { id: sessionId }, data: { lastSeenAt: new Date() } });
 
-    // Resolve + validate all referenced products in ONE query (no N+1).
+    // Resolve + validate all referenced products (no N+1). Tags resolve through the RfidTag
+    // table — multi-chip products (door panels: EPC1+EPC2) map every chip to the one product,
+    // so a batch containing both chips of one panel dedups to a single (session, product) row.
     const wantedIds = [...new Set(scans.filter((s: ScanInput) => s.productId).map((s: ScanInput) => s.productId!))];
     const wantedTags = [...new Set(scans.filter((s: ScanInput) => !s.productId && s.rfidTag).map((s: ScanInput) => s.rfidTag!))];
 
-    const products = await prisma.product.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          ...(wantedIds.length ? [{ id: { in: wantedIds } }] : []),
-          ...(wantedTags.length ? [{ rfidTag: { in: wantedTags } }] : []),
-        ],
-      },
-      select: { id: true, rfidTag: true },
-    });
-    const validIds = new Set(products.map((p) => p.id));
-    const tagToId = new Map(products.map((p) => [p.rfidTag, p.id]));
+    const [productsById, tagRows] = await Promise.all([
+      wantedIds.length
+        ? prisma.product.findMany({ where: { id: { in: wantedIds }, isActive: true }, select: { id: true } })
+        : Promise.resolve([] as { id: string }[]),
+      wantedTags.length
+        ? prisma.rfidTag.findMany({ where: { epc: { in: wantedTags }, product: { isActive: true } }, select: { epc: true, productId: true } })
+        : Promise.resolve([] as { epc: string; productId: string }[]),
+    ]);
+    const validIds = new Set(productsById.map((p) => p.id));
+    const tagToId = new Map(tagRows.map((t) => [t.epc, t.productId]));
 
     // Dedup within the batch and drop unknown/inactive tags.
     const finalIds = new Set<string>();

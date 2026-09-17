@@ -57,13 +57,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "each scan needs deviceId + rfidTag/epc" }, { status: 400 });
     }
 
-    // Resolve all referenced products in ONE query (no N+1).
+    // Resolve all referenced products in ONE query (no N+1). Goes through the RfidTag table —
+    // one product may carry several chips (door panels: EPC1+EPC2 all map to the same item),
+    // so two chips of one panel dedup to one (session, product) scan row via the map below.
     const tags = [...new Set(scans.map((s) => s.tag))];
-    const products = await prisma.product.findMany({
-      where: { isActive: true, rfidTag: { in: tags } },
-      select: { id: true, rfidTag: true },
+    const tagRows = await prisma.rfidTag.findMany({
+      where: { epc: { in: tags }, product: { isActive: true } },
+      select: { epc: true, productId: true },
     });
-    const tagToId = new Map(products.map((p) => [p.rfidTag, p.id]));
+    const tagToId = new Map(tagRows.map((t) => [t.epc, t.productId]));
 
     // Resolve the active (non-idle) session for each reader in ONE query. A reader maps
     // to at most one active session in practice; if several exist, the newest wins.

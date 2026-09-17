@@ -31,15 +31,20 @@ export async function GET(req: NextRequest) {
       ...(category && { category }),
     };
 
+    // Catalog view needs each product's scan count (to label Delete vs Archive); the
+    // scan-lookup map (all=true) needs the tag list instead (multi-chip products: every
+    // chip must resolve to the item on the client, mirroring the server-side lookups).
+    const include = all
+      ? { tags: { select: { epc: true, label: true } } } as const
+      : { _count: { select: { scans: true } } } as const;
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy,
-        // Catalog view needs each product's scan count (to label Delete vs Archive); the
-        // scan-lookup map (all=true) doesn't, so keep that path lean.
-        ...(all ? {} : { include: { _count: { select: { scans: true } } } }),
+        include,
       }),
       prisma.product.count({ where }),
     ]);

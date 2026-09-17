@@ -153,6 +153,9 @@ function RFIDPageInner() {
       const items = data.products || data || [];
       const map = new Map<string, Product>();
       for (const p of items) {
+        // Multi-chip products (door panels: EPC1+EPC2): every chip maps to the same item so
+        // a scan of either tag resolves identically — same as the server-side lookups.
+        for (const t of p.tags || []) map.set(t.epc, p);
         if (p.rfidTag) map.set(p.rfidTag, p);
       }
       setProductMap(map);

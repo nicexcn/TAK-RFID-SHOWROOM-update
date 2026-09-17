@@ -12,7 +12,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Session not found or inactive" }, { status: 404 });
     }
 
-    const product = await prisma.product.findFirst({ where: { rfidTag, isActive: true } });
+    // Resolve through the tag table (any chip of a multi-tag product finds the same item);
+    // fall back to the legacy primary-tag column for rows not yet backfilled.
+    const tagRow = await prisma.rfidTag.findUnique({ where: { epc: rfidTag }, include: { product: true } });
+    const product = (tagRow?.product.isActive ? tagRow.product : null)
+      ?? (await prisma.product.findFirst({ where: { rfidTag, isActive: true } }));
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
