@@ -529,6 +529,8 @@ export default function ProductsPage() {
                   </div>
                   <p className="text-xs mt-2" style={{ color: "var(--color-text-subtle)" }}>
                     * If the rfidTag already exists, the record is <strong>updated</strong>; otherwise a <strong>new one is created</strong>.
+                    An item with several RFID chips (e.g. door panels with 2 chips) = <strong>one row per chip with the same name</strong> —
+                    the first row creates the product, the rest attach their tags to it.
                   </p>
                 </div>
 
