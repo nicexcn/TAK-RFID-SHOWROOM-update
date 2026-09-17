@@ -58,8 +58,8 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
           <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>{zp.length ? "เปลี่ยนโซนเป็นเขตของ sale นี้:" : "ตั้งโซนจากเขตที่ดูแล:"}</span>
           {districts.map((d) => (
-            <button key={d} type="button" onClick={() => onPickZone(province ? `${province} / ${d}` : d)}
-              title={`ตั้งโซน ${province} / ${d}`}
+            <button key={d} type="button" onClick={() => onPickZone(province ? `${normalizeProvince(province)} / ${d}` : d)}
+              title={`ตั้งโซน ${normalizeProvince(province)} / ${d}`}
               className="px-2 py-0.5 rounded-lg text-[11px] transition-colors hover:opacity-80"
               style={{ background: "rgba(114,108,90,0.12)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
               {d}
@@ -95,4 +95,15 @@ export function ZoneSalesHint({ zone, sales, onPick }: {
 function nicknameOf(name: string): string | null {
   const m = name.match(/\(([^)]+)\)/);
   return m ? m[1] : null;
+}
+
+// The TWC sheet abbreviates provinces ("กรุงเทพ" for กรุงเทพมหานคร); the Zone cascade matches
+// THAI_GEO names exactly, so normalize the common short forms before building a zone value.
+const PROVINCE_ALIASES: Record<string, string> = {
+  "กรุงเทพ": "กรุงเทพมหานคร",
+  "กทม": "กรุงเทพมหานคร",
+  "ธนบุรี": "กรุงเทพมหานคร",
+};
+function normalizeProvince(p: string): string {
+  return PROVINCE_ALIASES[p.trim()] ?? p.trim();
 }
