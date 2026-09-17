@@ -123,6 +123,9 @@ export async function GET(req: NextRequest) {
         const bkkDay = bkkDayOf(s.scannedAt);
         return s.session.customerId ? `${s.session.customerId}::${bkkDay}` : `${s.session.id}::${bkkDay}`;
       })).size,
+      // Walk-in share of the same people-per-day metric: sessions with no registered
+      // customer, deduped per session per Bangkok day.
+      walkIns: new Set(filtered.filter((s) => !s.session.customerId).map((s) => `${s.session.id}::${bkkDayOf(s.scannedAt)}`)).size,
       // [08] "customers" = distinct REAL customers (by customerId only). Walk-ins and ad-hoc
       // codes (no Customer row) are excluded so the count matches the customer database,
       // not inflated by junk/walk-in codes. Was `customerId ?? customerCode`, which counted

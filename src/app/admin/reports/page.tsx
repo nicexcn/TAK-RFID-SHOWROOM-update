@@ -14,12 +14,11 @@ interface ProdLite { id: string; name: string; brand: string | null; category: s
 interface ProductRow { product: ProdLite; scanCount: number; takenQty: number; }
 interface Report {
   period: { from: string; to: string; label: string; key: string };
-  summary: { visits: number; customers: number; totalScans: number; totalTaken: number; uniqueProducts: number; firstTime: number; returning: number };
+  summary: { visits: number; walkIns: number; customers: number; totalScans: number; totalTaken: number; uniqueProducts: number; firstTime: number; returning: number };
   scannedProducts: ProductRow[];
   takenHomeProducts: ProductRow[];
   byBrand: { name: string; count: number }[];
   byCategory: { name: string; count: number }[];
-  bySource: { name: string; count: number }[];
   byType: { name: string; count: number }[];
   satisfaction: { overall: number | null; service: number | null; responses: number };
 }
@@ -87,7 +86,7 @@ export default function ReportsPage() {
       [`Report — ${appliedRange ? "Custom range" : PERIODS.find((p) => p.key === data.period.key)?.label || data.period.label}${query ? ` — "${query}"` : ""}`],
       [`${formatDate(data.period.from)} – ${formatDate(data.period.to)}`],
       [],
-      ["Visits", data.summary.visits], ["Customers", data.summary.customers],
+      ["Visits (people per day)", data.summary.visits], ["Walk-ins", data.summary.walkIns], ["Customers", data.summary.customers],
       ["Items scanned", data.summary.totalScans], ["Pieces taken home", data.summary.totalTaken], [],
       ["All scanned products"],
       ["Product", "Code", "Brand", "Category", "Scans", "Taken home (pcs)"],
@@ -226,7 +225,6 @@ export default function ReportsPage() {
 
   const maxBrand = Math.max(1, ...(data?.byBrand || []).map((b) => b.count));
   const maxCat = Math.max(1, ...(data?.byCategory || []).map((b) => b.count));
-  const maxSource = Math.max(1, ...(data?.bySource || []).map((b) => b.count));
   const maxType = Math.max(1, ...(data?.byType || []).map((b) => b.count));
 
   const card = (label: string, value: number, hint?: string, tooltip?: string) => (
@@ -301,7 +299,7 @@ export default function ReportsPage() {
               )}
               {exportingErp ? "Exporting…" : "Export for ERP"}
             </button>
-            <button onClick={exportVisits} disabled={!data || exportingVisits} title="One row per visit, incl. Interest / SO No. / Status"
+            <button onClick={exportVisits} disabled={!data || exportingVisits} title="One row per scanning session (visit detail), incl. Interest / SO No. / Status"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
               style={{ background: "var(--color-primary)" }}>
               {exportingVisits ? (
@@ -397,30 +395,18 @@ export default function ReportsPage() {
           {/* ── A. Visit & Customer Insights ─────────────────────────────── */}
           {sectionHeader("Visit & Customer Insights", "ข้อมูลการเข้าชมและลูกค้า")}
 
-          {/* Total visits + first-time vs returning */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Total visits + walk-ins + first-time vs returning */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "How many people came to the showroom this period: one visit = one person per day (registered customers + walk-ins, counted from scanning sessions). Re-scanning after End Session on the same day is still one visit; coming back another day counts again.")}
+            {card("Walk-ins", data.summary.walkIns, `${Math.max(0, data.summary.visits - data.summary.walkIns)} registered`, "Visitors without a customer registration who scanned this period. Each walk-in scanning session on a day counts as one person; a walk-in starting a new session the same day counts separately (no identity to match by).")}
             {card("Customers", data.summary.customers, undefined, "Distinct registered customers (by Customer ID) who scanned this period. Walk-ins are excluded.")}
             {card("First-time", data.summary.firstTime, "customers this period", "Customers whose first-ever scan is within this period (no earlier scans).")}
             {card("Returning", data.summary.returning, "visited before", "Customers who had scanned before this period began.")}
           </div>
 
-          {/* By source (discovery channel) + by customer type + satisfaction */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {bars("Customer source", data.bySource, maxSource, "#4a6fa5")}
-            {bars("Visitor types", data.byType, maxType, "#4a7c59")}
-          </div>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-              <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Satisfaction (avg / 5)</p>
-              <div className="flex gap-5">
-                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>overall</p></div>
-                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>service</p></div>
-              </div>
-              <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{data.satisfaction.responses} responses</p>
-            </div>
-          </div>
-
+          {/* By customer type + satisfaction (Customer source removed 16/9 — the Source field
+              left the registration form and all legacy values were cleared, so the breakdown
+              had nothing left to show. Replaced by the Walk-ins card above.) */}
           {/* ── B. Customer Interest & Product Insights ────────────────────── */}
           {sectionHeader("Customer Interest & Product Insights", "ความสนใจของลูกค้าและข้อมูลสินค้า")}
 
