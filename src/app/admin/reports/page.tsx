@@ -31,7 +31,7 @@ const PERIODS = [
 ] as const;
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<string>("monthly");
+  const [period, setPeriod] = useState<string>("daily"); // 16/9: open on Daily — staff mostly check today's numbers
   const [q, setQ] = useState("");
   const [query, setQuery] = useState(""); // applied search term
   const [data, setData] = useState<Report | null>(null);
@@ -289,7 +289,7 @@ export default function ReportsPage() {
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
             </button>
-            <button onClick={exportErp} disabled={!data || exportingErp} title="Per-takeaway lines for ERP stock-cut"
+            <button onClick={exportErp} disabled={!data || exportingErp} title="รายการตัดสต๊อกตามจำนวนที่เบิกไป สำหรับนำเข้า ERP"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
               style={{ background: "var(--color-primary)" }}>
               {exportingErp ? (
@@ -299,7 +299,7 @@ export default function ReportsPage() {
               )}
               {exportingErp ? "Exporting…" : "Export for ERP"}
             </button>
-            <button onClick={exportVisits} disabled={!data || exportingVisits} title="One row per scanning session (visit detail), incl. Interest / SO No. / Status"
+            <button onClick={exportVisits} disabled={!data || exportingVisits} title="หนึ่งแถวต่อหนึ่ง session ที่สแกน (รายละเอียดการเข้าชม) รวม Interest / SO No. / Status"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
               style={{ background: "var(--color-primary)" }}>
               {exportingVisits ? (
@@ -310,7 +310,7 @@ export default function ReportsPage() {
               {exportingVisits ? "Exporting…" : "Export visits"}
             </button>
             {/* update-tak 13/9 [09]: survey-results export (one row per response, answers flattened). */}
-            <button onClick={exportSurveys} disabled={!data || exportingSurveys} title="One row per survey response, all answers as columns"
+            <button onClick={exportSurveys} disabled={!data || exportingSurveys} title="หนึ่งแถวต่อหนึ่งผลตอบแบบสอบถาม โดยคำตอบทั้งหมดเป็นคอลัมน์"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
               style={{ background: "var(--color-primary)" }}>
               {exportingSurveys ? (
@@ -322,7 +322,7 @@ export default function ReportsPage() {
             </button>
             {/* update-tak 13/9 [07]: customer-database export moved here from Customer Management (super-admin only). */}
             {canExportCustomers && (
-              <button onClick={exportCustomers} disabled={exportingCustomers} title="Full customer database (all customers)"
+              <button onClick={exportCustomers} disabled={exportingCustomers} title="ฐานข้อมูลลูกค้าทั้งหมด (ทุกคน ไม่จำกัดช่วงเวลา)"
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-wait"
                 style={{ background: "var(--color-primary)" }}>
                 {exportingCustomers ? (
@@ -362,7 +362,7 @@ export default function ReportsPage() {
                 className="text-xs underline" aria-label="Close custom range">✕</button>
             </div>
           ) : (
-            <button onClick={() => setRangeMode("custom")} title="Pick a custom date range"
+            <button onClick={() => setRangeMode("custom")} title="เลือกช่วงวันที่เอง"
               className="px-3.5 py-2 rounded-xl text-sm" style={{ background: "var(--color-surface)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}>
               📅 Custom
             </button>
@@ -397,11 +397,11 @@ export default function ReportsPage() {
 
           {/* Total visits + walk-ins + first-time vs returning */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "How many people came to the showroom this period: one visit = one person per day (registered customers + walk-ins, counted from scanning sessions). Re-scanning after End Session on the same day is still one visit; coming back another day counts again.")}
-            {card("Walk-ins", data.summary.walkIns, `${Math.max(0, data.summary.visits - data.summary.walkIns)} registered`, "Visitors without a customer registration who scanned this period. Each walk-in scanning session on a day counts as one person; a walk-in starting a new session the same day counts separately (no identity to match by).")}
-            {card("Customers", data.summary.customers, undefined, "Distinct registered customers (by Customer ID) who scanned this period. Walk-ins are excluded.")}
-            {card("First-time", data.summary.firstTime, "customers this period", "Customers whose first-ever scan is within this period (no earlier scans).")}
-            {card("Returning", data.summary.returning, "visited before", "Customers who had scanned before this period began.")}
+            {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "จำนวนคนที่มาที่โชว์รูมในช่วงเวลานี้ นับ 1 คน ต่อ 1 วัน (รวมลูกค้าที่ลงทะเบียนและ walk-in นับจาก session ที่มีการสแกน) — สแกนแล้ว End Session แล้วกลับมาใหม่ในวันเดียวกัน ยังนับเป็น 1 คน แต่ถ้ามาอีกคนละวันจะนับเพิ่ม")}
+            {card("Walk-ins", data.summary.walkIns, `${Math.max(0, data.summary.visits - data.summary.walkIns)} registered`, "ผู้เข้าชมที่ไม่ได้ลงทะเบียนเป็นลูกค้าแต่มีการสแกนในช่วงเวลานี้ — นับ 1 session ต่อวันเป็น 1 คน (ถ้า walk-in เริ่ม session ใหม่ในวันเดียวกันจะนับเพิ่ม เพราะไม่มีข้อมูลตัวตนไว้จับคู่)")}
+            {card("Customers", data.summary.customers, undefined, "จำนวนลูกค้าที่ลงทะเบียน (นับตาม Customer ID) ที่มีการสแกนในช่วงเวลานี้ — ไม่รวม walk-in")}
+            {card("First-time", data.summary.firstTime, "customers this period", "ลูกค้าที่สแกนครั้งแรกตกอยู่ในช่วงเวลานี้ (ไม่เคยสแกนมาก่อน)")}
+            {card("Returning", data.summary.returning, "visited before", "ลูกค้าที่เคยสแกนมาก่อนช่วงเวลานี้เริ่มต้น")}
           </div>
 
           {/* By customer type + satisfaction (Customer source removed 16/9 — the Source field
