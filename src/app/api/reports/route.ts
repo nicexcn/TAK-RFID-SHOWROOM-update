@@ -269,6 +269,42 @@ export async function GET(req: NextRequest) {
       }).sort((a, b) => a.date.localeCompare(b.date) || a.docNo.localeCompare(b.docNo));
     }
 
+    // 16/9 feedback: per-customer takeaway summary for the CSV report — one row per customer
+    // who took items home this period, with the taken items (product × qty) listed. Uses the
+    // same takeaway scans as detail=takeaways, grouped by customer (walk-ins grouped under
+    // their session's customerCode, i.e. "WALK-IN").
+    const tkCustIds = [...new Set(filtered.filter((x) => (x.takeawayQty || 0) > 0).map((x) => x.session.customerId).filter(Boolean) as string[])];
+    const tkCusts = tkCustIds.length
+      ? await prisma.customer.findMany({ where: { id: { in: tkCustIds } }, select: { id: true, fullName: true, company: true, phone: true } })
+      : [];
+    const tkById = new Map(tkCusts.map((c) => [c.id, c]));
+    const byCustomer = new Map<string, { customer: string; company: string; customerCode: string; phone: string; items: Map<string, number>; totalQty: number }>();
+    for (const s of filtered.filter((x) => (x.takeawayQty || 0) > 0)) {
+      const c = s.session.customerId ? tkById.get(s.session.customerId) : undefined;
+      const key = s.session.customerId || `code:${s.session.customerCode}`;
+      const e = byCustomer.get(key) || {
+        customer: c?.fullName || s.session.customerCode || "Walk-in",
+        company: c?.company || "",
+        customerCode: s.session.customerCode,
+        phone: c?.phone || "",
+        items: new Map<string, number>(),
+        totalQty: 0,
+      };
+      if (s.product?.productCode || s.product?.name) {
+        const label = [s.product.productCode, s.product.name].filter(Boolean).join(" · ");
+        e.items.set(label, (e.items.get(label) || 0) + (s.takeawayQty || 0));
+      }
+      e.totalQty += s.takeawayQty || 0;
+      byCustomer.set(key, e);
+    }
+    const customerTakeaways = [...byCustomer.values()]
+      .map((e) => ({
+        ...e,
+        // items as "code · name (qty)" joined with "; " — readable in one CSV cell
+        itemsText: [...e.items.entries()].map(([label, qty]) => `${label} (${qty})`).join("; "),
+      }))
+      .sort((a, b) => b.totalQty - a.totalQty || a.customer.localeCompare(b.customer));
+
     // #4 (Excel report list) — visitor & customer insights, from the customers active this period.
     const visitingIds = [...new Set(filtered.map((s) => s.session.customerId).filter(Boolean) as string[])];
     let bySource: { name: string; count: number }[] = [];
@@ -348,6 +384,7 @@ export async function GET(req: NextRequest) {
       byType,
       satisfaction,
       takeaways,
+      customerTakeaways, // 16/9: per-customer items-taken summary (CSV report section)
       visits,
       surveys: surveyRows, // update-tak 13/9 [09]: per-response survey export (detail=surveys)
     });

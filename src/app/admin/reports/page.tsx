@@ -20,6 +20,7 @@ interface Report {
   byBrand: { name: string; count: number }[];
   byCategory: { name: string; count: number }[];
   byType: { name: string; count: number }[];
+  customerTakeaways?: { customer: string; company: string; customerCode: string; phone: string; itemsText: string; totalQty: number }[];
   satisfaction: { overall: number | null; service: number | null; responses: number };
 }
 
@@ -95,6 +96,11 @@ export default function ReportsPage() {
       ["Taken-home products"],
       ["Product", "Code", "Brand", "Quantity (pcs)"], // TAK 28/8 (K): piece counts, not just counts
       ...data.takenHomeProducts.map((r) => [r.product.name, r.product.productCode || "", r.product.brand || "", r.takenQty]),
+      [],
+      // 16/9: per-customer section — who took what home (one row per customer)
+      ["Items taken home per customer"],
+      ["Customer", "Company", "Customer Code", "Phone", "Items taken (code · name (pcs))", "Total (pcs)"],
+      ...(data.customerTakeaways || []).map((r) => [r.customer, r.company, r.customerCode, r.phone, r.itemsText, r.totalQty]),
     ];
     const csv = toCsv(rows);
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
