@@ -402,6 +402,37 @@ export default function SettingsPage() {
     }
   }
 
+  // 16/9: inline-edit a sale's coverage (จังหวัด + เขต). PATCH /api/sales — empty clears to null.
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [saleProvinceDraft, setSaleProvinceDraft] = useState("");
+  const [saleZoneDraft, setSaleZoneDraft] = useState("");
+  const [savingSaleCoverage, setSavingSaleCoverage] = useState(false);
+
+  function startEditSaleCoverage(s: { id: string; province?: string | null; zone?: string | null }) {
+    setEditingSaleId(s.id);
+    setSaleProvinceDraft(s.province || "");
+    setSaleZoneDraft(s.zone || "");
+  }
+
+  async function saveSaleCoverage(id: string) {
+    setSavingSaleCoverage(true);
+    try {
+      const res = await fetch("/api/sales", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, province: saleProvinceDraft, zone: saleZoneDraft }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSalesMaster((list) => list.map((x) => x.id === id ? { ...x, province: updated.province, zone: updated.zone } : x));
+        setEditingSaleId(null);
+      } else errToast("Could not save the coverage.");
+    } catch {
+      errToast("Could not save the coverage.");
+    } finally {
+      setSavingSaleCoverage(false);
+    }
+  }
+
   // Sales master delete (slide 28) — removes from the Sale table, keeping the
   // historical customer.salesPerson strings intact (they're free text).
   async function handleDeleteSale(id: string) {
@@ -855,18 +886,42 @@ export default function SettingsPage() {
                 {salesMaster.length === 0 ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--color-text-subtle)" }}>No salespeople yet</p>
                 ) : salesMaster.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-surface)" }}>
-                    <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{s.code}</span>
-                    <span className="text-sm truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
-                    {/* update-tak 13/9: zone coverage (เขต/จังหวัด) from the Sale master */}
-                    {s.province && (
-                      <span className="text-[11px] truncate flex-1 text-right" style={{ color: "var(--color-text-muted)" }} title={s.zone ? `เขต: ${s.zone}` : undefined}>
-                        {s.province}
-                      </span>
+                  <div key={s.id} className="px-3 py-1.5 rounded-lg" style={{ background: "var(--color-surface)" }}>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>{s.code}</span>
+                      <span className="text-sm truncate" style={{ color: "var(--color-text)" }}>{s.name}</span>
+                      {editingSaleId !== s.id && (
+                        <span className="text-[11px] truncate ml-auto text-right" style={{ color: "var(--color-text-muted)" }} title={s.zone ? `เขต: ${s.zone}` : undefined}>
+                          {s.province || "—"}
+                        </span>
+                      )}
+                      {editingSaleId !== s.id && (
+                        <button onClick={() => startEditSaleCoverage(s)}
+                          className="text-xs px-2 py-0.5 rounded-md flex-shrink-0"
+                          style={{ color: "var(--color-primary)", background: "var(--color-bg)" }}>✎ เขต</button>
+                      )}
+                      <button onClick={() => handleDeleteSale(s.id)} disabled={deletingOptionId === s.id}
+                        className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40 flex-shrink-0"
+                        style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === s.id ? "…" : "Delete"}</button>
+                    </div>
+                    {editingSaleId === s.id && (
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto_auto] gap-2 items-center">
+                        <input value={saleProvinceDraft} onChange={(e) => setSaleProvinceDraft(e.target.value)}
+                          placeholder="จังหวัด เช่น กรุงเทพ,สมุทรปราการ"
+                          className="px-3 py-2 rounded-lg text-xs outline-none"
+                          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                        <input value={saleZoneDraft} onChange={(e) => setSaleZoneDraft(e.target.value)}
+                          placeholder="เขต/อำเภอ (คั่นด้วย ,) เช่น พระโขนง,บางนา"
+                          className="px-3 py-2 rounded-lg text-xs outline-none"
+                          style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                        <button onClick={() => saveSaleCoverage(s.id)} disabled={savingSaleCoverage}
+                          className="px-3 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-50"
+                          style={{ background: "var(--color-primary)" }}>{savingSaleCoverage ? "…" : "Save"}</button>
+                        <button onClick={() => setEditingSaleId(null)}
+                          className="px-3 py-2 rounded-lg text-xs"
+                          style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>Cancel</button>
+                      </div>
                     )}
-                    <button onClick={() => handleDeleteSale(s.id)} disabled={deletingOptionId === s.id}
-                      className="text-xs px-2 py-0.5 rounded-md disabled:opacity-40 flex-shrink-0"
-                      style={{ color: "var(--color-danger-soft)", background: "var(--color-danger-bg)" }}>{deletingOptionId === s.id ? "…" : "Delete"}</button>
                   </div>
                 ))}
               </div>

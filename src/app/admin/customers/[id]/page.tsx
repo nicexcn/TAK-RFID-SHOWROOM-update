@@ -1,8 +1,10 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { ZoneCascade } from "@/components/ZoneCascade";
+import { SalesCoverageHint, ZoneSalesHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -77,6 +79,21 @@ export default function CustomerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
+  // 16/9: combobox options — Contractor segment sees only the contractor cell; sales
+  // covering the customer's zone float to the top under "ดูแลโซนนี้".
+  const comboboxOptions: SalesOption[] = useMemo(() => {
+    const base = form?.title === "Contractor"
+      ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
+      : salesOptions;
+    const covering = new Set(salesCoveringZone(form?.zone || "", base).map((s) => s.name));
+    return base.map((s) => ({
+      name: s.name,
+      code: s.code,
+      hint: s.province || s.zone || undefined,
+      group: covering.has(s.name) ? "ดูแลโซนนี้" : undefined,
+    }));
+  }, [salesOptions, form?.title, form?.zone]);
+
   // Feedback round 3 (15/9): existing company names as datalist suggestions on the Company
   // field, so staff pick "Home Connect" instead of typing a case variant.
   const [companyOptions, setCompanyOptions] = useState<string[]>([]);
@@ -333,36 +350,16 @@ export default function CustomerDetailPage() {
                   (name + ERP code in the suggestion), editable later */}
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales</span>
-                <input list="edit-sales-options" aria-label="Sales" value={form.salesPerson}
-                  onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
-                  placeholder="Type to search name or code…"
-                  autoComplete="off"
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-                <datalist id="edit-sales-options">
-                  {(form.title === "Contractor"
-                    ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
-                    : salesOptions
-                  ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                  {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
-                </datalist>
+                <div className="mt-0.5">
+                  <SalesCombobox
+                    options={comboboxOptions}
+                    value={form.salesPerson}
+                    onChange={(v) => setForm({ ...form, salesPerson: v })}
+                  />
+                </div>
               </label>
-              {/* 16/9: coverage hint — the sale's จังหวัด/เขต from the Sale master + whether it
-                  covers the customer's zone. */}
-              {(() => {
-                const picked = salesOptions.find((s) => s.name === form.salesPerson.trim());
-                if (!picked) return null;
-                const coverage = picked.province || picked.zone;
-                if (!coverage) return null;
-                const zoneParts = (form.zone || "").split("/").map((z) => z.trim()).filter(Boolean);
-                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
-                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
-                return (
-                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
-                    ดูแล: {coverage}
-                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนของลูกค้า" : " · โซนของลูกค้าอยู่นอกเขตที่ดูแล")}
-                  </p>
-                );
-              })()}
+              {/* 16/9: soft two-way hints (see SaleZoneHints) */}
+              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} />
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
@@ -425,36 +422,16 @@ export default function CustomerDetailPage() {
                   (name + ERP code in the suggestion), editable later */}
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sales</span>
-                <input list="edit-sales-options" aria-label="Sales" value={form.salesPerson}
-                  onChange={(e) => setForm({ ...form, salesPerson: e.target.value })}
-                  placeholder="Type to search name or code…"
-                  autoComplete="off"
-                  className="w-full mt-0.5 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-                <datalist id="edit-sales-options">
-                  {(form.title === "Contractor"
-                    ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
-                    : salesOptions
-                  ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                  {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
-                </datalist>
+                <div className="mt-0.5">
+                  <SalesCombobox
+                    options={comboboxOptions}
+                    value={form.salesPerson}
+                    onChange={(v) => setForm({ ...form, salesPerson: v })}
+                  />
+                </div>
               </label>
-              {/* 16/9: coverage hint — the sale's จังหวัด/เขต from the Sale master + whether it
-                  covers the customer's zone. */}
-              {(() => {
-                const picked = salesOptions.find((s) => s.name === form.salesPerson.trim());
-                if (!picked) return null;
-                const coverage = picked.province || picked.zone;
-                if (!coverage) return null;
-                const zoneParts = (form.zone || "").split("/").map((z) => z.trim()).filter(Boolean);
-                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
-                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
-                return (
-                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
-                    ดูแล: {coverage}
-                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนของลูกค้า" : " · โซนของลูกค้าอยู่นอกเขตที่ดูแล")}
-                  </p>
-                );
-              })()}
+              {/* 16/9: soft two-way hints (see SaleZoneHints) */}
+              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} />
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>

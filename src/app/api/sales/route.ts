@@ -38,3 +38,24 @@ export async function DELETE(req: NextRequest) {
   await prisma.sale.delete({ where: { id } }).catch(() => null);
   return NextResponse.json({ success: true });
 }
+
+// 16/9: edit a sale's coverage (จังหวัด/เขต, comma-separated as seeded from TWC's sheet).
+// Empty strings clear back to null (unassigned / role-based entries).
+export async function PATCH(req: NextRequest) {
+  const guard = requireAccess(req, "/admin/settings");
+  if ("response" in guard) return guard.response;
+  try {
+    const { id, province, zone } = await req.json();
+    if (!String(id || "").trim()) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const sale = await prisma.sale.update({
+      where: { id },
+      data: {
+        province: String(province || "").trim() || null,
+        zone: String(zone || "").trim() || null,
+      },
+    });
+    return NextResponse.json(sale);
+  } catch {
+    return NextResponse.json({ error: "Could not update the sale" }, { status: 500 });
+  }
+}

@@ -2,8 +2,10 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
 import { ZoneCascade } from "@/components/ZoneCascade";
+import { SalesCoverageHint, ZoneSalesHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 
@@ -75,6 +77,22 @@ export default function AddCustomerPage() {
     setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch]);
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // 16/9: combobox options — Sale master (+ legacy names). Contractor segment sees ONLY the
+  // contractor cell (ไก่/รัตน์/เขม); everyone else sees the full list, with the sales covering
+  // the picked zone floating to the top under a "ดูแลโซนนี้" heading.
+  const comboboxOptions: SalesOption[] = useMemo(() => {
+    const base = title === "Contractor"
+      ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
+      : salesOptions;
+    const covering = new Set(salesCoveringZone(zone, base).map((s) => s.name));
+    return base.map((s) => ({
+      name: s.name,
+      code: s.code,
+      hint: s.province || s.zone || undefined,
+      group: covering.has(s.name) ? "ดูแลโซนนี้" : undefined,
+    }));
+  }, [salesOptions, title, zone]);
 
   // #2: options for the staff "Sales" combobox come from the Sale master (Settings →
   // Salesperson, name + ERP code so slide-28 search can match both), plus any legacy
@@ -352,44 +370,18 @@ export default function AddCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="salesPerson" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Sales</label>
-              {/* Slide 28: 60+ sales — searchable combobox (type to filter by name or staff code),
-                  not a plain dropdown. datalist keeps it native; the value stored is "name". */}
-              <input id="salesPerson" list="sales-options" value={salesPerson}
-                onChange={(e) => setSalesPerson(e.target.value)} aria-label="Sales"
-                placeholder="Type to search name or code…"
-                autoComplete="off"
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-              <datalist id="sales-options">
-                {(title === "Contractor"
-                  ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
-                  : salesOptions
-                ).map((s) => <option key={s.name} value={s.name}>{s.code}</option>)}
-                {title !== "Contractor" && me && !salesOptions.some((s) => s.name === me) ? <option value={me} /> : null}
-              </datalist>
+              {/* 16/9: SalesCombobox (replaces the datalist) — searchable by name / nickname /
+                  ERP code, free text allowed, sales covering the picked zone grouped on top. */}
+              <SalesCombobox
+                options={comboboxOptions}
+                value={salesPerson}
+                onChange={setSalesPerson}
+              />
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
                 Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management
               </p>
-              {/* 16/9: coverage hint — show the selected sale's จังหวัด/เขต from the Sale master,
-                  and (when a zone is picked) whether it matches. No API change: the data rides
-                  along with /api/sales. */}
-              {(() => {
-                const picked = salesOptions.find((s) => s.name === salesPerson.trim());
-                if (!picked) return null;
-                const coverage = picked.province || picked.zone;
-                if (!coverage) return null;
-                // Does the picked zone fall inside this sale's coverage? (zone is stored
-                // "จังหวัด / เขต" or just one of them; match loosely on either part.)
-                const zoneParts = zone.split("/").map((z) => z.trim()).filter(Boolean);
-                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
-                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
-                return (
-                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
-                    ดูแล: {coverage}
-                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
-                  </p>
-                );
-              })()}
+              {/* 16/9: soft two-way hints (see SaleZoneHints) */}
+              <SalesCoverageHint salesPerson={salesPerson} zone={zone} sales={salesOptions} />
             </div>
             <div>
               <label htmlFor="project" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project</label>
@@ -403,6 +395,8 @@ export default function AddCustomerPage() {
               <label htmlFor="add-province" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Zone (จังหวัด/เขต)</label>
               {/* Slide 3: reactive จังหวัด → เขต/อำเภอ cascade (stored as "จังหวัด / อำเภอ") */}
               <ZoneCascade value={zone} onChange={setZone} idPrefix="add" />
+              {/* 16/9: soft suggestion — click a covering sale to fill the Sales field */}
+              <ZoneSalesHint zone={zone} sales={salesOptions} onPick={setSalesPerson} />
             </div>
           </div>
         </section>

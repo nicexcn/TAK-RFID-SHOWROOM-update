@@ -1,0 +1,77 @@
+"use client";
+
+// 16/9: soft two-way suggestions between the Sales picker and the Zone cascade.
+// Neither direction is forced — they are hints staff may click or ignore.
+//  - <SalesCoverageHint/>  : under the Sales field — the picked sale's coverage + whether
+//                            it covers the customer's zone (already shown since 2f54c27,
+//                            now shared here so both forms render it identically).
+//  - <ZoneSalesHint/>      : under the Zone field — chips of every sale covering the picked
+//                            zone; click a chip to fill the Sales field.
+// Matching is loose on purpose: sale coverage strings come from TWC's Excel with composite
+// entries like "พระราม5(ฝั่งเมืองนนท์)" or "คลองเตย(สุขุมวิท 16-48)", so we compare by
+// substring either way (zone ⊂ coverage part or coverage part ⊂ zone).
+export type SaleOption = { name: string; code: string; province?: string | null; zone?: string | null };
+
+function coverageParts(s: SaleOption): string[] {
+  return (s.province || "").split(",").concat((s.zone || "").split(","))
+    .map((c) => c.trim()).filter(Boolean);
+}
+
+function zoneParts(zone: string): string[] {
+  return zone.split("/").map((z) => z.trim()).filter(Boolean);
+}
+
+function matches(zone: string, parts: string[]): boolean {
+  const zp = zoneParts(zone);
+  if (zp.length === 0) return false;
+  return parts.some((c) => zp.some((z) => z.includes(c) || c.includes(z)));
+}
+
+/** Sales covering the given zone (province or district part), ordered by name. */
+export function salesCoveringZone(zone: string, sales: SaleOption[]): SaleOption[] {
+  if (!zone.trim()) return [];
+  return sales.filter((s) => matches(zone, coverageParts(s)));
+}
+
+export function SalesCoverageHint({ salesPerson, zone, sales }: {
+  salesPerson: string; zone: string; sales: SaleOption[];
+}) {
+  const picked = sales.find((s) => s.name === salesPerson.trim());
+  if (!picked) return null;
+  const coverage = picked.province || picked.zone;
+  if (!coverage) return null;
+  const covers = matches(zone, coverageParts(picked));
+  const zp = zoneParts(zone);
+  return (
+    <p className="text-[11px] mt-1" style={{ color: zp.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
+      ดูแล: {coverage}
+      {zp.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
+    </p>
+  );
+}
+
+export function ZoneSalesHint({ zone, sales, onPick }: {
+  zone: string; sales: SaleOption[]; onPick: (name: string) => void;
+}) {
+  const covering = salesCoveringZone(zone, sales);
+  if (covering.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+      <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>คนดูแลโซนนี้:</span>
+      {covering.map((s) => (
+        <button key={s.code} type="button" onClick={() => onPick(s.name)}
+          title={`${s.name} (${s.code})${s.province ? ` · ${s.province}` : ""}`}
+          className="px-2 py-0.5 rounded-lg text-[11px] transition-colors hover:opacity-80"
+          style={{ background: "rgba(114,108,90,0.12)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+          {nicknameOf(s.name) || s.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// "(ทราย)" inside "ชัญญา สุทธิวรรณ (ทราย)" — the short name staff actually use.
+function nicknameOf(name: string): string | null {
+  const m = name.match(/\(([^)]+)\)/);
+  return m ? m[1] : null;
+}
