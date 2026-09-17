@@ -39,6 +39,8 @@ export default function EditProductPage() {
   const [brands, setBrands] = useState<DropdownOption[]>([]);
   const [materialTypes, setMaterialTypes] = useState<DropdownOption[]>([]);
   const [categories, setCategories] = useState<DropdownOption[]>([]);
+  // 16/9: extra chips beyond the primary (multi-tag products — door panels carry EPC1+EPC2).
+  const [extraTags, setExtraTags] = useState<string[]>([]);
 
   const inputStyle = {
     background: "var(--color-bg)",
@@ -71,6 +73,8 @@ export default function EditProductPage() {
       setBrands(b);
       setMaterialTypes(m);
       setCategories(c);
+      // RfidTag rows for this product, minus the primary (which lives in the form).
+      setExtraTags(((product.tags as { epc: string }[] | undefined) || []).map((t) => t.epc).filter((e: string) => e !== (product.rfidTag || "")));
       setFetching(false);
     }
     fetchAll();
@@ -96,7 +100,7 @@ export default function EditProductPage() {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form }),
+        body: JSON.stringify({ ...form, tags: extraTags }),
       });
       if (res.ok) {
         router.push("/admin/products");
@@ -223,7 +227,7 @@ export default function EditProductPage() {
           </div>
 
           {/* RFID Tag — scan with a reader, or type it (moved below the descriptive fields) */}
-          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} />
+          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} extraTags={extraTags} onExtraTagsChange={setExtraTags} />
 
           {/* image3: give-away vs must-return */}
           <div>

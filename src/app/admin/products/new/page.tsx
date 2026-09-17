@@ -32,6 +32,8 @@ export default function NewProductPage() {
     returnable: true, // image3: true = must-return sample; false = give-away
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  // 16/9: extra chips beyond the primary (multi-tag products — door panels carry EPC1+EPC2).
+  const [extraTags, setExtraTags] = useState<string[]>([]);
 
   const [brands, setBrands] = useState<DropdownOption[]>([]);
   const [materialTypes, setMaterialTypes] = useState<DropdownOption[]>([]);
@@ -86,7 +88,7 @@ export default function NewProductPage() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, imageUrls }),
+        body: JSON.stringify({ ...form, imageUrls, tags: extraTags }),
       });
       if (res.ok) {
         router.push("/admin/products");
@@ -200,7 +202,7 @@ export default function NewProductPage() {
           </div>
 
           {/* RFID Tag — scan with a reader, or type it (moved below the descriptive fields) */}
-          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} />
+          <RfidTagField value={form.rfidTag} onChange={(v) => setForm((p) => ({ ...p, rfidTag: v }))} extraTags={extraTags} onExtraTagsChange={setExtraTags} />
           </div>
 
           {/* image3: give-away vs must-return */}

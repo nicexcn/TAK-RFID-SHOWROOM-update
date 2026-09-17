@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/lib/permissions";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const product = await prisma.product.findUnique({ where: { id } });
+    const product = await prisma.product.findUnique({ where: { id }, include: { tags: { select: { id: true, epc: true, label: true } } } });
     if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(product);
   } catch (error) {
@@ -29,6 +30,44 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       // Empty tag → null so untagged products don't collide on the unique index.
       data: { rfidTag: String(rfidTag || "").trim() || null, brand, materialType, category, productCode, name, size, colour, description, location, returnable },
     });
+    // 16/9: sync extra tags (multi-chip products). `tags` is the full desired set of
+    // additional EPCs (excluding the primary): rows are created/removed to match.
+    // The primary rfidTag column always gets a RfidTag row too, so every chip of the
+    // product resolves through the tag table.
+    if (Array.isArray(data.tags)) {
+      const wanted = [...new Set((data.tags as unknown[]).map((t) => String(t || "").trim()).filter(Boolean)
+        .filter((t) => t !== product.rfidTag))];
+      // primary tag row follows the column
+      if (product.rfidTag) {
+        await prisma.rfidTag.upsert({
+          where: { epc: product.rfidTag },
+          update: { productId: id },
+          create: { epc: product.rfidTag, productId: id, label: "primary" },
+        }).catch(() => {}); // epc held elsewhere → the 409 below will surface it
+      }
+      const existing = await prisma.rfidTag.findMany({ where: { productId: id }, select: { epc: true, label: true } });
+      const keep = new Set(wanted);
+      // remove rows no longer wanted (but never the primary)
+      for (const t of existing) {
+        if (t.epc !== product.rfidTag && !keep.has(t.epc)) {
+          await prisma.rfidTag.deleteMany({ where: { productId: id, epc: t.epc } });
+        }
+      }
+      for (const epc of wanted) {
+        try {
+          await prisma.rfidTag.upsert({
+            where: { epc },
+            update: { productId: id },
+            create: { epc, productId: id },
+          });
+        } catch (e) {
+          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+            return NextResponse.json({ error: `RFID tag “${epc}” is already in use.` }, { status: 409 });
+          }
+          throw e;
+        }
+      }
+    }
     return NextResponse.json(product);
   } catch (error) {
     console.error("PUT PRODUCT ERROR:", error);

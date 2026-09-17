@@ -23,7 +23,7 @@ interface Product {
   name: string;
   imageUrl: string | null;
   isActive: boolean;
-  _count?: { scans: number };
+  _count?: { scans: number; tags: number };
 }
 
 const columnHelper = createColumnHelper<Product>();
@@ -31,6 +31,7 @@ const columnHelper = createColumnHelper<Product>();
 interface ImportResult {
   created: number;
   updated: number;
+  tagsAdded?: number; // 16/9: chips attached to an existing same-name product
   failed: number;
   errors: string[];
 }
@@ -639,6 +640,12 @@ export default function ProductsPage() {
                     <p className="text-2xl font-bold" style={{ color: "var(--color-info)" }}>{importResult.updated}</p>
                     <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Updated</p>
                   </div>
+                  {!!importResult.tagsAdded && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: "#9f886c" }}>{importResult.tagsAdded}</p>
+                      <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Tags added</p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <p className="text-2xl font-bold" style={{ color: "var(--color-danger)" }}>{importResult.failed}</p>
                     <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Failed</p>

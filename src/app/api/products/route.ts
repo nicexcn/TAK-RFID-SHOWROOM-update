@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         // can build an epc→product map — tags are small, include them on that path too.
         include: {
           ...(all ? { tags: { select: { epc: true } } } : {}),
-          ...(!all ? { _count: { select: { scans: true } } } : {}),
+          ...(!all ? { _count: { select: { scans: true, tags: true } } } : {}),
         },
       }),
       prisma.product.count({ where }),
@@ -91,6 +91,23 @@ export async function POST(req: NextRequest) {
     const product = await prisma.product.create({
       data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive, returnable: returnable !== false },
     });
+    // 16/9: extra tags (multi-chip products). The first tag is the primary rfidTag column;
+    // every additional EPC gets a RfidTag row pointing at this product. EPC conflict → 409.
+    const extraTags: string[] = (Array.isArray(data.tags) ? data.tags : [])
+      .map((t: unknown) => String(t || "").trim()).filter(Boolean);
+    if (extraTags.length) {
+      for (const epc of extraTags) {
+        if (epc === rfidTag) continue;
+        try {
+          await prisma.rfidTag.create({ data: { epc, productId: product.id } });
+        } catch (e) {
+          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+            return NextResponse.json({ error: `RFID tag “${epc}” is already in use.` }, { status: 409 });
+          }
+          throw e;
+        }
+      }
+    }
     if (urls.length) {
       await prisma.productImage.createMany({ data: urls.map((url, i) => ({ productId: product.id, url, order: i })) });
       await syncCover(product.id);
