@@ -176,14 +176,19 @@ export default function SalesCombobox({ options, value, onChange, placeholder = 
             </li>
           ) : ordered.map((o, i) => {
             const showGroup = o.group && o.group !== lastGroup;
+            const groupEnded = !o.group && lastGroup; // first ungrouped item after the group
             lastGroup = o.group || lastGroup;
             return (
               <div key={o.name}>
                 {showGroup && (
-                  <li role="presentation" className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide"
-                    style={{ color: "var(--color-primary)" }}>
+                  <li role="presentation" className="px-4 pt-2 pb-1 text-[10px] font-semibold tracking-wide"
+                    style={{ color: "var(--color-primary)", background: "rgba(114,108,90,0.10)" }}>
                     {o.group}
                   </li>
+                )}
+                {groupEnded && (
+                  // Visible separator between the suggestion group and the rest of the list.
+                  <li role="separator" className="my-1" style={{ borderTop: "1px solid var(--color-border)" }} />
                 )}
                 <li
                   data-idx={i}

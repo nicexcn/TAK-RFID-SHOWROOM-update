@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // 16/9: soft two-way suggestions between the Sales picker and the Zone cascade.
 // Neither direction is forced — they are hints staff may click or ignore.
 //  - <SalesCoverageHint/>  : under the Sales field — the picked sale's coverage + whether
@@ -45,8 +47,12 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
   if (!coverage) return null;
   const covers = matches(zone, coverageParts(picked));
   const zp = zoneParts(zone);
-  // District quick-picks from this sale's เขต list (first few; the zone column carries them).
-  const districts = (picked.zone || "").split(",").map((d) => d.trim()).filter(Boolean).slice(0, 6);
+  // District quick-picks from this sale's เขต list. Show up to 8 (the full set for most
+  // sales — e.g. ทราย has 8), then a "+N" chip expanding the rest.
+  const allDistricts = (picked.zone || "").split(",").map((d) => d.trim()).filter(Boolean);
+  const [showAll, setShowAll] = useState(false);
+  const districts = showAll ? allDistricts : allDistricts.slice(0, 8);
+  const hidden = allDistricts.length - districts.length;
   const province = (picked.province || "").split(",")[0].trim(); // first province for the chip value
   return (
     <div className="mt-1">
@@ -54,7 +60,7 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
         ดูแล: {coverage}
         {zp.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
       </p>
-      {onPickZone && districts.length > 0 && (
+      {onPickZone && allDistricts.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
           <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>{zp.length ? "เปลี่ยนโซนเป็นเขตของ sale นี้:" : "ตั้งโซนจากเขตที่ดูแล:"}</span>
           {districts.map((d) => (
@@ -65,6 +71,13 @@ export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
               {d}
             </button>
           ))}
+          {hidden > 0 && (
+            <button type="button" onClick={() => setShowAll(true)}
+              className="px-2 py-0.5 rounded-lg text-[11px]"
+              style={{ color: "var(--color-primary)" }}>
+              +{hidden} เพิ่มเติม
+            </button>
+          )}
         </div>
       )}
     </div>
