@@ -407,6 +407,18 @@ export default function ReportsPage() {
           {/* By customer type + satisfaction (Customer source removed 16/9 — the Source field
               left the registration form and all legacy values were cleared, so the breakdown
               had nothing left to show. Replaced by the Walk-ins card above.) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {bars("Visitor types", data.byType, maxType, "#4a7c59")}
+            <div className="p-4 rounded-xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+              <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>Satisfaction (avg / 5)</p>
+              <div className="flex gap-5">
+                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.overall ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>overall</p></div>
+                <div><p className="text-2xl font-semibold" style={{ color: "var(--color-text-muted)" }}>{data.satisfaction.service ?? "—"}</p><p className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>service</p></div>
+              </div>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-subtle)" }}>{data.satisfaction.responses} responses</p>
+            </div>
+          </div>
+
           {/* ── B. Customer Interest & Product Insights ────────────────────── */}
           {sectionHeader("Customer Interest & Product Insights", "ความสนใจของลูกค้าและข้อมูลสินค้า")}
 
