@@ -399,7 +399,7 @@ export default function ReportsPage() {
 
           {/* Total visits + first-time vs returning */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "Distinct sessions that scanned at least one item this period. A customer with multiple scanning sessions counts as multiple visits. Walk-in / zero-scan sessions are not counted.")}
+            {card("Total visits", data.summary.visits, `${data.summary.customers} customers`, "How many people came to the showroom this period: one visit = one person per day (registered customers + walk-ins, counted from scanning sessions). Re-scanning after End Session on the same day is still one visit; coming back another day counts again.")}
             {card("Customers", data.summary.customers, undefined, "Distinct registered customers (by Customer ID) who scanned this period. Walk-ins are excluded.")}
             {card("First-time", data.summary.firstTime, "customers this period", "Customers whose first-ever scan is within this period (no earlier scans).")}
             {card("Returning", data.summary.returning, "visited before", "Customers who had scanned before this period began.")}

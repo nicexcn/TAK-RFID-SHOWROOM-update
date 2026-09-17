@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/permissions";
 import { canAccessPath } from "@/lib/roles";
 import { customerTypeLabel } from "@/lib/customerTypes";
+import { bkkDayOf } from "@/lib/erpDocNo";
 
 // #4 Report: product activity over a period (Daily/Weekly/Monthly/Yearly), searchable by
 // customer code / Project / Sale. Returns the summary + "all scanned" and "taken home" lists
@@ -113,9 +114,15 @@ export async function GET(req: NextRequest) {
     const takenHomeProducts = scannedProducts.filter((p) => p.takenQty > 0).sort((a, b) => b.takenQty - a.takenQty);
 
     const summary = {
-      // update-tak 13/9 [08]: "visits" = distinct sessions that scanned in the window.
-      // (Zero-scan/walk-in test sessions don't count as visits — only real scanning sessions.)
-      visits: new Set(filtered.map((s) => s.session.id)).size,
+      // 16/9 feedback: "visits" = distinct (person, Bangkok day) pairs — how many people came
+      // to the showroom per day, walk-ins included. Same person re-scanning after End Session
+      // on the SAME day is still one visit; coming back another day counts again. Walk-in
+      // sessions (customerId null) are keyed by their session id per day — one walk-in visit
+      // per session per day (we can't identity-match anonymous visitors).
+      visits: new Set(filtered.map((s) => {
+        const bkkDay = bkkDayOf(s.scannedAt);
+        return s.session.customerId ? `${s.session.customerId}::${bkkDay}` : `${s.session.id}::${bkkDay}`;
+      })).size,
       // [08] "customers" = distinct REAL customers (by customerId only). Walk-ins and ad-hoc
       // codes (no Customer row) are excluded so the count matches the customer database,
       // not inflated by junk/walk-in codes. Was `customerId ?? customerCode`, which counted
@@ -266,7 +273,14 @@ export async function GET(req: NextRequest) {
     let firstTime = 0, returning = 0;
     if (visitingIds.length) {
       const custs = await prisma.customer.findMany({ where: { id: { in: visitingIds } }, select: { id: true, source: true, title: true } });
-      bySource = tally(custs.map((c) => c.source));
+      // 16/9 feedback: surface customers with no source as "Not specified" so the breakdown
+      // always sums to the Customers card (the Source field was removed from the form 6/8,
+      // so every customer registered since then is unclassified).
+      const unspecified = custs.filter((c) => !String(c.source || "").trim()).length;
+      bySource = [
+        ...tally(custs.map((c) => c.source)),
+        ...(unspecified ? [{ name: "Not specified", count: unspecified }] : []),
+      ];
       byType = tally(custs.map((c) => (c.title ? customerTypeLabel(c.title) : null)));
       // Count first/returning over customers that STILL EXIST (session.customerId isn't an FK, so a
       // deleted customer's id can linger on old sessions and skew the totals vs bySource/byType).
