@@ -260,10 +260,11 @@ function DocGroups({
               </span>
               {/* update-tak 13/9: Print slip removed. Print sticker is back (15/9 feedback round 3):
                   envelope sticker — ONE per document (slide 12): it carries only customer/project
-                  info (no product code), so one button for the whole prepared batch. Walk-in
-                  groups (no customerCode) get no sticker — nothing to label. */}
-              {g.customerCode && (
-                <a href={`/print/sticker?${new URLSearchParams({ company: g.company || "", contact: g.contact || "", phone: g.phone || "", requester: g.contact || "", code: g.customerCode || "" }).toString()}`}
+                  info (no product code), so one button for the whole prepared batch. 16/9: walk-in
+                  groups print too (they have a docNo + date like any document) — code falls back
+                  to the docNo, requester stays editable on the print page. */}
+              {(g.customerCode || g.docNo) && (
+                <a href={`/print/sticker?${new URLSearchParams({ company: g.company || "", contact: g.contact || "", phone: g.phone || "", requester: g.contact || "", code: g.customerCode || g.docNo || "" }).toString()}`}
                   target="_blank" rel="noopener noreferrer" title="Print envelope sticker (one per prepared batch)"
                   className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                   style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
