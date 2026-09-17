@@ -46,7 +46,7 @@ export default function AddCustomerPage() {
   const [project, setProject] = useState(""); // #4: project this customer is associated with
   const [zone, setZone] = useState(""); // slide 3: sales territory (เขต) of the customer/project
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
-  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
+  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
   // Feedback round 3 (15/9): existing company names as datalist suggestions, so staff pick
   // "Home Connect" instead of typing "home connect" and forking a case-variant company.
@@ -83,8 +83,8 @@ export default function AddCustomerPage() {
     Promise.all([
       fetch("/api/sales").then((r) => r.json()).catch(() => []),
       fetch("/api/dropdown?type=sales").then((r) => r.json()).catch(() => []),
-    ]).then(([master, legacy]: [{ name: string; code: string }[], { value: string }[]]) => {
-      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code }));
+    ]).then(([master, legacy]: [{ name: string; code: string; province?: string | null; zone?: string | null }[], { value: string }[]]) => {
+      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code, province: s.province ?? null, zone: s.zone ?? null }));
       const masterNames = new Set(fromMaster.map((s) => s.name));
       const fromLegacy = (Array.isArray(legacy) ? legacy : [])
         .map((o) => ({ name: o.value, code: "" }))
@@ -370,6 +370,26 @@ export default function AddCustomerPage() {
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
                 Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management
               </p>
+              {/* 16/9: coverage hint — show the selected sale's จังหวัด/เขต from the Sale master,
+                  and (when a zone is picked) whether it matches. No API change: the data rides
+                  along with /api/sales. */}
+              {(() => {
+                const picked = salesOptions.find((s) => s.name === salesPerson.trim());
+                if (!picked) return null;
+                const coverage = picked.province || picked.zone;
+                if (!coverage) return null;
+                // Does the picked zone fall inside this sale's coverage? (zone is stored
+                // "จังหวัด / เขต" or just one of them; match loosely on either part.)
+                const zoneParts = zone.split("/").map((z) => z.trim()).filter(Boolean);
+                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
+                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
+                return (
+                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
+                    ดูแล: {coverage}
+                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
+                  </p>
+                );
+              })()}
             </div>
             <div>
               <label htmlFor="project" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project</label>

@@ -76,7 +76,7 @@ export default function CustomerDetailPage() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string }[]>([]);
+  const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
   // Feedback round 3 (15/9): existing company names as datalist suggestions on the Company
   // field, so staff pick "Home Connect" instead of typing a case variant.
   const [companyOptions, setCompanyOptions] = useState<string[]>([]);
@@ -146,8 +146,8 @@ export default function CustomerDetailPage() {
     Promise.all([
       fetch("/api/sales").then((r) => r.json()).catch(() => []),
       fetch("/api/dropdown?type=sales").then((r) => r.json()).catch(() => []),
-    ]).then(([master, legacy]: [{ name: string; code: string }[], { value: string }[]]) => {
-      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code }));
+    ]).then(([master, legacy]: [{ name: string; code: string; province?: string | null; zone?: string | null }[], { value: string }[]]) => {
+      const fromMaster = (Array.isArray(master) ? master : []).map((s) => ({ name: s.name, code: s.code, province: s.province ?? null, zone: s.zone ?? null }));
       const names = new Set(fromMaster.map((s) => s.name));
       const fromLegacy = (Array.isArray(legacy) ? legacy : [])
         .map((o) => ({ name: o.value, code: "" }))
@@ -346,6 +346,23 @@ export default function CustomerDetailPage() {
                   {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
               </label>
+              {/* 16/9: coverage hint — the sale's จังหวัด/เขต from the Sale master + whether it
+                  covers the customer's zone. */}
+              {(() => {
+                const picked = salesOptions.find((s) => s.name === form.salesPerson.trim());
+                if (!picked) return null;
+                const coverage = picked.province || picked.zone;
+                if (!coverage) return null;
+                const zoneParts = (form.zone || "").split("/").map((z) => z.trim()).filter(Boolean);
+                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
+                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
+                return (
+                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
+                    ดูแล: {coverage}
+                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนของลูกค้า" : " · โซนของลูกค้าอยู่นอกเขตที่ดูแล")}
+                  </p>
+                );
+              })()}
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
@@ -421,6 +438,23 @@ export default function CustomerDetailPage() {
                   {form.title !== "Contractor" && form.salesPerson && !salesOptions.some((s) => s.name === form.salesPerson) ? <option value={form.salesPerson} /> : null}
                 </datalist>
               </label>
+              {/* 16/9: coverage hint — the sale's จังหวัด/เขต from the Sale master + whether it
+                  covers the customer's zone. */}
+              {(() => {
+                const picked = salesOptions.find((s) => s.name === form.salesPerson.trim());
+                if (!picked) return null;
+                const coverage = picked.province || picked.zone;
+                if (!coverage) return null;
+                const zoneParts = (form.zone || "").split("/").map((z) => z.trim()).filter(Boolean);
+                const coverageParts = (picked.province || "").split(",").concat((picked.zone || "").split(",")).map((c) => c.trim()).filter(Boolean);
+                const covers = zoneParts.length > 0 && coverageParts.some((c) => zoneParts.some((z) => z.includes(c) || c.includes(z)));
+                return (
+                  <p className="text-[11px] mt-1" style={{ color: zoneParts.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
+                    ดูแล: {coverage}
+                    {zoneParts.length > 0 && (covers ? " · ✓ รวมโซนของลูกค้า" : " · โซนของลูกค้าอยู่นอกเขตที่ดูแล")}
+                  </p>
+                );
+              })()}
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
