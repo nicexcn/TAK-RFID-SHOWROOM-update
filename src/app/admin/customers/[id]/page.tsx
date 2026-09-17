@@ -1,7 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { ZoneCascade } from "@/components/ZoneCascade";
-import { SalesCoverageHint, ZoneSalesHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import { SalesCoverageHint, salesCoveringZone } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 
 import { useEffect, useMemo, useState } from "react";
@@ -359,7 +359,7 @@ export default function CustomerDetailPage() {
                 </div>
               </label>
               {/* 16/9: soft two-way hints (see SaleZoneHints) */}
-              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} />
+              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} onPickZone={(z) => setForm({ ...form, zone: z })} />
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>
@@ -431,7 +431,7 @@ export default function CustomerDetailPage() {
                 </div>
               </label>
               {/* 16/9: soft two-way hints (see SaleZoneHints) */}
-              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} />
+              <SalesCoverageHint salesPerson={form.salesPerson} zone={form.zone || ""} sales={salesOptions} onPickZone={(z) => setForm({ ...form, zone: z })} />
               <div className="flex gap-2 pt-1">
                 <button onClick={saveEdit} disabled={saving} className="flex-1 px-3 py-2 rounded-lg text-sm text-white disabled:opacity-60" style={{ background: "var(--color-primary)" }}>{saving ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving…</span> : "Save"}</button>
                 <button onClick={() => setEditing(false)} disabled={saving} className="px-3 py-2 rounded-lg text-sm" style={{ background: "var(--color-bg)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>Cancel</button>

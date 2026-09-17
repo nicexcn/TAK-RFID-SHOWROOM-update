@@ -2,7 +2,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
 import { ZoneCascade } from "@/components/ZoneCascade";
-import { SalesCoverageHint, ZoneSalesHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import { SalesCoverageHint, salesCoveringZone } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -380,8 +380,10 @@ export default function AddCustomerPage() {
               <p className="text-[11px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
                 Auto-filled with the showroom sales on duty · Manage the sales list in Settings → Sale Management
               </p>
-              {/* 16/9: soft two-way hints (see SaleZoneHints) */}
-              <SalesCoverageHint salesPerson={salesPerson} zone={zone} sales={salesOptions} />
+              {/* 16/9: soft two-way hints (see SaleZoneHints) — pick sale → its districts
+                  become one-click zone picks; drop the old zone→sales chips (redundant with
+                  the combobox's ดูแลโซนนี้ group). */}
+              <SalesCoverageHint salesPerson={salesPerson} zone={zone} sales={salesOptions} onPickZone={setZone} />
             </div>
             <div>
               <label htmlFor="project" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Project</label>
@@ -395,8 +397,6 @@ export default function AddCustomerPage() {
               <label htmlFor="add-province" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Zone (จังหวัด/เขต)</label>
               {/* Slide 3: reactive จังหวัด → เขต/อำเภอ cascade (stored as "จังหวัด / อำเภอ") */}
               <ZoneCascade value={zone} onChange={setZone} idPrefix="add" />
-              {/* 16/9: soft suggestion — click a covering sale to fill the Sales field */}
-              <ZoneSalesHint zone={zone} sales={salesOptions} onPick={setSalesPerson} />
             </div>
           </div>
         </section>

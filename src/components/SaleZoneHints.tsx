@@ -33,8 +33,11 @@ export function salesCoveringZone(zone: string, sales: SaleOption[]): SaleOption
   return sales.filter((s) => matches(zone, coverageParts(s)));
 }
 
-export function SalesCoverageHint({ salesPerson, zone, sales }: {
+export function SalesCoverageHint({ salesPerson, zone, sales, onPickZone }: {
   salesPerson: string; zone: string; sales: SaleOption[];
+  /** 16/9: when the picked sale covers zones and the customer's zone is unset (or being
+   *  changed), quick-pick chips of the sale's districts set the zone directly from here. */
+  onPickZone?: (zone: string) => void;
 }) {
   const picked = sales.find((s) => s.name === salesPerson.trim());
   if (!picked) return null;
@@ -42,11 +45,29 @@ export function SalesCoverageHint({ salesPerson, zone, sales }: {
   if (!coverage) return null;
   const covers = matches(zone, coverageParts(picked));
   const zp = zoneParts(zone);
+  // District quick-picks from this sale's เขต list (first few; the zone column carries them).
+  const districts = (picked.zone || "").split(",").map((d) => d.trim()).filter(Boolean).slice(0, 6);
+  const province = (picked.province || "").split(",")[0].trim(); // first province for the chip value
   return (
-    <p className="text-[11px] mt-1" style={{ color: zp.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
-      ดูแล: {coverage}
-      {zp.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
-    </p>
+    <div className="mt-1">
+      <p className="text-[11px]" style={{ color: zp.length > 0 && !covers ? "var(--color-danger-soft)" : "var(--color-text-subtle)" }}>
+        ดูแล: {coverage}
+        {zp.length > 0 && (covers ? " · ✓ รวมโซนที่เลือก" : " · โซนที่เลือกอยู่นอกเขตที่ดูแล")}
+      </p>
+      {onPickZone && districts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+          <span className="text-[11px]" style={{ color: "var(--color-text-subtle)" }}>{zp.length ? "เปลี่ยนโซนเป็นเขตของ sale นี้:" : "ตั้งโซนจากเขตที่ดูแล:"}</span>
+          {districts.map((d) => (
+            <button key={d} type="button" onClick={() => onPickZone(province ? `${province} / ${d}` : d)}
+              title={`ตั้งโซน ${province} / ${d}`}
+              className="px-2 py-0.5 rounded-lg text-[11px] transition-colors hover:opacity-80"
+              style={{ background: "rgba(114,108,90,0.12)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+              {d}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
