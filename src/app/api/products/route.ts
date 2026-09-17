@@ -24,19 +24,16 @@ export async function GET(req: NextRequest) {
       ...(status === "archived" ? { isActive: false } : status === "all" ? {} : { isActive: true }),
       // Search spans every text column shown in the table (plus a few product attributes),
       // so a query for a brand / material / category / code / colour matches — not just name.
+      // Also matches any chip EPC in the tag table (multi-tag products: door panels).
       ...(search && {
-        OR: ["name", "productCode", "brand", "materialType", "category", "colour", "size", "location", "rfidTag"]
-          .map((f) => ({ [f]: { contains: search, mode: "insensitive" as const } })),
+        OR: [
+          ...["name", "productCode", "brand", "materialType", "category", "colour", "size", "location", "rfidTag"]
+            .map((f) => ({ [f]: { contains: search, mode: "insensitive" as const } })),
+          { tags: { some: { epc: { contains: search, mode: "insensitive" as const } } } },
+        ],
       }),
       ...(category && { category }),
     };
-
-    // Catalog view needs each product's scan count (to label Delete vs Archive); the
-    // scan-lookup map (all=true) needs the tag list instead (multi-chip products: every
-    // chip must resolve to the item on the client, mirroring the server-side lookups).
-    const include = all
-      ? { tags: { select: { epc: true, label: true } } } as const
-      : { _count: { select: { scans: true } } } as const;
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -44,7 +41,13 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         orderBy,
-        include,
+        // Catalog view needs each product's scan count (to label Delete vs Archive); the
+        // scan-lookup map (all=true) needs every chip EPC (multi-tag products) so the client
+        // can build an epc→product map — tags are small, include them on that path too.
+        include: {
+          ...(all ? { tags: { select: { epc: true } } } : {}),
+          ...(!all ? { _count: { select: { scans: true } } } : {}),
+        },
       }),
       prisma.product.count({ where }),
     ]);

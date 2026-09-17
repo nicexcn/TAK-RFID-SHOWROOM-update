@@ -153,9 +153,10 @@ function RFIDPageInner() {
       const items = data.products || data || [];
       const map = new Map<string, Product>();
       for (const p of items) {
-        // Multi-chip products (door panels: EPC1+EPC2): every chip maps to the same item so
-        // a scan of either tag resolves identically — same as the server-side lookups.
-        for (const t of p.tags || []) map.set(t.epc, p);
+        // Multi-tag products (door panels: EPC1+EPC2): every chip must resolve to the same
+        // product, so a panel scanned reads as ONE item. The legacy primary rfidTag stays as
+        // a fallback for rows not yet backfilled into the tag table.
+        for (const t of (p.tags as { epc: string }[] | undefined) || []) map.set(t.epc, p);
         if (p.rfidTag) map.set(p.rfidTag, p);
       }
       setProductMap(map);
