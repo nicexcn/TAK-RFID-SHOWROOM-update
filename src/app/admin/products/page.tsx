@@ -343,8 +343,10 @@ export default function ProductsPage() {
         </button>
       );
     } }),
-  ], [openMenu]);
-
+    // isSuperAdmin + selected are deps: the select column's cells depend on both, and role
+    // arrives async AFTER the first render — without them the memo keeps the pre-login
+    // (non-super-admin) column and the checkboxes never appear.
+  ], [openMenu, isSuperAdmin, selected]);
   return (
     <div>
       <PageHeader
