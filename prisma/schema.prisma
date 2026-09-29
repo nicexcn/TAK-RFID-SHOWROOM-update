@@ -39,6 +39,10 @@ model Product {
   // image3: false = give-away (customer keeps it) → no prepare notification, not a loan.
   // true (default) = must be returned → normal prepare notification + borrow/return tracking.
   returnable    Boolean        @default(true)
+  // 17/9 (Takeaway Limit per product): null = use the global per-session limit
+  // (AppSettings.takeawayLimit); a number = this item may be taken home at most N pieces
+  // per visit (e.g. small samples capped at 1 even when the global limit is 3).
+  takeawayLimit Int?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   scans         Scan[]

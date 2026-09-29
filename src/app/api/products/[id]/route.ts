@@ -24,11 +24,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const data = await req.json();
     // imageUrl is intentionally NOT writable here — it's a derived cover cache
     // owned solely by syncCover() (gallery image #0). See /api/products/[id]/images.
-    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable } = data;
+    const { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, returnable, takeawayLimit } = data;
     const product = await prisma.product.update({
       where: { id },
       // Empty tag → null so untagged products don't collide on the unique index.
-      data: { rfidTag: String(rfidTag || "").trim() || null, brand, materialType, category, productCode, name, size, colour, description, location, returnable },
+      data: { rfidTag: String(rfidTag || "").trim() || null, brand, materialType, category, productCode, name, size, colour, description, location, returnable, takeawayLimit: takeawayLimit == null ? null : Math.max(0, Math.floor(Number(takeawayLimit))) },
     });
     // 16/9: sync extra tags (multi-chip products). `tags` is the full desired set of
     // additional EPCs (excluding the primary): rows are created/removed to match.

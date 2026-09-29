@@ -41,6 +41,8 @@ export default function EditProductPage() {
   const [categories, setCategories] = useState<DropdownOption[]>([]);
   // 16/9: extra chips beyond the primary (multi-tag products — door panels carry EPC1+EPC2).
   const [extraTags, setExtraTags] = useState<string[]>([]);
+  // 17/9: optional per-product takeaway cap (empty = use the global session limit).
+  const [takeawayLimit, setTakeawayLimit] = useState("");
 
   const inputStyle = {
     background: "var(--color-bg)",
@@ -75,6 +77,7 @@ export default function EditProductPage() {
       setCategories(c);
       // RfidTag rows for this product, minus the primary (which lives in the form).
       setExtraTags(((product.tags as { epc: string }[] | undefined) || []).map((t) => t.epc).filter((e: string) => e !== (product.rfidTag || "")));
+      setTakeawayLimit(product.takeawayLimit == null ? "" : String(product.takeawayLimit));
       setFetching(false);
     }
     fetchAll();
@@ -100,7 +103,7 @@ export default function EditProductPage() {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, tags: extraTags }),
+        body: JSON.stringify({ ...form, tags: extraTags, takeawayLimit: takeawayLimit === "" ? null : Number(takeawayLimit) }),
       });
       if (res.ok) {
         router.push("/admin/products");
@@ -239,6 +242,14 @@ export default function EditProductPage() {
                 <span style={{ color: "var(--color-text-muted)" }}>Unchecked = <strong>give-away</strong> — no alert, no return tracking</span>
               </span>
             </label>
+          {/* 17/9: per-product takeaway cap — overrides the global session limit for this item */}
+          <div>
+            <label htmlFor="takeawayLimit" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Takeaway limit (this item)</label>
+            <input id="takeawayLimit" type="number" min={0} value={takeawayLimit}
+              onChange={(e) => setTakeawayLimit(e.target.value)} placeholder="Use global limit"
+              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>Leave empty to use the global per-visit limit. Set a number to cap this item lower (e.g. 1).</p>
+          </div>
           </div>
 
           {/* Product Images — first image is the cover (synced to imageUrl) */}

@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // Empty tag → null (non-RFID items like catalogs). The unique index ignores NULLs,
     // so any number of untagged products can coexist.
     rfidTag = String(data.rfidTag || "").trim() || null as unknown as string;
-    const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive, returnable } = data;
+    const { brand, materialType, category, productCode, name, size, colour, description, location, imageUrl, imageUrls, isActive, returnable, takeawayLimit } = data;
 
     // RFID tag reuse: a tag can be held by a SOFT-DELETED product (hidden from the catalog
     // but still occupying the unique tag). Free it so the physical chip can be re-stuck on a
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     const urls: string[] = (Array.isArray(imageUrls) ? imageUrls : imageUrl ? [imageUrl] : [])
       .filter((u: unknown): u is string => typeof u === "string" && !!u);
     const product = await prisma.product.create({
-      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive, returnable: returnable !== false },
+      data: { rfidTag, brand, materialType, category, productCode, name, size, colour, description, location, isActive, returnable: returnable !== false, takeawayLimit: takeawayLimit == null ? null : Math.max(0, Math.floor(Number(takeawayLimit))) },
     });
     // 16/9: extra tags (multi-chip products). The first tag is the primary rfidTag column;
     // every additional EPC gets a RfidTag row pointing at this product. EPC conflict → 409.

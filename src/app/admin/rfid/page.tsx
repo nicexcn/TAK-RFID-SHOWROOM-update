@@ -32,6 +32,7 @@ interface Product {
   id: string; name: string; brand: string | null; productCode: string | null;
   materialType: string | null; category: string | null; imageUrl: string | null;
   location: string | null; returnable?: boolean; // image3: false = give-away (no prepare/return)
+  takeawayLimit?: number | null; // 17/9: per-product cap (null = global limit applies)
 }
 interface ScanItem {
   id: string; scannedAt: string; product: Product;
@@ -723,6 +724,14 @@ function RFIDPageInner() {
     if (next === prev) return;
     // Enforce the per-session takeaway limit (total pieces across ALL scans) when increasing.
     if (takeawayEnabled && delta > 0) {
+      // 17/9: a product-specific limit (Product.takeawayLimit) caps THIS item harder than
+      // the global per-session limit — e.g. a sample limited to 1 even when the visit
+      // limit is 3. Falls back to the global limit when the product has no override.
+      const itemLimit = scan.product.takeawayLimit ?? takeawayLimit;
+      if (next > itemLimit) {
+        warn(`This item is limited to ${itemLimit} per visit`);
+        return;
+      }
       const totalOthers = Object.entries(takeaway).reduce((sum, [id, q]) => (id === scanId ? sum : sum + q), 0);
       if (totalOthers + next > takeawayLimit) {
         warn(`Takeaway limit reached — max ${takeawayLimit} per visit`);

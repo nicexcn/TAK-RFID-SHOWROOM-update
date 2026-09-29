@@ -50,6 +50,28 @@ export default function ProductsPage() {
   const [fetchError, setFetchError] = useState(false);
   const reqSeq = useRef(0); // drop out-of-order responses (a slow early request landing late)
   const confirm = useConfirm();
+  // 17/9: super-admin-only bulk delete + select-all checkbox column.
+  const [role, setRole] = useState("");
+  const isSuperAdmin = role === "super_admin";
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => { if (d.role) setRole(d.role); }).catch(() => {}); }, []);
+  const allVisibleSelected = selected.size > 0 && products.every((p) => selected.has(p.id));
+  function toggleAll() {
+    setSelected(allVisibleSelected ? new Set() : new Set(products.map((p) => p.id)));
+  }
+  function toggleOne(id: string) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  async function handleBulkDelete() {
+    if (!isSuperAdmin || selected.size === 0) return;
+    if (!(await confirm({ title: `Delete ${selected.size} product${selected.size > 1 ? "s" : ""}?`, message: "Scanned products are archived (history kept); the rest are deleted permanently. Continue?", danger: true }))) return;
+    setImporting(true);
+    try {
+      await Promise.all([...selected].map((id) => fetch(`/api/products/${id}`, { method: "DELETE" })));
+      setSelected(new Set());
+      fetchProducts();
+    } finally { setImporting(false); }
+  }
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -77,6 +99,7 @@ export default function ProductsPage() {
   const [importPreview, setImportPreview] = useState<Record<string, string>[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importRows, setImportRows] = useState<Record<string, string>[]>([]); // full parsed rows (17/9: dup check)
   const [importError, setImportError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -174,12 +197,35 @@ export default function ProductsPage() {
       const text = ev.target?.result as string;
       const rows = parseCsv(text);
       setImportPreview(rows.slice(0, 5)); // preview 5 rows
+      setImportRows(rows); // full set — the duplicate check scans everything
     };
     reader.readAsText(file, "UTF-8");
   }
 
   async function handleImport() {
     if (!importFile) return;
+    // 17/9: rows whose rfidTag already exists will OVERWRITE that product — ask first.
+    // (Multi-chip rows whose name matches an existing product only ATTACH a tag; those
+    // are counted as updates too since they modify existing data.)
+    if (importRows.length > 0) {
+      const tags = importRows.map((r) => String(r.rfidTag || r["RFID Tag"] || r["rfid_tag"] || "").trim()).filter(Boolean);
+      const names = new Set(importRows.map((r) => String(r.name || r["Product Name"] || r["product_name"] || "").trim()).filter(Boolean));
+      if (tags.length || names.size) {
+        const q = new URLSearchParams();
+        if (tags.length) q.set("tags", tags.join(","));
+        if (names.size) q.set("names", [...names].join(","));
+        const existing = await fetch(`/api/products/exists?${q.toString()}`).then((r) => r.json()).catch(() => ({}));
+        const dupCount = existing.count || 0;
+        if (dupCount > 0) {
+          const ok = await confirm({
+            title: `${dupCount} row${dupCount > 1 ? "s" : ""} match existing products`,
+            message: "Importing will update/overwrite the existing product data with the file's values. Continue?",
+            danger: true,
+          });
+          if (!ok) return;
+        }
+      }
+    }
     setImporting(true);
     setImportError("");
 
@@ -264,6 +310,15 @@ export default function ProductsPage() {
         )}
       </span>
     ) }),
+    columnHelper.display({ id: "select", header: isSuperAdmin ? "Select" : "", enableHiding: false, cell: ({ row }) => (
+      isSuperAdmin ? (
+        <input type="checkbox" aria-label={`Select ${row.original.name}`}
+          checked={selected.has(row.original.id)}
+          onChange={() => toggleOne(row.original.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4" />
+      ) : null
+    ) }),
     columnHelper.display({ id: "actions", header: "Actions", enableHiding: false, cell: ({ row }) => {
       const product = row.original;
       return (
@@ -297,6 +352,23 @@ export default function ProductsPage() {
         crumbs={[{ label: "Home", href: "/admin" }, { label: "Product Management" }]}
         actions={
           <>
+            {/* 17/9: super-admin bulk delete (appears once rows are selected) */}
+            {isSuperAdmin && selected.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-soft)", border: "1px solid var(--color-danger-border)" }}>
+                Delete {selected.size} selected
+              </button>
+            )}
+            {/* 17/9: select-all / deselect toggle */}
+            <button
+              onClick={toggleAll}
+              disabled={products.length === 0}
+              className="px-4 py-2 rounded-xl text-sm disabled:opacity-50"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+              {allVisibleSelected ? "Deselect all" : "Select all"}
+            </button>
             {/* Import Button */}
             <button
               onClick={() => setShowImport(true)}

@@ -154,6 +154,38 @@ export default function SettingsPage() {
   // Takeaway
   const [takeawayLimit, setTakeawayLimit] = useState(3);
   const [takeawayEnabled, setTakeawayEnabled] = useState(true);
+  // 17/9: per-product takeaway overrides — products with their own cap (null = global).
+  const [limitProducts, setLimitProducts] = useState<{ id: string; name: string; productCode: string | null; takeawayLimit: number | null }[]>([]);
+  const [limitSearch, setLimitSearch] = useState("");
+  const [editingLimitId, setEditingLimitId] = useState<string | null>(null);
+  const [limitDraft, setLimitDraft] = useState("");
+  const [savingLimit, setSavingLimit] = useState(false);
+  useEffect(() => {
+    if (activeTab !== "takeaway") return;
+    fetch("/api/products?all=true").then((r) => r.json()).then((d) => {
+      const arr = (d.products || []) as { id: string; name: string; productCode: string | null; takeawayLimit: number | null }[];
+      // only products that HAVE an override, plus search matches for adding new ones
+      setLimitProducts(arr.filter((x) => x.takeawayLimit != null));
+      setAllProductsForLimits(arr);
+    }).catch(() => {});
+  }, [activeTab]);
+  const [allProductsForLimits, setAllProductsForLimits] = useState<{ id: string; name: string; productCode: string | null; takeawayLimit: number | null }[]>([]);
+  async function saveProductLimit(id: string, value: string) {
+    setSavingLimit(true);
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ takeawayLimit: value === "" ? null : Number(value) }),
+      });
+      if (res.ok) {
+        setLimitProducts((list) => value === ""
+          ? list.filter((x) => x.id !== id)
+          : list.map((x) => x.id === id ? { ...x, takeawayLimit: Number(value) } : x));
+        setAllProductsForLimits((list) => list.map((x) => x.id === id ? { ...x, takeawayLimit: value === "" ? null : Number(value) } : x));
+        setEditingLimitId(null);
+      }
+    } finally { setSavingLimit(false); }
+  }
   const [borrowDays, setBorrowDays] = useState(14); // default borrow/return period (days)
   const [takeawaySuccess, setTakeawaySuccess] = useState("");
 
@@ -967,6 +999,62 @@ export default function SettingsPage() {
 
                 {/* Borrow period UI removed (TAK 28/8: samples are given, not borrowed) —
                     borrowDays still loads/saves untouched so the hidden loans data stays consistent. */}
+
+                {/* 17/9: per-product overrides — some items are capped lower than the global limit */}
+                <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--color-border)" }}>
+                  <p className="text-sm font-medium mb-1" style={{ color: "var(--color-text)" }}>Per-product limits</p>
+                  <p className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>บางสินค้าจำกัดจำนวนที่นำกลับต่ำกว่าค่ากลาง — ตั้ง per item ที่นี่หรือที่หน้า Edit Product (เว้นว่าง = ใช้ค่ากลางข้างบน)</p>
+
+                  {/* products with an override set */}
+                  <div className="space-y-1 mb-4">
+                    {limitProducts.length === 0 ? (
+                      <p className="text-xs" style={{ color: "var(--color-text-subtle)" }}>No per-product overrides yet — search below to add one.</p>
+                    ) : limitProducts.map((x) => (
+                      <div key={x.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: "var(--color-bg)" }}>
+                        <span className="text-sm truncate flex-1" style={{ color: "var(--color-text)" }}>{x.name}{x.productCode ? ` (${x.productCode})` : ""}</span>
+                        {editingLimitId === x.id ? (
+                          <>
+                            <input type="number" min={0} value={limitDraft} onChange={(e) => setLimitDraft(e.target.value)}
+                              className="w-16 px-2 py-1 rounded-lg text-xs outline-none"
+                              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} autoFocus />
+                            <button onClick={() => saveProductLimit(x.id, limitDraft)} disabled={savingLimit}
+                              className="px-2 py-1 rounded-lg text-xs font-medium text-white disabled:opacity-50" style={{ background: "var(--color-primary)" }}>Save</button>
+                            <button onClick={() => setEditingLimitId(null)} className="px-2 py-1 rounded-lg text-xs" style={{ color: "var(--color-text-muted)" }}>Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs px-2 py-0.5 rounded-md font-semibold" style={{ background: "rgba(114,108,90,0.14)", color: "var(--color-text)" }}>max {x.takeawayLimit}</span>
+                            <button onClick={() => { setEditingLimitId(x.id); setLimitDraft(String(x.takeawayLimit ?? "")); }}
+                              className="text-xs px-2 py-0.5 rounded-md" style={{ color: "var(--color-primary)" }}>Edit</button>
+                            <button onClick={() => saveProductLimit(x.id, "")} disabled={savingLimit}
+                              className="text-xs px-2 py-0.5 rounded-md" style={{ color: "var(--color-danger-soft)" }}>Remove</button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* search to add a new override */}
+                  <input value={limitSearch} onChange={(e) => setLimitSearch(e.target.value)}
+                    placeholder="ค้นหาสินค้าเพื่อตั้ง limit…"
+                    className="w-full px-4 py-3 rounded-xl outline-none text-sm mb-2"
+                    style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+                  {limitSearch.trim() && (
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {allProductsForLimits
+                        .filter((x) => (x.name + " " + (x.productCode || "")).toLowerCase().includes(limitSearch.trim().toLowerCase()) && x.takeawayLimit == null)
+                        .slice(0, 10)
+                        .map((x) => (
+                          <button key={x.id} onClick={() => { setEditingLimitId(x.id); setLimitDraft("1"); setLimitSearch("");
+                            setLimitProducts((list) => [...list, { ...x, takeawayLimit: null }]); }}
+                            className="w-full text-left px-3 py-1.5 rounded-lg text-sm"
+                            style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
+                            {x.name}{x.productCode ? ` (${x.productCode})` : ""}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
 
                 {takeawaySuccess && <p className="text-sm mt-4" style={{ color: "var(--color-success)" }}>{takeawaySuccess}</p>}
                 <button disabled={savingTakeaway}

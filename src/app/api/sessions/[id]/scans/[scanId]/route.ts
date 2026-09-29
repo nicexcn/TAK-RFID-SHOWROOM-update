@@ -54,11 +54,22 @@ export async function PATCH(
 
     // Per-session takeaway limit (server backstop; also covers concurrent stations).
     if (data.takeawayQty !== undefined) {
-      const settings = await prisma.appSettings.findUnique({
-        where: { id: "singleton" },
-        select: { takeawayLimit: true, takeawayEnabled: true },
-      });
+      const [settings, product] = await Promise.all([
+        prisma.appSettings.findUnique({
+          where: { id: "singleton" },
+          select: { takeawayLimit: true, takeawayEnabled: true },
+        }),
+        prisma.product.findUnique({ where: { id: pid }, select: { takeawayLimit: true } }),
+      ]);
       if (settings?.takeawayEnabled) {
+        // 17/9: a product-specific limit caps this item harder than the global session limit.
+        const itemLimit = product?.takeawayLimit ?? null;
+        if (itemLimit !== null && data.takeawayQty > itemLimit) {
+          return NextResponse.json(
+            { error: `This item is limited to ${itemLimit} per visit`, limit: itemLimit },
+            { status: 400 },
+          );
+        }
         const others = await prisma.scan.aggregate({
           where: { sessionId, productId: { not: pid } },
           _sum: { takeawayQty: true },
