@@ -193,13 +193,10 @@ function RFIDPageInner() {
     }).catch(() => {});
   }, []);
 
-  // Restore this station's last reader URL once on mount, then persist it on change — so
-  // staff don't re-enter the address every reload (it was previously React-state only).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(STATION_READER_KEY);
-    if (saved) setDeviceIps((p) => ({ ...p, 1: saved }));
-  }, []);
+  // 17/9 feedback: NO auto-restore of the last reader URL — starting a session must NOT
+  // silently reconnect the previously-used reader (another customer may be mid-scan on it
+  // by now). The staff member picks a reader from the dropdown for every new page load.
+  // The address is still remembered for the manual-entry escape hatch, just not applied.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const u = deviceIps[wsDeviceId];
@@ -208,17 +205,25 @@ function RFIDPageInner() {
 
   // Poll the relay for readers currently pushing, so the picker shows live devices (not just
   // the static presets). ws→http / wss→https for the relay's HTTP /devices endpoint.
+  // 17/9 feedback: SNAPSHOTTED at page open — a tab opened later must not have its reader
+  // list (or dropdown) reshuffled by other stations' activity; the staff member picks from
+  // what was there when THEY opened the page. Re-polling only when the page regains focus
+  // after being away (a deliberate "refresh" by returning to the tab).
+  const relayPolledRef = useRef(false);
   useEffect(() => {
     if (!relayBase) return;
     const httpBase = relayBase.replace(/^ws/, "http"); // ws→http, wss→https
-    let stopped = false;
-    const poll = () => fetch(`${httpBase}/devices`)
-      .then((r) => r.json())
-      .then((d) => { if (!stopped) setRelayDevices(Array.isArray(d?.devices) ? d.devices.map((x: { id: string }) => x.id) : []); })
-      .catch(() => {});
+    const poll = (force = false) => {
+      if (relayPolledRef.current && !force) return; // already snapshotted this page load
+      fetch(`${httpBase}/devices`)
+        .then((r) => r.json())
+        .then((d) => { relayPolledRef.current = true; setRelayDevices(Array.isArray(d?.devices) ? d.devices.map((x: { id: string }) => x.id) : []); })
+        .catch(() => {});
+    };
+    const onFocus = () => poll(true); // coming back to the tab = intent to see fresh state
+    window.addEventListener("focus", onFocus);
     poll();
-    const t = setInterval(poll, 4000);
-    return () => { stopped = true; clearInterval(t); };
+    return () => window.removeEventListener("focus", onFocus);
   }, [relayBase]);
 
   // Swap optimistic "ws-" scan ids for the server's real ids (matched by productId) once a
@@ -1007,7 +1012,8 @@ function RFIDPageInner() {
                         {savedReaders.map((r) => {
                           const b = r.device ? busyReaders[r.device] : undefined;
                           const url = readerUrl(r, relayBase, relaySubKey);
-                          return <option key={r.id} value={url} disabled={!url}>{b ? `🔴 ${r.name || r.device} — in use by ${b.customerName}` : (r.name || r.device || r.url)}</option>;
+                          // 17/9: a reader bound to another active session is DISABLED, not just flagged.
+                          return <option key={r.id} value={url} disabled={!url || !!b}>{b ? `🔴 ${r.name || r.device} — in use by ${b.customerName}` : (r.name || r.device || r.url)}</option>;
                         })}
                       </optgroup>
                     )}
@@ -1015,7 +1021,7 @@ function RFIDPageInner() {
                       <optgroup label="Live on relay">
                         {relayDevices.map((d) => {
                           const b = busyReaders[d];
-                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase, relaySubKey)}>{b ? `🔴 ${d} — in use by ${b.customerName}` : `🟢 ${d}`}</option>;
+                          return <option key={"live-" + d} value={readerUrl({ device: d }, relayBase, relaySubKey)} disabled={!!b}>{b ? `🔴 ${d} — in use by ${b.customerName}` : `🟢 ${d}`}</option>;
                         })}
                       </optgroup>
                     )}

@@ -253,19 +253,21 @@ export default function CustomerDetailPage() {
     ["Customer ID", customer.customerCode],
     ["Customer Segment", customer.title === "Other" ? customer.titleOther || "Other" : customerTypeLabel(customer.title) || "—"],
     ["Company", customer.company || "—"],
-    ["Heard via", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
     ["Sales", customer.salesPerson || "—"],
     ["Zone (เขต)", customer.zone || "—"],
-    ["Project", customer.project || "—"],
-    ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
-    ["Created", formatDateTime(customer.createdAt)],
   ];
+  // 17/9: Heard via / Project / PDPA / Created moved here from Company Info — they describe
+  // the PERSON (how they found us, their project, their consent), not the company.
   const contactFields: [string, string][] = [
     ["Full Name", customer.fullName || "—"],
     ["Segment detail", customer.titleOther || "—"],
     ["Phone", customer.phone || "—"],
     ["Email", customer.email || "—"],
     ["LINE ID", customer.lineId || "—"],
+    ["Heard via", [...(customer.knowChannel || []), customer.knowChannelOther].filter(Boolean).join(", ") || "—"],
+    ...(role === "user" ? [] : [["Project", customer.project || "—"]] as [string, string][]),
+    ["PDPA", customer.pdpaConsent ? "Consented ✓" : "Not consented"],
+    ["Created", formatDateTime(customer.createdAt)],
   ];
   // Item 6: the basic Presenter "cannot access sales information" — hide the sales/assignment fields.
   const visibleCompanyFields = role === "user" ? companyFields.filter(([l]) => !["Source", "Sales", "Project"].includes(l)) : companyFields;
@@ -503,9 +505,15 @@ export default function CustomerDetailPage() {
               Opens the add-customer form with {customer.company}'s details prefilled.
             </p>
             <Link
-              href={customer.companyId
-                ? `/admin/customers/add?companyId=${customer.companyId}`
-                : `/admin/customers/add?company=${encodeURIComponent(customer.company)}`}
+              href={`/admin/customers/add?${new URLSearchParams({
+                ...(customer.companyId
+                  ? { companyId: customer.companyId }
+                  : { company: customer.company }),
+                // 17/9: carry the current contact's sales + zone — a new contact at the same
+                // company is served by the same sale and sits in the same area by default.
+                ...(customer.salesPerson ? { sales: customer.salesPerson } : {}),
+                ...(customer.zone ? { zone: customer.zone } : {}),
+              }).toString()}`}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white"
               style={{ background: "var(--color-primary)" }}>
               + Add

@@ -27,6 +27,10 @@ export default function AddCustomerPage() {
   // update-tak 13/9 [16]: pre-fill company from ?company= OR ?companyId= (the "add to this company" flow).
   const presetCompany = searchParams.get("company") || "";
   const presetCompanyId = searchParams.get("companyId") || "";
+  // 17/9: "Add another contact at this company" also carries the current contact's
+  // sales + zone — the new person defaults to the same sale/area, staff can still change.
+  const presetSales = searchParams.get("sales") || "";
+  const presetZone = searchParams.get("zone") || "";
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -44,9 +48,9 @@ export default function AddCustomerPage() {
   const [channels, setChannels] = useState<string[]>([]);
   const [channelOther, setChannelOther] = useState("");
   const [pdpa, setPdpa] = useState(false);
-  const [salesPerson, setSalesPerson] = useState(""); // #2: staff-filled — who handles this customer
+  const [salesPerson, setSalesPerson] = useState(presetSales); // #2: staff-filled — who handles this customer (prefilled from ?sales=)
   const [project, setProject] = useState(""); // #4: project this customer is associated with
-  const [zone, setZone] = useState(""); // slide 3: sales territory (เขต) of the customer/project
+  const [zone, setZone] = useState(presetZone); // slide 3: sales territory (เขต) — prefilled from ?zone=
   // Source field removed (TAK feedback 6/8/26 slide 5) — the customer form no longer asks how they came in.
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
   const [me, setMe] = useState(""); // logged-in staff — the default "Sales Showroom person" for walk-ins
@@ -139,8 +143,8 @@ export default function AddCustomerPage() {
     if (title === "Other" && !titleOther.trim()) { setError(req); setFieldErrors({ titleOther: "Please specify the segment" }); titleOtherRef.current?.focus(); return; }
     if (!company) { setError(req); setFieldErrors({ company: "Company is required" }); companyRef.current?.focus(); return; }
     if (!phone) { setError(req); setFieldErrors({ phone: "Mobile phone is required" }); phoneRef.current?.focus(); return; }
-    if (!email) { setError(req); setFieldErrors({ email: "Email is required" }); emailRef.current?.focus(); return; }
-    if (!emailOk) { setError("Please enter a valid email address."); setFieldErrors({ email: "Enter a valid email address" }); emailRef.current?.focus(); return; }
+    // 17/9: email is OPTIONAL — only validate the format when one is actually typed.
+    if (email && !emailOk) { setError("Please enter a valid email address."); setFieldErrors({ email: "Enter a valid email address" }); emailRef.current?.focus(); return; }
     if (!pdpa) { setError("Please confirm PDPA consent."); setFieldErrors({ pdpa: "Consent is required" }); scrollTo(pdpaRef.current); return; }
     setSaving(true);
     try {
@@ -288,7 +292,7 @@ export default function AddCustomerPage() {
             </div>
             <div className="col-span-2">
               <label htmlFor="email" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>
-                Email <span style={{ color: "var(--color-danger)" }}>*</span>
+                Email
               </label>
               <input id="email" ref={emailRef} type="email" value={email}
                 onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
