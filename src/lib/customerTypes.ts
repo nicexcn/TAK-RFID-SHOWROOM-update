@@ -14,7 +14,7 @@ export const CUSTOMER_TYPES = [
   // 17/9: "Owner Developer" added per feedback (เจ้าของโครงการ/ผู้พัฒนา). New prefix "OD" —
   // customers registered from now on get OD00001…; the legacy "Developer" value (removed
   // earlier, zero records) still resolves through the ?? fallbacks if one ever appears.
-  { value: "OwnerDev",   prefix: "OD", label: "Owner Developer",   labelTh: "เจ้าของโครงการ",         color: "#8a6d3b" },
+  { value: "OwnerDev",   prefix: "OD", label: "Owner Developer",   labelTh: "ผู้พัฒนาโครงการ",         color: "#8a6d3b" },
   { value: "Other",      prefix: "Ot", label: "Other",             labelTh: "อื่นๆ",                  color: "#6b6560" },
 ] as const;
 
