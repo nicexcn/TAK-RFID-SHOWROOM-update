@@ -11,6 +11,10 @@ export const CUSTOMER_TYPES = [
   { value: "Turnkey",    prefix: "TK", label: "Turnkey",           labelTh: "รับเหมาแบบครบวงจร",       color: "#4a6fa5" },
   { value: "Contractor", prefix: "Ct", label: "Contractor",        labelTh: "ผู้รับเหมา",              color: "#4c4847" },
   { value: "Homeowner",  prefix: "Ho", label: "Home Owner",        labelTh: "เจ้าของบ้านหรือโครงการ", color: "#4a7c59" },
+  // 17/9: "Owner Developer" added per feedback (เจ้าของโครงการ/ผู้พัฒนา). New prefix "OD" —
+  // customers registered from now on get OD00001…; the legacy "Developer" value (removed
+  // earlier, zero records) still resolves through the ?? fallbacks if one ever appears.
+  { value: "OwnerDev",   prefix: "OD", label: "Owner Developer",   labelTh: "เจ้าของโครงการ",         color: "#8a6d3b" },
   { value: "Other",      prefix: "Ot", label: "Other",             labelTh: "อื่นๆ",                  color: "#6b6560" },
 ] as const;
 
