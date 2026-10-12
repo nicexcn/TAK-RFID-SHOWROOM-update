@@ -1,8 +1,9 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { ZoneCascade } from "@/components/ZoneCascade";
-import { SalesCoverageHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import { SalesCoverageHint } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
+import { saleFor } from "@/lib/salesAutofill";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -79,20 +80,24 @@ export default function CustomerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
-  // 16/9: combobox options — Contractor segment sees only the contractor cell; sales
-  // covering the customer's zone float to the top under "ดูแลโซนนี้".
+  // 10/10 (sales list v2): the rule result floats to the top under "แนะนำตามกติกา".
+  // EDIT form: no auto-fill — the customer already has a stored sale; the rule is a
+  // suggestion only (staff see the recommended name at the top of the dropdown).
+  const autofillSale = useMemo(
+    () => (form?.title === "Contractor" ? null : saleFor(form?.title || "", form?.zone || "")),
+    [form?.title, form?.zone],
+  );
   const comboboxOptions: SalesOption[] = useMemo(() => {
     const base = form?.title === "Contractor"
       ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
       : salesOptions;
-    const covering = new Set(salesCoveringZone(form?.zone || "", base).map((s) => s.name));
     return base.map((s) => ({
       name: s.name,
       code: s.code,
       hint: s.province || s.zone || undefined,
-      group: covering.has(s.name) ? "ดูแลโซนนี้" : undefined,
+      group: autofillSale && s.name === autofillSale ? "แนะนำตามกติกา" : undefined,
     }));
-  }, [salesOptions, form?.title, form?.zone]);
+  }, [salesOptions, form?.title, autofillSale]);
 
   // Feedback round 3 (15/9): existing company names as datalist suggestions on the Company
   // field, so staff pick "Home Connect" instead of typing a case variant.

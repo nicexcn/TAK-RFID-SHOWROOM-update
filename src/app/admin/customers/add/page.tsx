@@ -2,8 +2,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
 import { ZoneCascade } from "@/components/ZoneCascade";
-import { SalesCoverageHint, salesCoveringZone } from "@/components/SaleZoneHints";
+import { SalesCoverageHint } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
+import { saleFor } from "@/lib/salesAutofill";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -82,21 +83,41 @@ export default function AddCustomerPage() {
 
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  // 16/9: combobox options — Sale master (+ legacy names). Contractor segment sees ONLY the
-  // contractor cell (ไก่/รัตน์/เขม); everyone else sees the full list, with the sales covering
-  // the picked zone floating to the top under a "ดูแลโซนนี้" heading.
+  // 10/10 (TWC email 12 Oct — sales list v2): combobox options + AUTO-FILL.
+  // กทม+ปริมณฑล → หัวหน้า BU ตาม segment (ต้นอ้อ/ปุ๊); ต่างจังหวัด → sale ตามจังหวัด
+  // (8 คนตามภาค). Contractor keeps the OLD contractor-cell rule (ไก่/รัตน์/เขม) — the
+  // v2 table maps Contractor → ปุ๊ for the BU-head flow, but the 13/9 instruction to bind
+  // ONLY the contractor cell for Contractor customers still stands; v2 wins for everything else.
+  const autofillSale = useMemo(
+    () => (title === "Contractor" ? null : saleFor(title, zone)),
+    [title, zone],
+  );
+
+  // Auto-fill the Sales field whenever the rule produces a name — but never clobber a
+  // name the staff picked deliberately: only fill when the field is empty OR currently
+  // holds a previous AUTO-FILL value (tracked in a ref).
+  const lastAutofillRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autofillSale) return;
+    const currentIsAutofill = salesPerson === lastAutofillRef.current;
+    if (!salesPerson || currentIsAutofill) {
+      lastAutofillRef.current = autofillSale;
+      setSalesPerson(autofillSale);
+    }
+  }, [autofillSale]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const comboboxOptions: SalesOption[] = useMemo(() => {
     const base = title === "Contractor"
       ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
       : salesOptions;
-    const covering = new Set(salesCoveringZone(zone, base).map((s) => s.name));
+    // Group: the auto-filled rule result floats to the top so staff see WHY it was chosen.
     return base.map((s) => ({
       name: s.name,
       code: s.code,
       hint: s.province || s.zone || undefined,
-      group: covering.has(s.name) ? "ดูแลโซนนี้" : undefined,
+      group: autofillSale && s.name === autofillSale ? "แนะนำตามกติกา" : undefined,
     }));
-  }, [salesOptions, title, zone]);
+  }, [salesOptions, title, autofillSale]);
 
   // #2: options for the staff "Sales" combobox come from the Sale master (Settings →
   // Salesperson, name + ERP code so slide-28 search can match both), plus any legacy
