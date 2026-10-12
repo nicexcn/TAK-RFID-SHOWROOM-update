@@ -94,17 +94,18 @@ export default function AddCustomerPage() {
   );
 
   // Auto-fill the Sales field whenever the rule produces a name — but never clobber a
-  // name the staff picked deliberately: only fill when the field is empty OR currently
-  // holds a previous AUTO-FILL value (tracked in a ref).
+  // name the staff picked deliberately. The `me` (showroom on-duty) default is a PLACEHOLDER
+  // the rule overrides: the 12 Oct instruction links the field to You are a…/จังหวัด, so when
+  // a rule name exists it wins over the logged-in-staff default.
   const lastAutofillRef = useRef<string | null>(null);
   useEffect(() => {
     if (!autofillSale) return;
-    const currentIsAutofill = salesPerson === lastAutofillRef.current;
+    const currentIsAutofill = salesPerson === lastAutofillRef.current || salesPerson === me;
     if (!salesPerson || currentIsAutofill) {
       lastAutofillRef.current = autofillSale;
       setSalesPerson(autofillSale);
     }
-  }, [autofillSale]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autofillSale, me]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const comboboxOptions: SalesOption[] = useMemo(() => {
     const base = title === "Contractor"
