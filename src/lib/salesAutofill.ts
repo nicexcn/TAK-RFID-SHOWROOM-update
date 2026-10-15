@@ -38,16 +38,17 @@ export const PROVINCE_SALE: { sale: string; provinces: string[] }[] = [
   { sale: "อดินันท์ ไวยวรรณจิต (นัน)", provinces: ["สงขลา", "ปัตตานี", "ยะลา", "นราธิวาส", "สตูล", "ชุมพร", "ตรัง", "พัทลุง"] },
 ];
 
-/** The auto-filled sale for a (segment, zone) pair. null = no rule applies (keep manual). */
+/** The auto-filled sale for a (segment, zone) pair. null = no rule applies (keep manual).
+ *  zone may be "" — before a province is picked we optimistically apply the METRO rule
+ *  (most showroom customers are กทม+ปริมณฑล); choosing an upcountry province replaces it. */
 export function saleFor(segment: string, zone: string): string | null {
+  if (!segment) return null;
   const province = zone.split("/")[0]?.trim() || "";
-  if (!province || !segment) return null;
 
-  if (METRO_PROVINCES.has(province)) {
+  if (!province || METRO_PROVINCES.has(province)) {
     return BU_HEAD_BY_SEGMENT[segment] ?? null;
   }
-  // ต่างจังหวัด: จับคู่ชื่อจังหวัด (รองรับชื่อย่อ "อยุธยา"/"นครศรีฯ"/"สุราษฎร์ฯ" ในตาราง
-  // โดย map เป็นชื่อเต็มตาม THAI_GEO แล้ว)
+  // ต่างจังหวัด: จับคู่ชื่อจังหวัด
   const found = PROVINCE_SALE.find((p) => p.provinces.includes(province));
   return found?.sale ?? null;
 }

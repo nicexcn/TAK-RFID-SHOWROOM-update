@@ -1,6 +1,6 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
-import { ZoneCascade } from "@/components/ZoneCascade";
+import ZoneCombobox from "@/components/ZoneCombobox";
 import { SalesCoverageHint } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 import { saleFor } from "@/lib/salesAutofill";
@@ -350,7 +350,7 @@ export default function CustomerDetailPage() {
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Zone (จังหวัด/เขต)</span>
                 <div className="mt-0.5">
-                  <ZoneCascade value={form.zone} onChange={(z) => setForm({ ...form, zone: z })} idPrefix="edit" />
+                  <ZoneCombobox value={form.zone || ""} onChange={(z) => setForm({ ...form, zone: z })} idPrefix="edit" />
                 </div>
               </label>
               {/* Item 2 + slide 28: Sales owner — searchable combobox of the Sale master
@@ -422,7 +422,7 @@ export default function CustomerDetailPage() {
               <label className="block">
                 <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Zone (จังหวัด/เขต)</span>
                 <div className="mt-0.5">
-                  <ZoneCascade value={form.zone} onChange={(z) => setForm({ ...form, zone: z })} idPrefix="edit" />
+                  <ZoneCombobox value={form.zone || ""} onChange={(z) => setForm({ ...form, zone: z })} idPrefix="edit" />
                 </div>
               </label>
               {/* Item 2 + slide 28: Sales owner — searchable combobox of the Sale master

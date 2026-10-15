@@ -1,7 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
 import { Spinner } from "@/components/Spinner";
-import { ZoneCascade } from "@/components/ZoneCascade";
+import ZoneCombobox from "@/components/ZoneCombobox";
 import { SalesCoverageHint } from "@/components/SaleZoneHints";
 import SalesCombobox, { type SalesOption } from "@/components/SalesCombobox";
 import { saleFor } from "@/lib/salesAutofill";
@@ -422,7 +422,7 @@ export default function AddCustomerPage() {
             <div>
               <label htmlFor="add-province" className="block text-sm mb-1.5" style={{ color: "var(--color-text)" }}>Zone (จังหวัด/เขต)</label>
               {/* Slide 3: reactive จังหวัด → เขต/อำเภอ cascade (stored as "จังหวัด / อำเภอ") */}
-              <ZoneCascade value={zone} onChange={setZone} idPrefix="add" />
+              <ZoneCombobox value={zone} onChange={setZone} idPrefix="add" />
             </div>
           </div>
         </section>
