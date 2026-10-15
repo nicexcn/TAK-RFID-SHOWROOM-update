@@ -1,10 +1,12 @@
 "use client";
 
-// 15/10 (rev 2): two-part Zone picker, restored — searchable จังหวัด combobox on the left
-// (same interaction conventions as SalesCombobox: IME-guarded keybinds, scrollIntoView,
-// a11y roles) + dependent เขต/อำเภอ select on the right. Stored value format unchanged:
-// "จังหวัด / เขต-อำเภอ" (province-only = "จังหวัด / "). Legacy free-text zones (no separator
-// or unknown district) stay editable as plain text, with a switch back to the picker.
+// 15/10 (rev 2): two-part Zone picker, restored — searchable จังหวัด combobox (left)
+// + dependent searchable เขต/อำเภอ combobox (right, strict to the picked province's list;
+// Bangkok alone has 50 districts, so a plain select meant a lot of scrolling). Same
+// interaction conventions as SalesCombobox (IME-guarded keybinds, scrollIntoView, a11y
+// roles). Stored value format unchanged: "จังหวัด / เขต-อำเภอ" (province-only =
+// "จังหวัด / "). Legacy free-text zones (no separator or unknown district) stay editable
+// as plain text, with a switch back to the picker.
 import { useState, useRef, useEffect, useId, useMemo } from "react";
 import { THAI_GEO, parseZone } from "@/lib/thaiGeo";
 
@@ -14,10 +16,15 @@ const boxStyle = {
   color: "var(--color-text)",
 } as const;
 
-export default function ZoneCombobox({ value, onChange, idPrefix }: {
-  value: string;
-  onChange: (v: string) => void;
-  idPrefix: string;
+/** Shared type-to-filter listbox used by both halves of the Zone picker. */
+function SearchBox({ id, options, selected, onCommit, placeholder, noMatchHint, disabled }: {
+  id: string;
+  options: string[];
+  selected: string;           // committed value shown when closed ("" = nothing picked)
+  onCommit: (v: string) => void;
+  placeholder: string;
+  noMatchHint: (q: string) => string;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -28,12 +35,6 @@ export default function ZoneCombobox({ value, onChange, idPrefix }: {
   const listId = useId();
   const optionId = useId();
 
-  const parsed = useMemo(() => parseZone(value), [value]);
-  const districts = useMemo(
-    () => (parsed ? THAI_GEO.find((g) => g.p === parsed.p)?.d ?? [] : []),
-    [parsed],
-  );
-
   // click-outside close (mousedown, like SalesCombobox, so a drag ending outside doesn't leak).
   useEffect(() => {
     function onDown(e: MouseEvent | TouchEvent) {
@@ -43,20 +44,19 @@ export default function ZoneCombobox({ value, onChange, idPrefix }: {
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const provinces = useMemo(() => THAI_GEO.map((g) => g.p), []);
   const filtered = useMemo(() => {
-    if (!query) return provinces;
+    if (!query) return options;
     const lq = query.toLowerCase();
-    return provinces.filter((p) => p.toLowerCase().includes(lq));
-  }, [provinces, query]);
+    return options.filter((o) => o.toLowerCase().includes(lq));
+  }, [options, query]);
 
   // Reset highlight when the list opens or the query changes.
   useEffect(() => {
     if (!open) return;
-    const idx = filtered.indexOf(parsed?.p ?? "");
+    const idx = filtered.indexOf(selected);
     setActive(idx >= 0 ? idx : filtered.length > 0 ? 0 : -1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, query]);
+  }, [open, query, options]);
 
   // scroll the highlighted option into view (cmdk pattern)
   useEffect(() => {
@@ -64,8 +64,8 @@ export default function ZoneCombobox({ value, onChange, idPrefix }: {
     listRef.current.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [active]);
 
-  function commit(province: string) {
-    onChange(province ? `${province} / ` : ""); // district resets on province change (cascade)
+  function commit(v: string) {
+    onCommit(v);
     setOpen(false);
     setQuery("");
   }
@@ -105,6 +105,75 @@ export default function ZoneCombobox({ value, onChange, idPrefix }: {
     }
   }
 
+  const activeId = active >= 0 && filtered[active] ? `${optionId}-${active}` : undefined;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <input
+        id={id}
+        ref={inputRef}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-activedescendant={activeId}
+        aria-autocomplete="list"
+        aria-disabled={disabled || undefined}
+        value={open ? query : selected}
+        placeholder={placeholder}
+        autoComplete="off"
+        disabled={disabled}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          if (!open) setOpen(true);
+        }}
+        onFocus={() => { if (!open && !disabled) { setQuery(""); setOpen(true); } }}
+        onKeyDown={onKeyDown}
+        className="w-full px-3 py-3 rounded-xl outline-none text-sm disabled:opacity-50"
+        style={boxStyle}
+      />
+      {open && (
+        <ul ref={listRef} id={listId} role="listbox"
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          {filtered.length === 0 ? (
+            <li className="px-4 py-3 text-sm" style={{ color: "var(--color-text-subtle)" }}>
+              {noMatchHint(query)}
+            </li>
+          ) : filtered.map((o, i) => (
+            <li
+              key={o}
+              data-idx={i}
+              id={`${optionId}-${i}`}
+              role="option"
+              aria-selected={selected === o}
+              onMouseDown={(e) => e.preventDefault()} // keep input focus; commit on click (iOS-safe)
+              onClick={() => commit(o)}
+              onMouseEnter={() => setActive(i)}
+              className="px-4 py-2 text-sm cursor-pointer"
+              style={{
+                background: i === active ? "var(--color-bg)" : "transparent",
+                color: "var(--color-text)",
+              }}>
+              {o}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default function ZoneCombobox({ value, onChange, idPrefix }: {
+  value: string;
+  onChange: (v: string) => void;
+  idPrefix: string;
+}) {
+  const parsed = useMemo(() => parseZone(value), [value]);
+  const districts = useMemo(
+    () => (parsed ? THAI_GEO.find((g) => g.p === parsed.p)?.d ?? [] : []),
+    [parsed],
+  );
+
   // Legacy free-text zone (no separator, unknown province, or unknown district): keep it
   // editable, offer the picker.
   if (value && !parsed) {
@@ -127,72 +196,27 @@ export default function ZoneCombobox({ value, onChange, idPrefix }: {
     );
   }
 
-  const activeId = active >= 0 && filtered[active] ? `${optionId}-${active}` : undefined;
-
   return (
     <div className="grid grid-cols-2 gap-2">
       {/* Part 1: searchable จังหวัด combobox (was a plain <select> in ZoneCascade). */}
-      <div ref={rootRef} className="relative">
-        <input
-          id={`${idPrefix}-province`}
-          ref={inputRef}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-activedescendant={activeId}
-          aria-autocomplete="list"
-          value={open ? query : (parsed?.p ?? "")}
-          placeholder="จังหวัด… เช่น กรุงเทพ"
-          autoComplete="off"
-          onChange={(e) => {
-            setQuery(e.target.value);
-            if (!open) setOpen(true);
-          }}
-          onFocus={() => { if (!open) { setQuery(""); setOpen(true); } }}
-          onKeyDown={onKeyDown}
-          className="w-full px-3 py-3 rounded-xl outline-none text-sm"
-          style={boxStyle}
-        />
-        {open && (
-          <ul ref={listRef} id={listId} role="listbox"
-            className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-            {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm" style={{ color: "var(--color-text-subtle)" }}>
-                ไม่พบจังหวัดที่ตรงกับ “{query}”
-              </li>
-            ) : filtered.map((p, i) => (
-              <li
-                key={p}
-                data-idx={i}
-                id={`${optionId}-${i}`}
-                role="option"
-                aria-selected={parsed?.p === p}
-                onMouseDown={(e) => e.preventDefault()} // keep input focus; commit on click (iOS-safe)
-                onClick={() => commit(p)}
-                onMouseEnter={() => setActive(i)}
-                className="px-4 py-2 text-sm cursor-pointer"
-                style={{
-                  background: i === active ? "var(--color-bg)" : "transparent",
-                  color: "var(--color-text)",
-                }}>
-                {p}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {/* Part 2: dependent เขต/อำเภอ select (unchanged from the old cascade). */}
-      <select
+      <SearchBox
+        id={`${idPrefix}-province`}
+        options={THAI_GEO.map((g) => g.p)}
+        selected={parsed?.p ?? ""}
+        onCommit={(p) => onChange(p ? `${p} / ` : "")} // district resets on province change (cascade)
+        placeholder="จังหวัด… เช่น กรุงเทพ"
+        noMatchHint={(q) => `ไม่พบจังหวัดที่ตรงกับ “${q}”`}
+      />
+      {/* Part 2: searchable เขต/อำเภอ combobox, strict to the picked province's list. */}
+      <SearchBox
         id={`${idPrefix}-district`}
-        value={parsed?.d ?? ""}
-        onChange={(e) => onChange(e.target.value && parsed ? `${parsed.p} / ${e.target.value}` : (parsed?.p ? `${parsed.p} / ` : ""))}
+        options={districts}
+        selected={parsed?.d ?? ""}
+        onCommit={(d) => onChange(parsed ? (d ? `${parsed.p} / ${d}` : `${parsed.p} / `) : "")}
+        placeholder="เขต/อำเภอ…"
         disabled={!parsed}
-        className="w-full px-3 py-3 rounded-xl outline-none text-sm disabled:opacity-50"
-        style={boxStyle}>
-        <option value="">เขต/อำเภอ…</option>
-        {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-      </select>
+        noMatchHint={(q) => `ไม่พบเขต/อำเภอที่ตรงกับ “${q}” ในจังหวัดนี้`}
+      />
     </div>
   );
 }
