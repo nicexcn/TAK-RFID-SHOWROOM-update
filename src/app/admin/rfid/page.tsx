@@ -957,7 +957,6 @@ function RFIDPageInner() {
               projects={projects} selectedProject={projectId} onProjectChange={setProjectId}
               projectHint={preloadProject ? undefined : "No project"}
               onStart={handleStartSession} starting={loading} startLabel="Start Session" startMode="footer"
-              allowWalkIn onWalkIn={() => handleStartSessionWith("WALK-IN", null)}
             />
             {error && <p className="text-sm mt-3" style={{ color: "var(--color-danger)" }}>{error}</p>}
           </div>

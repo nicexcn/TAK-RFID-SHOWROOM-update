@@ -130,6 +130,10 @@ model Sale {
   // update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): the coverage area — เขต (Bangkok
   // districts) and จังหวัด (provinces), comma-separated as provided by TWC. Null = this
   // person is a section manager / role-based entry, not a zone-assigned salesperson.
+  // 15/10 (TAK feedback): อาชีพที่ดูแล — which "You are a…" segments this person covers,
+  // comma-separated (BU heads cover several, e.g. "Architect,Interior,OwnerDev").
+  // Null = covers by area only (upcountry province-mapped sales).
+  segment   String?
   zone      String?  // เขตที่ดูแล, e.g. "สาทร,ยานนาวา,บางคอแหลม"
   province  String?  // จังหวัด, e.g. "กรุงเทพ,สมุทรปราการ"
   active    Boolean  @default(true)

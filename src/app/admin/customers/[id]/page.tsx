@@ -10,7 +10,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { customerTypeLabel, CUSTOMER_TYPES } from "@/lib/customerTypes";
-import { formatDateTime } from "@/lib/formatDate";
+import { formatDate, formatDateTime } from "@/lib/formatDate";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import { Spinner } from "@/components/Spinner";
@@ -22,9 +22,6 @@ const errorToast = { style: { background: "var(--color-danger-soft)", color: "va
 // prep staff can view/register but not modify; deleting is limited further to admins.
 const CAN_EDIT_ROLES = ["super_admin", "admin", "management"];
 const CAN_DELETE_ROLES = ["super_admin"];
-// update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): a Contractor customer is handled by the
-// contractor sales cell ONLY — these 3 people (by ERP code). Other segments see the full list.
-const CONTRACTOR_SALES_CODES = ["C0120", "C0108", "C0117"]; // ไก่ / รัตน์ / เขม
 // Item 2: fields staff may edit after registration.
 type EditForm = {
   fullName: string; title: string; titleOther: string; company: string; phone: string;
@@ -79,25 +76,25 @@ export default function CustomerDetailPage() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // 15/10 (TAK feedback): Scan history day-grouping sort — ใหม่-เก่า (default) / เก่า-ใหม่.
+  const [scanSort, setScanSort] = useState<"new" | "old">("new");
   const [salesOptions, setSalesOptions] = useState<{ name: string; code: string; province?: string | null; zone?: string | null }[]>([]);
   // 10/10 (sales list v2): the rule result floats to the top under "แนะนำตามกติกา".
   // EDIT form: no auto-fill — the customer already has a stored sale; the rule is a
   // suggestion only (staff see the recommended name at the top of the dropdown).
+  // 15/10: Contractor follows the same table as every other segment (13/9 cell rule dropped).
   const autofillSale = useMemo(
-    () => (form?.title === "Contractor" ? null : saleFor(form?.title || "", form?.zone || "")),
+    () => saleFor(form?.title || "", form?.zone || ""),
     [form?.title, form?.zone],
   );
   const comboboxOptions: SalesOption[] = useMemo(() => {
-    const base = form?.title === "Contractor"
-      ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
-      : salesOptions;
-    return base.map((s) => ({
+    return salesOptions.map((s) => ({
       name: s.name,
       code: s.code,
       hint: s.province || s.zone || undefined,
       group: autofillSale && s.name === autofillSale ? "แนะนำตามกติกา" : undefined,
     }));
-  }, [salesOptions, form?.title, autofillSale]);
+  }, [salesOptions, autofillSale]);
 
   // Feedback round 3 (15/9): existing company names as datalist suggestions on the Company
   // field, so staff pick "Home Connect" instead of typing a case variant.
@@ -252,6 +249,20 @@ export default function CustomerDetailPage() {
     : customer.sessions;
   const allScans = visibleSessions.flatMap((s) => s.scans);
   const uniqueProducts = new Map(allScans.map((s) => [s.product.id, s]));
+  // 15/10 (TAK feedback): group the scan history by DAY (like the Notifications page).
+  // Key = local YYYY-MM-DD of each product's latest scan, so the header date always
+  // matches formatDate() on the rows inside it (no UTC day-shift).
+  const scanDayGroups = (() => {
+    const byDay = new Map<string, ScanRow[]>();
+    for (const scan of uniqueProducts.values()) {
+      const d = new Date(scan.scannedAt);
+      const key = isNaN(d.getTime()) ? "unknown" : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const list = byDay.get(key) || [];
+      list.push(scan);
+      byDay.set(key, list);
+    }
+    return [...byDay.entries()].sort((a, b) => (scanSort === "new" ? b[0].localeCompare(a[0]) : a[0].localeCompare(b[0])));
+  })();
   // TAK 28/8: the profile splits into COMPANY-level (this card) and PERSON-level
   // (Contact Info card) — one Customer row, two display groupings.
   const companyFields: [string, string][] = [
@@ -590,13 +601,34 @@ export default function CustomerDetailPage() {
             <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>
               Scan history{selectedProject ? " · filtered" : ""}
             </h2>
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{uniqueProducts.size} items · {visibleSessions.length} sessions</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{uniqueProducts.size} items · {visibleSessions.length} sessions</span>
+              {/* 15/10 (TAK feedback): เรียงวันได้ — ใหม่-เก่า default / เก่า-ใหม่. */}
+              <select aria-label="Sort scan history by day" value={scanSort}
+                onChange={(e) => setScanSort(e.target.value as "new" | "old")}
+                className="text-xs px-2 py-1 rounded-lg outline-none"
+                style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}>
+                <option value="new">ใหม่-เก่า</option>
+                <option value="old">เก่า-ใหม่</option>
+              </select>
+            </div>
           </div>
           {uniqueProducts.size === 0 ? (
             <p className="text-sm py-6 text-center" style={{ color: "var(--color-text-subtle)" }}>{selectedProject ? "No scans for this project yet" : "No scan history yet"}</p>
           ) : (
-            <div className="space-y-2">
-              {[...uniqueProducts.values()].map((scan) => {
+            <div className="space-y-3">
+              {scanDayGroups.map(([day, scans]) => (
+                <div key={day}>
+                  {/* Day header — the divider style mirrors the Notifications page grouping. */}
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
+                      {day === "unknown" ? "—" : formatDate(day)}
+                    </span>
+                    <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{scans.length} item{scans.length > 1 ? "s" : ""}</span>
+                    <div className="flex-1" style={{ borderTop: "1px solid var(--color-border)" }} />
+                  </div>
+                  <div className="space-y-2">
+              {scans.map((scan) => {
                 const st = STATUS[scan.prepareStatus] || STATUS.NONE;
                 return (
                   <div key={scan.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
@@ -622,6 +654,9 @@ export default function CustomerDetailPage() {
                   </div>
                 );
               })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

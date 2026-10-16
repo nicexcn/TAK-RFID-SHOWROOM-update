@@ -13,10 +13,6 @@ import { CUSTOMER_TYPES } from "@/lib/customerTypes";
 const TITLE_OPTIONS = CUSTOMER_TYPES.map((t) => ({ value: t.value, label: `${t.label} / ${t.labelTh}` }));
 type TitleType = string;
 
-// update-tak 13/9 (รายชื่อ Sale ตามเขตและจังหวัด): a Contractor customer is handled by the
-// contractor sales cell ONLY — these 3 people (by ERP code). Other segments see the full list.
-const CONTRACTOR_SALES_CODES = ["C0120", "C0108", "C0117"]; // ไก่ / รัตน์ / เขม
-
 const KNOW_CHANNELS = [
   "Facebook","Instagram","Website","Google search","Friend or colleague",
   "Designer / Architect recommendation","Sales recommendation",
@@ -85,11 +81,10 @@ export default function AddCustomerPage() {
 
   // 10/10 (TWC email 12 Oct — sales list v2): combobox options + AUTO-FILL.
   // กทม+ปริมณฑล → หัวหน้า BU ตาม segment (ต้นอ้อ/ปุ๊); ต่างจังหวัด → sale ตามจังหวัด
-  // (8 คนตามภาค). Contractor keeps the OLD contractor-cell rule (ไก่/รัตน์/เขม) — the
-  // v2 table maps Contractor → ปุ๊ for the BU-head flow, but the 13/9 instruction to bind
-  // ONLY the contractor cell for Contractor customers still stands; v2 wins for everything else.
+  // (8 คนตามภาค). 15/10: the 13/9 Contractor-cell special case is dropped — Contractor
+  // follows the same table as every other segment (BU head for metro, province-mapped upcountry).
   const autofillSale = useMemo(
-    () => (title === "Contractor" ? null : saleFor(title, zone)),
+    () => saleFor(title, zone),
     [title, zone],
   );
 
@@ -108,17 +103,14 @@ export default function AddCustomerPage() {
   }, [autofillSale, me]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const comboboxOptions: SalesOption[] = useMemo(() => {
-    const base = title === "Contractor"
-      ? salesOptions.filter((s) => CONTRACTOR_SALES_CODES.includes(s.code))
-      : salesOptions;
     // Group: the auto-filled rule result floats to the top so staff see WHY it was chosen.
-    return base.map((s) => ({
+    return salesOptions.map((s) => ({
       name: s.name,
       code: s.code,
       hint: s.province || s.zone || undefined,
       group: autofillSale && s.name === autofillSale ? "แนะนำตามกติกา" : undefined,
     }));
-  }, [salesOptions, title, autofillSale]);
+  }, [salesOptions, autofillSale]);
 
   // #2: options for the staff "Sales" combobox come from the Sale master (Settings →
   // Salesperson, name + ERP code so slide-28 search can match both), plus any legacy
