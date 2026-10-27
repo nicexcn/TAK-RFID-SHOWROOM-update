@@ -1,6 +1,5 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
-import Image from "next/image";
 import { Spinner } from "@/components/Spinner";
 import { Toggle } from "@/components/Toggle";
 import { Stepper } from "@/components/Stepper";
@@ -26,10 +25,6 @@ const newRegistryId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(16).slice(2, 10);
 
 interface DropdownOption { id: string; type: string; value: string; }
-interface MediaFile {
-  id: string; productId: string; url: string; order: number;
-  product?: { name: string; productCode?: string };
-}
 interface UserItem {
   id: string; username: string; firstName: string; lastName: string;
   role: string; createdAt: string;
@@ -82,7 +77,6 @@ export default function SettingsPage() {
 
   // Ids of rows whose DELETE request is in flight — disables the control + gates local removal on res.ok.
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const [deletingOptionId, setDeletingOptionId] = useState<string | null>(null);
 
   // Dashboard
@@ -127,10 +121,6 @@ export default function SettingsPage() {
   const [editLoading, setEditLoading] = useState(false);
 
   // Media
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
-  const [mediaSearch, setMediaSearch] = useState("");
-  const [mediaSuccess, setMediaSuccess] = useState("");
   const [slideDuration, setSlideDuration] = useState(5);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [relayUrl, setRelayUrl] = useState(""); // Option E cloud relay base
@@ -226,7 +216,6 @@ export default function SettingsPage() {
   useEffect(() => { fetchOptions(); }, [activeType]);
 
   useEffect(() => {
-    if (activeTab === "media") fetchMediaFiles();
     if (activeTab === "account") fetchUsers();
   }, [activeTab]);
 
@@ -308,33 +297,6 @@ export default function SettingsPage() {
       errToast("Failed to delete user.");
     } finally {
       setDeletingUserId(null);
-    }
-  }
-
-  async function fetchMediaFiles() {
-    setMediaLoading(true);
-    try {
-      const res = await fetch("/api/products/images/all");
-      if (res.ok) setMediaFiles(await res.json());
-    } catch {}
-    setMediaLoading(false);
-  }
-
-  async function handleDeleteMedia(id: string) {
-    if (!(await confirm({ title: "Delete image?", message: "Delete this image?", danger: true }))) return;
-    setDeletingMediaId(id);
-    try {
-      const res = await fetch(`/api/products/images/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setMediaFiles((p) => p.filter((f) => f.id !== id));
-        setMediaSuccess("✓ Image deleted"); setTimeout(() => setMediaSuccess(""), 2000);
-      } else {
-        errToast("Failed to delete image.");
-      }
-    } catch {
-      errToast("Failed to delete image.");
-    } finally {
-      setDeletingMediaId(null);
     }
   }
 
@@ -508,10 +470,6 @@ export default function SettingsPage() {
   }, [activeTab, activeType]);
 
   const selectedColor = GRAPH_COLORS[dashboardSettings.graphColor];
-  const filteredMedia = mediaFiles.filter((f) =>
-    !mediaSearch || f.product?.name?.toLowerCase().includes(mediaSearch.toLowerCase()) ||
-    f.product?.productCode?.toLowerCase().includes(mediaSearch.toLowerCase())
-  );
   const filteredUsers = users.filter((u) =>
     !userSearch || u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
     u.firstName.toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -1245,7 +1203,6 @@ export default function SettingsPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={idleVideoUrl} alt="Idle preview" className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} />
                     ) : (
-                      // eslint-disable-next-line jsx-a11y/media-has-caption
                       <video src={idleVideoUrl} className="mt-2 w-56 rounded-lg" style={{ background: "#000", objectFit: idleVideoFit as "contain" | "cover", aspectRatio: "16/9" }} muted loop playsInline controls />
                     )
                   )}
@@ -1304,73 +1261,6 @@ export default function SettingsPage() {
                   className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-wait" style={{ background: "var(--color-primary)", color: "var(--color-surface)" }}>
                   {savingDisplay ? <span className="inline-flex items-center gap-2"><Spinner size="xs" color="currentColor" /> Saving...</span> : "Save"}
                 </button>
-              </div>
-
-              <div style={cardStyle}>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-base font-semibold" style={{ color: "var(--color-text)" }}>Media Files</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>Overview of all product images — upload &amp; reorder in Edit Product</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-4"
-                  style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}>
-                  <svg width="14" height="14" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                  </svg>
-                  <input value={mediaSearch} onChange={(e) => setMediaSearch(e.target.value)}
-                    placeholder="Search by product name or code..."
-                    className="outline-none text-sm w-full" style={{ background: "transparent", color: "var(--color-text)" }} />
-                </div>
-                {mediaSuccess && <p className="text-sm mb-3" style={{ color: "var(--color-success)" }}>{mediaSuccess}</p>}
-                {mediaLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Spinner size="lg" />
-                  </div>
-                ) : filteredMedia.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-sm" style={{ color: "var(--color-text-subtle)" }}>{mediaSearch ? "No results found" : "No media files yet"}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <div className="grid grid-cols-12 px-3 pb-1 text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
-                      <div className="col-span-1">Image</div>
-                      <div className="col-span-5">Product</div>
-                      <div className="col-span-3">Code</div>
-                      <div className="col-span-2 text-center">Order</div>
-                      <div className="col-span-1" />
-                    </div>
-                    {filteredMedia.map((file) => (
-                      <div key={file.id} className="grid grid-cols-12 items-center px-3 py-2 rounded-xl" style={{ background: "var(--color-bg)" }}>
-                        <div className="col-span-1">
-                          <div className="w-8 h-10 rounded overflow-hidden" style={{ background: "var(--color-border)" }}>
-                            <Image src={file.url} alt="" width={32} height={40} className="w-full h-full object-cover" />
-                          </div>
-                        </div>
-                        <div className="col-span-5 text-sm truncate pr-2" style={{ color: "var(--color-text)" }}>{file.product?.name ?? "–"}</div>
-                        <div className="col-span-3 text-xs" style={{ color: "var(--color-text-muted)" }}>{file.product?.productCode ?? "–"}</div>
-                        <div className="col-span-2 text-center text-xs" style={{ color: "var(--color-text-muted)" }}>#{file.order + 1}</div>
-                        <div className="col-span-1 flex gap-1 justify-end">
-                          <a href={file.url} download className="w-6 h-6 flex items-center justify-center rounded-lg" style={{ background: "var(--color-border)" }}>
-                            <svg width="11" height="11" fill="none" stroke="#726c5a" strokeWidth="2" viewBox="0 0 24 24">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                          </a>
-                          <button onClick={() => handleDeleteMedia(file.id)}
-                            disabled={deletingMediaId === file.id}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg disabled:opacity-40" style={{ background: "var(--color-danger-bg)" }}>
-                            <svg width="11" height="11" fill="none" stroke="var(--color-danger-soft)" strokeWidth="2" viewBox="0 0 24 24">
-                              <polyline points="3 6 5 6 21 6"/>
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                              <path d="M10 11v6M14 11v6"/>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           )}
