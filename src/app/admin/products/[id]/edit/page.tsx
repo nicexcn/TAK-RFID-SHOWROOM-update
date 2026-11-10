@@ -27,6 +27,15 @@ export default function EditProductPage() {
     materialType: "",
     category: "",
     productCode: "",
+    // 5/11 TAK Master File: ERP item number (same code WITH the space, e.g. "WY 4240X").
+    itemCode: "",
+    range: "",
+    thickness: "",
+    finish: "",
+    typeSpecies: "",
+    edgeband: "",
+    displayWall: "",
+    remark: "",
     name: "",
     location: "",
     size: "",
@@ -64,6 +73,14 @@ export default function EditProductPage() {
         materialType: product.materialType || "",
         category: product.category || "",
         productCode: product.productCode || "",
+        itemCode: product.itemCode || "",
+        range: product.range || "",
+        thickness: product.thickness || "",
+        finish: product.finish || "",
+        typeSpecies: product.typeSpecies || "",
+        edgeband: product.edgeband || "",
+        displayWall: product.displayWall || "",
+        remark: product.remark || "",
         name: product.name || "",
         location: product.location || "",
         size: product.size || "",
@@ -163,10 +180,17 @@ export default function EditProductPage() {
         <div className="space-y-4">
 
           {/* Product Code */}
-          <div>
-            <label htmlFor="productCode" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
-            <input id="productCode" name="productCode" value={form.productCode} onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="productCode" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Product Code</label>
+              <input id="productCode" name="productCode" value={form.productCode} onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <label htmlFor="itemCode" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Item Code (ERP)</label>
+              <input id="itemCode" name="itemCode" value={form.itemCode} onChange={handleChange} placeholder="e.g. WY 4240X"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
           </div>
 
           {/* Brand + Material Type */}
@@ -225,6 +249,52 @@ export default function EditProductPage() {
             <div>
               <label htmlFor="description" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Description</label>
               <input id="description" name="description" value={form.description} onChange={handleChange} placeholder="Short description…"
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+            </div>
+          </div>
+
+          {/* 5/11 Master File catalog attributes */}
+          <div className="pt-2 mt-2 border-t" style={{ borderColor: "var(--color-border)" }}>
+            <p className="text-xs font-medium mb-3" style={{ color: "var(--color-text-muted)" }}>Catalog attributes (from TAK Master File)</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="range" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Range</label>
+                <input id="range" name="range" value={form.range} onChange={handleChange} placeholder="e.g. Structures"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+              <div>
+                <label htmlFor="thickness" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Thickness</label>
+                <input id="thickness" name="thickness" value={form.thickness} onChange={handleChange} placeholder="e.g. +-0.8mm"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="finish" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Finish</label>
+                <input id="finish" name="finish" value={form.finish} onChange={handleChange} placeholder="e.g. Brushed"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+              <div>
+                <label htmlFor="typeSpecies" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Type / Species</label>
+                <input id="typeSpecies" name="typeSpecies" value={form.typeSpecies} onChange={handleChange} placeholder="e.g. Metal"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="edgeband" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Edgeband</label>
+                <input id="edgeband" name="edgeband" value={form.edgeband} onChange={handleChange} placeholder="e.g. EBHS8001VT - 23/45"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+              <div>
+                <label htmlFor="displayWall" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Display Wall</label>
+                <input id="displayWall" name="displayWall" value={form.displayWall} onChange={handleChange} placeholder="e.g. MD2"
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="remark" className="block text-sm mb-1 font-medium" style={{ color: "var(--color-text)" }}>Remark</label>
+              <input id="remark" name="remark" value={form.remark} onChange={handleChange} placeholder="e.g. Light / Mid / Dark"
                 className="w-full px-4 py-3 rounded-xl outline-none text-sm" style={inputStyle} />
             </div>
           </div>

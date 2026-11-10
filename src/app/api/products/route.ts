@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       // Also matches any chip EPC in the tag table (multi-tag products: door panels).
       ...(search && {
         OR: [
-          ...["name", "productCode", "brand", "materialType", "category", "colour", "size", "location", "rfidTag"]
+          ...["name", "productCode", "itemCode", "brand", "materialType", "category", "colour", "size", "location", "rfidTag"]
             .map((f) => ({ [f]: { contains: search, mode: "insensitive" as const } })),
           { tags: { some: { epc: { contains: search, mode: "insensitive" as const } } } },
         ],

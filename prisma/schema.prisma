@@ -29,6 +29,17 @@ model Product {
   materialType  String?
   category      String?
   productCode   String?
+  // TAK Master File (5/11/2026): the ERP item number — same as productCode but WITH the
+  // space (e.g. productCode "WY4240X" vs itemCode "WY 4240X"). ERP export files use this.
+  itemCode      String?
+  // Master File catalog attributes (5/11/2026) — imported from the sheet, editable in the UI.
+  range         String?
+  thickness     String?
+  finish        String?
+  typeSpecies   String?
+  edgeband      String?
+  displayWall   String?
+  remark        String?
   name          String
   size          String?
   colour        String?

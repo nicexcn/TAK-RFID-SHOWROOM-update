@@ -268,8 +268,8 @@ export default function ProductsPage() {
   }
 
   function downloadTemplate() {
-    const headers = ["rfidTag", "name", "brand", "materialType", "category", "productCode", "size", "colour", "description", "location"];
-    const example = ["RFID-001", "Sample Product", "BrandX", "Laminate", "Floor", "PC-001", "60x60", "White", "Sample description", "Rack A-01"];
+    const headers = ["rfidTag", "name", "brand", "materialType", "category", "productCode", "itemCode", "range", "size", "thickness", "colour", "finish", "typeSpecies", "edgeband", "displayWall", "remark", "description", "location"];
+    const example = ["RFID-001", "Sample Product", "BrandX", "Laminate", "Floor", "PC-001", "PC 001", "Structures", "60x60", "+-0.8mm", "White", "Brushed", "Metal", "EB-001", "MD2", "Light", "Sample description", "Rack A-01"];
     const csv = [headers.join(","), example.join(",")].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -590,8 +590,16 @@ export default function ProductsPage() {
                       ["materialType", "Material type"],
                       ["category", "Category"],
                       ["productCode", "Product code"],
+                      ["itemCode", "Item code (ERP, with space)"],
+                      ["range", "Range"],
                       ["size", "Size"],
+                      ["thickness", "Thickness"],
                       ["colour", "Colour"],
+                      ["finish", "Finish"],
+                      ["typeSpecies", "Type / Species"],
+                      ["edgeband", "Edgeband"],
+                      ["displayWall", "Display wall"],
+                      ["remark", "Remark"],
                       ["description", "Description"],
                       ["location", "Storage location"],
                     ].map(([col, desc]) => (

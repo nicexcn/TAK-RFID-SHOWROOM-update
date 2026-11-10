@@ -119,7 +119,7 @@ export default function ReportsPage() {
       const res = await fetch(`/api/reports?${windowParams({ detail: "takeaways" })}`);
       if (!res.ok) { toast("Export failed — please try again.", { style: { background: "var(--color-danger-soft)", color: "var(--color-surface)", border: "none", borderRadius: "0.75rem" } }); return; }
       const d = await res.json();
-      const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[];
+      const takeaways = (d.takeaways || []) as { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; itemCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[];
       // 17/9: Sales Name / Sales Dimension are BACK (user request — they were dropped in the
       // 13/9 template reshuffle but the API kept sending them). Sale = the customer's
       // salesPerson; Dimension = that sale's ERP code from the Sale master.
@@ -131,7 +131,8 @@ export default function ReportsPage() {
         ["Posting Date", "Document No.", "Item No.", "Quantity", "Customer Name", "Contact Person", "Project Name", "Sales Name", "Sales Dimension"],
         ...takeaways.map((t) => [
           posting(t.date), t.docNo, // t.date is a Bangkok YYYY-MM-DD string
-          t.productCode, t.qty, t.company || t.customer, [t.contact, t.phone].filter(Boolean).join(" "),
+          // 5/11 TAK Master File: the ERP consumes the spaced Item code (fallback: Product code).
+          t.itemCode || t.productCode, t.qty, t.company || t.customer, [t.contact, t.phone].filter(Boolean).join(" "),
           t.project, t.sale, t.saleCode,
         ]),
       ];

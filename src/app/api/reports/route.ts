@@ -10,7 +10,7 @@ import { bkkDayOf } from "@/lib/erpDocNo";
 // (image1) plus brand/category interest breakdowns.
 
 type Period = "daily" | "weekly" | "monthly" | "yearly";
-type ProdLite = { id: string; name: string; brand: string | null; category: string | null; materialType: string | null; productCode: string | null };
+type ProdLite = { id: string; name: string; brand: string | null; category: string | null; materialType: string | null; productCode: string | null; itemCode: string | null };
 
 const TZ_OFFSET_MS = 7 * 60 * 60 * 1000; // Asia/Bangkok (+07:00, no DST) — the showroom's local day
 
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
       where: { scannedAt: { gte: from, lte: to } },
       select: {
         id: true, takeawayQty: true, scannedAt: true,
-        product: { select: { id: true, name: true, brand: true, category: true, materialType: true, productCode: true } },
+        product: { select: { id: true, name: true, brand: true, category: true, materialType: true, productCode: true, itemCode: true } },
         session: { select: { id: true, customerCode: true, customerId: true } },
       },
     });
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
     //   Project Name | Sales Name | Sales Dimension (sale's ERP code)
     // Contact/project come from the visit's Session (contactId/projectId) with customer-level
     // fallbacks; Sales Dimension is the Sale master code, matched by the customer's sale name.
-    let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[] | undefined;
+    let takeaways: { date: string; docNo: string; customerCode: string; customer: string; company: string; contact: string; phone: string; zone: string; project: string; productCode: string; itemCode: string; productName: string; brand: string; category: string; qty: number; sale: string; saleCode: string }[] | undefined;
     // TAK 28/8: visits detail — ONE ROW PER SESSION (zero-scan visits included), with the
     // manual visit topics (interest/soNumber/status), the codes taken home, and remarks.
     let visits: { date: string; customerCode: string; customer: string; company: string; contact: string; zone: string; project: string; interest: string; soNumber: string; status: string; productsTaken: string; totalQty: number; description: string; sale: string }[] | undefined;
@@ -262,7 +262,7 @@ export async function GET(req: NextRequest) {
           contact: sess?.contactName || c?.fullName || "",
           phone: c?.phone || "",
           zone: c?.zone || "", project: sess?.project?.name || c?.project || "",
-          productCode: s.product?.productCode || "", productName: s.product?.name || "",
+          productCode: s.product?.productCode || "", itemCode: s.product?.itemCode || "", productName: s.product?.name || "",
           brand: s.product?.brand || "", category: s.product?.category || "",
           qty: s.takeawayQty, sale: saleName, saleCode: saleCodeByName.get(saleName) || "",
         };
